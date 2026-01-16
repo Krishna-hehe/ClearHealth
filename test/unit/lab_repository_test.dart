@@ -1,0 +1,73 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:lab_sense_app/core/repositories/lab_repository.dart';
+import 'package:lab_sense_app/core/supabase_service.dart';
+import 'package:lab_sense_app/core/cache_service.dart';
+
+class MockSupabaseService extends Mock implements SupabaseService {}
+class MockCacheService extends Mock implements CacheService {}
+
+void main() {
+  late LabRepository labRepository;
+  late MockSupabaseService mockSupabaseService;
+  late MockCacheService mockCacheService;
+
+  setUp(() {
+    mockSupabaseService = MockSupabaseService();
+    mockCacheService = MockCacheService();
+    labRepository = LabRepository(mockSupabaseService, mockCacheService);
+  });
+
+  group('LabRepository', () {
+    test('getLabResults returns empty list on error and fallback to empty cache', () async {
+       // Mock Supabase to throw
+       when(() => mockSupabaseService.getLabResults(limit: any(named: 'limit')))
+          .thenThrow(Exception('Network Error'));
+       
+       // Mock Cache to return empty list
+       when(() => mockCacheService.getCachedLabResults()).thenReturn([]);
+       
+       final results = await labRepository.getLabResults();
+       
+       expect(results, isEmpty);
+       
+       // Verify both were called
+       verify(() => mockSupabaseService.getLabResults(limit: 10)).called(1);
+       verify(() => mockCacheService.getCachedLabResults()).called(1);
+    });
+
+    test('getLabResults returns cached data on network error', () async {
+       final mockCachedJson = [
+         {
+           'id': '1',
+           'date': '2023-01-01',
+           'lab_name': 'Cached Lab',
+           'status': 'Normal',
+           'test_results': []
+         }
+       ];
+
+       when(() => mockSupabaseService.getLabResults(limit: any(named: 'limit')))
+          .thenThrow(Exception('Network Error'));
+       
+       when(() => mockCacheService.getCachedLabResults()).thenReturn(mockCachedJson);
+       
+       final results = await labRepository.getLabResults();
+       
+       expect(results, isNotEmpty);
+       expect(results.first.labName, 'Cached Lab');
+       
+       verify(() => mockSupabaseService.getLabResults(limit: 10)).called(1);
+       verify(() => mockCacheService.getCachedLabResults()).called(1);
+    });
+
+    test('createLabResult delegates to service', () async {
+      final data = {'test': 'data'};
+      when(() => mockSupabaseService.createLabResult(data)).thenAnswer((_) async {});
+
+      await labRepository.createLabResult(data);
+
+      verify(() => mockSupabaseService.createLabResult(data)).called(1);
+    });
+  });
+}

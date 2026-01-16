@@ -1,26 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme.dart';
-import '../../core/supabase_service.dart';
-import '../../core/ai_service.dart';
+import '../../core/providers.dart';
 
-class TrendsPage extends StatefulWidget {
+class TrendsPage extends ConsumerStatefulWidget {
   const TrendsPage({super.key});
 
   @override
-  State<TrendsPage> createState() => _TrendsPageState();
+  ConsumerState<TrendsPage> createState() => _TrendsPageState();
 }
 
-class _TrendsPageState extends State<TrendsPage> with SingleTickerProviderStateMixin {
+class _TrendsPageState extends ConsumerState<TrendsPage> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late List<Animation<double>> _animations;
   String? _selectedTest;
-  List<String> _availableTests = [];
   List<Map<String, dynamic>> _rawData = [];
   List<FlSpot> _spots = [];
-  bool _isLoading = false;
+  final bool _isLoading = false;
   bool _isAnalyzing = false;
   String? _aiAnalysis;
   String _unit = '';
@@ -29,7 +28,6 @@ class _TrendsPageState extends State<TrendsPage> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _initializeData();
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
@@ -50,32 +48,53 @@ class _TrendsPageState extends State<TrendsPage> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  Future<void> _initializeData() async {
-    setState(() => _isLoading = true);
-    final supabase = SupabaseService();
-    _availableTests = await supabase.getDistinctTests();
+  @override
+  Widget build(BuildContext context) {
+    final testsAsync = ref.watch(distinctTestsProvider);
     
-    if (_availableTests.isNotEmpty) {
-      _selectedTest = _availableTests.contains('Cholesterol') 
-          ? 'Cholesterol' 
-          : _availableTests.first;
-      await _fetchTrendData();
-    } else {
-      setState(() => _isLoading = false);
-    }
+    return testsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, s) => Center(child: Text('Error: $e')),
+      data: (tests) {
+        if (tests.isEmpty) return _buildNoDataState();
+        
+        // Auto-select first test if none selected
+        _selectedTest ??= tests.contains('Cholesterol') ? 'Cholesterol' : tests.first;
+        
+        final trendDataAsync = ref.watch(trendDataProvider(_selectedTest!));
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildAnimatedItem(0, _buildHeader()),
+              const SizedBox(height: 32),
+              _buildAnimatedItem(1, _buildSelectionCard(tests)),
+              const SizedBox(height: 24),
+              trendDataAsync.when(
+                loading: () => const SizedBox(height: 300, child: Center(child: CircularProgressIndicator())),
+                error: (e, s) => Center(child: Text('Error: $e')),
+                data: (data) {
+                  _rawData = data;
+                  _updateSpots();
+                  return Column(
+                    children: [
+                      _buildAnimatedItem(2, _buildChartCard()),
+                      const SizedBox(height: 24),
+                      _buildAnimatedItem(3, _buildAiTrendCard()),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
-  Future<void> _fetchTrendData() async {
-    if (_selectedTest == null) return;
-    
-    setState(() {
-      _isLoading = true;
-      _aiAnalysis = null;
-    });
-
-    final supabase = SupabaseService();
-    _rawData = await supabase.getTrendData(_selectedTest!);
-    
+  void _updateSpots() {
     if (_rawData.isNotEmpty) {
       _unit = _rawData.last['unit'] ?? '';
       _reference = _rawData.last['reference'] ?? '';
@@ -89,11 +108,11 @@ class _TrendsPageState extends State<TrendsPage> with SingleTickerProviderStateM
       _unit = '';
       _reference = '';
     }
-
-    setState(() {
-      _isLoading = false;
+    
+    // Trigger animation controller if not already running
+    if (!_controller.isAnimating && !_controller.isCompleted) {
       _controller.forward();
-    });
+    }
   }
 
   Future<void> _analyzeTrend() async {
@@ -111,34 +130,14 @@ class _TrendsPageState extends State<TrendsPage> with SingleTickerProviderStateM
           "Explain what the pattern suggests (e.g., improvement, stability, or concern) and provide context-specific health considerations. "
           "Keep the response professional, concise (max 3-4 sentences), and clear.";
 
-      final analysis = await AiService.chat(prompt);
-      setState(() => _aiAnalysis = analysis);
+      final analysis = await ref.read(aiServiceProvider).chat(prompt);
+      if(mounted) setState(() => _aiAnalysis = analysis);
     } catch (e) {
       debugPrint('Error analyzing trend: $e');
-      setState(() => _aiAnalysis = "Unable to generate analysis right now. Please try again later.");
+      if(mounted) setState(() => _aiAnalysis = "Unable to generate analysis right now. Please try again later.");
     } finally {
-      setState(() => _isAnalyzing = false);
+      if(mounted) setState(() => _isAnalyzing = false);
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildAnimatedItem(0, _buildHeader()),
-        const SizedBox(height: 32),
-        if (_availableTests.isEmpty && !_isLoading)
-          _buildNoDataState()
-        else ...[
-          _buildAnimatedItem(1, _buildSelectionCard()),
-          const SizedBox(height: 24),
-          _buildAnimatedItem(2, _buildChartCard()),
-          const SizedBox(height: 24),
-          _buildAnimatedItem(3, _buildAiTrendCard()),
-        ],
-      ],
-    );
   }
 
   Widget _buildAnimatedItem(int index, Widget child) {
@@ -188,7 +187,7 @@ class _TrendsPageState extends State<TrendsPage> with SingleTickerProviderStateM
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Theme.of(context).dividerColor.withOpacity(0.1),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(FontAwesomeIcons.chartLine, size: 24, color: AppColors.secondary),
@@ -211,7 +210,7 @@ class _TrendsPageState extends State<TrendsPage> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildSelectionCard() {
+  Widget _buildSelectionCard(List<String> tests) {
     String dateRange = 'No data';
     if (_rawData.isNotEmpty) {
       final start = DateTime.parse(_rawData.first['date']);
@@ -257,12 +256,14 @@ class _TrendsPageState extends State<TrendsPage> with SingleTickerProviderStateM
               child: DropdownButton<String>(
                 value: _selectedTest,
                 isExpanded: true,
-                items: _availableTests
+                items: tests
                     .map((item) => DropdownMenuItem(value: item, child: Text(item)))
                     .toList(),
                 onChanged: (val) {
-                  setState(() => _selectedTest = val!);
-                  _fetchTrendData();
+                  setState(() {
+                    _selectedTest = val;
+                    _aiAnalysis = null;
+                  });
                 },
               ),
             ),
@@ -470,29 +471,29 @@ class _TrendsPageState extends State<TrendsPage> with SingleTickerProviderStateM
                child: Container(
                  padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).dividerColor.withOpacity(0.05),
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Theme.of(context).dividerColor),
                 ),
-               child: Column(
-                 crossAxisAlignment: CrossAxisAlignment.start,
-                 children: [
-                    Row(
-                      children: const [
-                        Icon(FontAwesomeIcons.robot, size: 16, color: AppColors.primary),
-                        SizedBox(width: 12),
-                        Text('Assistant Guidance', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary)),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _aiAnalysis!,
-                      style: TextStyle(fontSize: 14, height: 1.5, color: Theme.of(context).colorScheme.onSurface),
-                    ),
-                 ],
-               ),
-             )
-           )
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                     Row(
+                       children: const [
+                         Icon(FontAwesomeIcons.robot, size: 16, color: AppColors.primary),
+                         SizedBox(width: 12),
+                         Text('Assistant Guidance', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary)),
+                       ],
+                     ),
+                     const SizedBox(height: 12),
+                     Text(
+                       _aiAnalysis!,
+                       style: TextStyle(fontSize: 14, height: 1.5, color: Theme.of(context).colorScheme.onSurface),
+                     ),
+                  ],
+                ),
+              )
+            )
           else
             Center(
               child: Column(

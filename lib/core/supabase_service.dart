@@ -1,43 +1,25 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'cache_service.dart';
+
 
 class SupabaseService {
-  static final SupabaseService _instance = SupabaseService._internal();
-  factory SupabaseService() => _instance;
-  SupabaseService._internal();
+  final SupabaseClient client;
 
-  final SupabaseClient client = Supabase.instance.client;
+  SupabaseService(this.client);
 
-  // Authentication
-  Future<AuthResponse> signUp(String email, String password) async {
-    return await client.auth.signUp(email: email, password: password);
-  }
 
-  Future<AuthResponse> signIn(String email, String password) async {
-    return await client.auth.signInWithPassword(email: email, password: password);
-  }
-
-  Future<void> signOut() async {
-    await client.auth.signOut();
-  }
-
-  User? get currentUser => client.auth.currentUser;
 
   // Database Operations (Examples)
   Future<List<Map<String, dynamic>>> getLabResults({int limit = 10}) async {
     try {
-      final response = await client
+      return await client
           .from('lab_results')
           .select()
           .order('date', ascending: false)
           .limit(limit);
-      
-      await CacheService().cacheLabResults(response);
-      return response;
     } catch (e) {
-      debugPrint('Supabase fetch failed, falling back to cache: $e');
-      return CacheService().getCachedLabResults();
+      debugPrint('Supabase fetch failed: $e');
+      rethrow; // Let repository handle fallback
     }
   }
 
@@ -47,69 +29,63 @@ class SupabaseService {
 
   // Profile Management
   Future<Map<String, dynamic>?> getProfile() async {
-    if (currentUser == null) return null;
+    if (client.auth.currentUser == null) return null;
     try {
-      final response = await client
+      return await client
           .from('profiles')
           .select()
-          .eq('id', currentUser!.id)
+          .eq('id', client.auth.currentUser!.id)
           .single();
-      
-      await CacheService().cacheProfile(response);
-      return response;
     } catch (e) {
-      debugPrint('Supabase fetch failed, falling back to cache: $e');
-      return CacheService().getCachedProfile();
+      debugPrint('Supabase fetch failed: $e');
+      rethrow;
     }
   }
 
   Stream<Map<String, dynamic>?> getProfileStream() {
-    if (currentUser == null) return Stream.value(null);
+    if (client.auth.currentUser == null) return Stream.value(null);
     return client
         .from('profiles')
         .stream(primaryKey: ['id'])
-        .eq('id', currentUser!.id)
+        .eq('id', client.auth.currentUser!.id)
         .map((data) => data.isNotEmpty ? data.first : null);
   }
 
   Future<void> saveConditions(List<String> conditions) async {
-    if (currentUser == null) return;
-    await client.from('profiles').update({'conditions': conditions}).eq('id', currentUser!.id);
+    if (client.auth.currentUser == null) return;
+    await client.from('profiles').update({'conditions': conditions}).eq('id', client.auth.currentUser!.id);
   }
 
   Future<void> updateProfile(Map<String, dynamic> data) async {
-    if (currentUser == null) return;
-    await client.from('profiles').update(data).eq('id', currentUser!.id);
+    if (client.auth.currentUser == null) return;
+    await client.from('profiles').update(data).eq('id', client.auth.currentUser!.id);
   }
 
   Future<List<Map<String, dynamic>>> getPrescriptions() async {
-    if (currentUser == null) return [];
+    if (client.auth.currentUser == null) return [];
     try {
-      final response = await client
+      return await client
           .from('prescriptions')
           .select()
-          .eq('user_id', currentUser!.id);
-      
-      await CacheService().cachePrescriptions(response);
-      return response;
+          .eq('user_id', client.auth.currentUser!.id);
     } catch (e) {
       debugPrint('Error fetching prescriptions: $e');
-      return CacheService().getCachedPrescriptions();
+      rethrow;
     }
   }
 
   Future<void> addPrescription(Map<String, dynamic> data) async {
-    if (currentUser == null) return;
-    await client.from('prescriptions').insert({...data, 'user_id': currentUser!.id});
+    if (client.auth.currentUser == null) return;
+    await client.from('prescriptions').insert({...data, 'user_id': client.auth.currentUser!.id});
   }
 
   Future<int> getActivePrescriptionsCount() async {
-    if (currentUser == null) return 0;
+    if (client.auth.currentUser == null) return 0;
     try {
       final response = await client
           .from('prescriptions')
           .select('id')
-          .eq('user_id', currentUser!.id)
+          .eq('user_id', client.auth.currentUser!.id)
           .eq('is_active', true)
           .count();
       return response.count;
@@ -119,7 +95,7 @@ class SupabaseService {
   }
 
   Future<List<Map<String, dynamic>>> getTrendData(String testName) async {
-    if (currentUser == null) return [];
+    if (client.auth.currentUser == null) return [];
     try {
       final results = await getLabResults(limit: 50); // Fetch more for trends
       List<Map<String, dynamic>> trendPoints = [];
@@ -152,7 +128,7 @@ class SupabaseService {
   }
 
   Future<List<String>> getDistinctTests() async {
-    if (currentUser == null) return [];
+    if (client.auth.currentUser == null) return [];
     try {
       final results = await getLabResults(limit: 50);
       Set<String> testNames = {};
@@ -173,12 +149,12 @@ class SupabaseService {
   }
 
   Future<List<Map<String, dynamic>>> getNotifications() async {
-    if (currentUser == null) return [];
+    if (client.auth.currentUser == null) return [];
     try {
       final response = await client
           .from('notifications')
           .select()
-          .eq('user_id', currentUser!.id)
+          .eq('user_id', client.auth.currentUser!.id)
           .order('created_at', ascending: false);
       return response;
     } catch (e) {
@@ -188,16 +164,16 @@ class SupabaseService {
   }
 
   Stream<List<Map<String, dynamic>>> getNotificationsStream() {
-    if (currentUser == null) return Stream.value([]);
+    if (client.auth.currentUser == null) return Stream.value([]);
     return client
         .from('notifications')
         .stream(primaryKey: ['id'])
-        .eq('user_id', currentUser!.id)
+        .eq('user_id', client.auth.currentUser!.id)
         .order('created_at', ascending: false);
   }
 
   Future<void> markNotificationAsRead(String id) async {
-    if (currentUser == null) return;
+    if (client.auth.currentUser == null) return;
     try {
       await client
           .from('notifications')
@@ -209,7 +185,7 @@ class SupabaseService {
   }
 
   Future<void> createLabResult(Map<String, dynamic> data) async {
-    if (currentUser == null) return;
+    if (client.auth.currentUser == null) return;
     try {
       final List<dynamic> testResults = data['test_results'] ?? [];
       final status = testResults.any((t) => (t['status']?.toString().toLowerCase() ?? '') == 'high' || (t['status']?.toString().toLowerCase() ?? '') == 'low') 
@@ -217,7 +193,7 @@ class SupabaseService {
           : 'Normal';
 
       await client.from('lab_results').insert({
-        'user_id': currentUser!.id,
+        'user_id': client.auth.currentUser!.id,
         'lab_name': data['lab_name'] ?? 'Manual Upload',
         'date': data['date'] ?? DateTime.now().toIso8601String().split('T')[0],
         'status': status,

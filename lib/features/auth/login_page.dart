@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../core/supabase_service.dart';
 import '../../core/theme.dart';
 import '../../core/navigation.dart';
+import '../../core/providers.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -48,9 +48,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         throw 'Passwords do not match.';
       }
 
-      final supabase = SupabaseService();
+      final authService = ref.read(authServiceProvider);
       if (_isSignUp) {
-        await supabase.signUp(_emailController.text, _passwordController.text);
+        await authService.signUp(_emailController.text, _passwordController.text);
         if (mounted) {
            ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Registration successful! Please check your email.')),
@@ -62,7 +62,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           ref.read(navigationProvider.notifier).state = NavItem.dashboard;
         }
       } else {
-        await supabase.signIn(_emailController.text, _passwordController.text);
+        await authService.signIn(_emailController.text, _passwordController.text);
         if (mounted) {
            ref.read(navigationProvider.notifier).state = NavItem.dashboard;
         }
@@ -77,6 +77,28 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  Future<void> _handleSocialAuth(String provider) async {
+    setState(() => _isLoading = true);
+    try {
+      final authService = ref.read(authServiceProvider);
+      if (provider == 'Google') {
+        await authService.signInWithGoogle();
+      } else if (provider == 'Apple') {
+        await authService.signInWithApple();
+      }
+      // Note: Redirect happens automatically for OAuth
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Social Login Error: $e'), backgroundColor: AppColors.danger),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -137,7 +159,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
+                      color: Colors.black.withValues(alpha: 0.02),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -256,11 +278,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       const SizedBox(height: 32),
                       Row(
                         children: [
-                          Expanded(child: _buildSocialButton('Google', FontAwesomeIcons.google)),
+                          Expanded(child: _buildSocialButton('Google', FontAwesomeIcons.google, () => _handleSocialAuth('Google'))),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildSocialButton('Apple', FontAwesomeIcons.apple)),
+                          Expanded(child: _buildSocialButton('Apple', FontAwesomeIcons.apple, () => _handleSocialAuth('Apple'))),
                         ],
                       ),
+
                     ],
                   ],
                 ),
@@ -269,13 +292,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               if (_isSignUp)
                 Column(
                   children: [
-                    const Text('Start free with 3 uploads per month', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF111827))),
+                    const Text('Instant AI-powered explanations', style: TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    Text('No credit card required', style: TextStyle(color: Colors.grey[500], fontSize: 14)),
-                    Text('Instant AI-powered explanations', style: TextStyle(color: Colors.grey[500], fontSize: 14)),
                     Text('HIPAA-compliant security', style: TextStyle(color: Colors.grey[500], fontSize: 14)),
                   ],
                 )
+
               else
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -366,9 +388,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
-  Widget _buildSocialButton(String label, IconData icon) {
+  Widget _buildSocialButton(String label, IconData icon, VoidCallback onPressed) {
     return OutlinedButton(
-      onPressed: () {},
+      onPressed: _isLoading ? null : onPressed,
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
         side: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -391,4 +413,5 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ),
     );
   }
+
 }

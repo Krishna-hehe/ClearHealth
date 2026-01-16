@@ -1,14 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../core/theme.dart';
+import '../../core/navigation.dart';
 
-class LandingPage extends StatelessWidget {
+class LandingPage extends ConsumerStatefulWidget {
   const LandingPage({super.key});
+
+  @override
+  ConsumerState<LandingPage> createState() => _LandingPageState();
+}
+
+class _LandingPageState extends ConsumerState<LandingPage> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _howItWorksKey = GlobalKey();
+
+  void _scrollToHowItWorks() {
+    final context = _howItWorksKey.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     debugPrint('🎨 LandingPage.build called');
     return SingleChildScrollView(
+      controller: _scrollController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -21,6 +48,7 @@ class LandingPage extends StatelessWidget {
       ),
     );
   }
+
 
   Widget _buildHeroSection() {
     return Container(
@@ -56,7 +84,9 @@ class LandingPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  ref.read(navigationProvider.notifier).state = NavItem.auth;
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2D2D2D),
                   foregroundColor: Colors.white,
@@ -74,7 +104,7 @@ class LandingPage extends StatelessWidget {
               ),
               const SizedBox(width: 20),
               OutlinedButton(
-                onPressed: () {},
+                onPressed: _scrollToHowItWorks,
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 22),
                   side: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -88,15 +118,11 @@ class LandingPage extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'No credit card required • 3 free uploads per month',
-            style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
-          ),
         ],
       ),
     );
   }
+
 
   Widget _buildFeatureGrid() {
     return Container(
@@ -180,9 +206,11 @@ class LandingPage extends StatelessWidget {
 
   Widget _buildHowItWorks() {
     return Container(
+      key: _howItWorksKey,
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 100, horizontal: 24),
       color: const Color(0xFFFCFBF7),
+
       child: Column(
         children: [
           const Text(
@@ -289,7 +317,9 @@ class LandingPage extends StatelessWidget {
           ),
           const SizedBox(height: 48),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              ref.read(navigationProvider.notifier).state = NavItem.auth;
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2D2D2D),
               foregroundColor: Colors.white,
@@ -306,6 +336,7 @@ class LandingPage extends StatelessWidget {
               ],
             ),
           ),
+
         ],
       ),
     );

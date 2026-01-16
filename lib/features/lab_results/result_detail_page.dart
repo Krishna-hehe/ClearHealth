@@ -4,7 +4,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../core/ai_service.dart';
-import '../../core/navigation.dart';
+import '../../core/providers.dart';
+import '../../core/pdf_service.dart';
 
 class ResultDetailPage extends ConsumerWidget {
   const ResultDetailPage({super.key});
@@ -26,7 +27,7 @@ class ResultDetailPage extends ConsumerWidget {
     final referenceRange = selectedTest.reference;
 
     return FutureBuilder<LabTestAnalysis>(
-      future: AiService.getSingleTestAnalysis(
+      future: ref.read(aiServiceProvider).getSingleTestAnalysis(
         testName: testName,
         value: value,
         unit: unit,
@@ -53,7 +54,7 @@ class ResultDetailPage extends ConsumerWidget {
           children: [
             _buildRangeBanner(context, analysis.status),
             const SizedBox(height: 24),
-            _buildResultHeader(context, testName, value, unit, referenceRange, selectedReport?.date),
+            _buildResultHeader(context, testName, value, unit, referenceRange, selectedReport?.date, ref),
             const SizedBox(height: 24),
             _buildAnalysisSection(context, analysis),
             const SizedBox(height: 24),
@@ -68,13 +69,13 @@ class ResultDetailPage extends ConsumerWidget {
     final isNormal = status == 'Normal';
     final isHigh = status == 'High';
     final color = isNormal ? AppColors.success : (isHigh ? AppColors.danger : Colors.orange);
-    final bgColor = isNormal ? AppColors.success.withOpacity(0.1) : (isHigh ? AppColors.danger.withOpacity(0.1) : Colors.orange.withOpacity(0.1));
+    final bgColor = isNormal ? AppColors.success.withValues(alpha: 0.1) : (isHigh ? AppColors.danger.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1));
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: bgColor.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.2 : 1.0),
+        color: bgColor.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.2 : 1.0),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -99,7 +100,7 @@ class ResultDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildResultHeader(BuildContext context, String name, double value, String unit, String referenceRange, DateTime? date) {
+  Widget _buildResultHeader(BuildContext context, String name, double value, String unit, String referenceRange, DateTime? date, WidgetRef ref) {
     final dateStr = date != null ? DateFormat('MMMM d, yyyy').format(date) : 'Unknown Date';
     return Container(
       padding: const EdgeInsets.all(24),
@@ -116,7 +117,7 @@ class ResultDetailPage extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).dividerColor.withOpacity(0.1),
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(FontAwesomeIcons.bolt, size: 16, color: AppColors.secondary),
@@ -135,6 +136,8 @@ class ResultDetailPage extends ConsumerWidget {
                   ),
                 ],
               ),
+              const Spacer(),
+              _buildDownloadButton(context, ref),
             ],
           ),
           const SizedBox(height: 24),
@@ -157,7 +160,7 @@ class ResultDetailPage extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Theme.of(context).dividerColor.withOpacity(0.05),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -276,7 +279,7 @@ class ResultDetailPage extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).dividerColor.withOpacity(0.05),
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Text(
@@ -332,7 +335,7 @@ class ResultDetailPage extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
+              color: Colors.orange.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -340,7 +343,7 @@ class ResultDetailPage extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.03),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(FontAwesomeIcons.arrowTrendDown, size: 16, color: Colors.orange),
@@ -365,6 +368,32 @@ class ResultDetailPage extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+  Widget _buildDownloadButton(BuildContext context, WidgetRef ref) {
+    return ElevatedButton.icon(
+      icon: const Icon(Icons.download_outlined, size: 16),
+      label: const Text('Download Report'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      onPressed: () async {
+        final selectedTest = ref.read(selectedTestProvider);
+        final selectedReport = ref.read(selectedReportProvider);
+        if (selectedTest == null || selectedReport == null) return;
+
+        final profile = ref.read(userProfileProvider).asData?.value;
+        final patientName = profile != null ? "${profile['first_name']} ${profile['last_name']}" : null;
+
+        await PdfService.generateLabReportPdf(
+          selectedReport,
+          [selectedTest],
+          patientName: patientName,
+        );
+      },
     );
   }
 }

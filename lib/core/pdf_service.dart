@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -6,7 +5,7 @@ import 'models.dart';
 import 'package:intl/intl.dart';
 
 class PdfService {
-  static Future<void> generateLabReportPdf(LabReport report, List<TestResult> results) async {
+  static Future<void> generateLabReportPdf(LabReport report, List<TestResult> results, {String? patientName}) async {
     final pdf = pw.Document();
 
     final fontData = await PdfGoogleFonts.interRegular();
@@ -20,7 +19,7 @@ class PdfService {
           return [
             _buildHeader(report, fontBoldData),
             pw.SizedBox(height: 24),
-            _buildUserInfo(fontBoldData),
+            _buildUserInfo(fontBoldData, patientName: patientName),
             pw.SizedBox(height: 24),
             _buildResultsTable(results, fontData, fontBoldData),
             pw.Spacer(),
@@ -36,7 +35,7 @@ class PdfService {
     );
   }
 
-  static Future<void> generateSummaryPdf(List<LabReport> reports, {String? aiSummary}) async {
+  static Future<void> generateSummaryPdf(List<LabReport> reports, {String? aiSummary, String? patientName}) async {
     final pdf = pw.Document();
     final fontData = await PdfGoogleFonts.interRegular();
     final fontBoldData = await PdfGoogleFonts.interBold();
@@ -49,7 +48,7 @@ class PdfService {
           return [
             _buildMedicalHeader(fontBoldData),
             pw.SizedBox(height: 24),
-            _buildUserInfo(fontBoldData),
+            _buildUserInfo(fontBoldData, patientName: patientName),
             pw.SizedBox(height: 24),
             
             if (aiSummary != null && aiSummary.isNotEmpty) ...[
@@ -150,7 +149,7 @@ class PdfService {
     );
   }
 
-  static pw.Widget _buildUserInfo(pw.Font boldFont) {
+  static pw.Widget _buildUserInfo(pw.Font boldFont, {String? patientName}) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(12),
       decoration: pw.BoxDecoration(
@@ -165,7 +164,7 @@ class PdfService {
             children: [
               pw.Text('PATIENT INFORMATION', style: pw.TextStyle(font: boldFont, fontSize: 8, color: PdfColors.grey700)),
               pw.SizedBox(height: 4),
-              pw.Text('Krishna Modi', style: pw.TextStyle(font: boldFont, fontSize: 12)),
+              pw.Text(patientName ?? 'Krishna Modi', style: pw.TextStyle(font: boldFont, fontSize: 12)),
             ],
           ),
           pw.Column(

@@ -8,7 +8,6 @@ import 'core/theme.dart';
 import 'core/providers.dart';
 import 'widgets/main_layout.dart';
 import 'core/biometric_service.dart';
-import 'core/auth_provider.dart';
 import 'features/auth/login_page.dart';
 import 'core/notification_service.dart';
 import 'core/cache_service.dart';
@@ -75,7 +74,9 @@ class LabSenseApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      home: const MainLayout(child: SizedBox()),
+      home: currentUser == null 
+          ? const LoginPage() 
+          : const MainLayout(child: SizedBox()),
     );
   }
 }

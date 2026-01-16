@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'models.dart';
 
 enum NavItem {
   landing,
@@ -22,5 +21,4 @@ enum NavItem {
 
 final navigationProvider = StateProvider<NavItem>((ref) => NavItem.landing);
 final isSignUpModeProvider = StateProvider<bool>((ref) => false);
-final selectedTestProvider = StateProvider<TestResult?>((ref) => null);
-final selectedReportProvider = StateProvider<LabReport?>((ref) => null);
+

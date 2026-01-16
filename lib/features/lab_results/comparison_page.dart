@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/theme.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
@@ -82,7 +81,7 @@ class ComparisonPage extends ConsumerWidget {
             border: Border.all(color: AppColors.border),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -91,7 +90,7 @@ class ComparisonPage extends ConsumerWidget {
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-              headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
+              headingRowColor: WidgetStateProperty.all(const Color(0xFFF9FAFB)),
               columnSpacing: 40,
               columns: [
                 const DataColumn(

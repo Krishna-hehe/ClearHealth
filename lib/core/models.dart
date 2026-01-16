@@ -70,5 +70,17 @@ class LabReport {
       testResults: (json['test_results'] as List?)?.map((t) => TestResult.fromJson(t)).toList(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'date': date.toIso8601String(),
+      'lab_name': labName,
+      'tests': testCount,
+      'abnormal_count': abnormalCount,
+      'status': status,
+      'test_results': testResults?.map((t) => t.toJson()).toList(),
+    };
+  }
 }
 

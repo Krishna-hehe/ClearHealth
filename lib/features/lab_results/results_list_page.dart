@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../core/navigation.dart';
 import '../../core/models.dart';
@@ -28,7 +29,7 @@ class ResultsListPage extends ConsumerWidget {
             final data = results.isEmpty ? _getMockResults() : results;
             return Column(
               children: [
-                _buildPdfDownloadCard(context, data),
+                _buildPdfDownloadCard(context, ref, data),
                 const SizedBox(height: 32),
                 ...data.map((result) => _buildResultCard(context, ref, result, isComparisonMode, selectedReportsForComparison)),
               ],
@@ -104,7 +105,7 @@ class ResultsListPage extends ConsumerWidget {
   }
 
 
-  Widget _buildPdfDownloadCard(BuildContext context, List<LabReport> results) {
+  Widget _buildPdfDownloadCard(BuildContext context, WidgetRef ref, List<LabReport> results) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -128,21 +129,26 @@ class ResultsListPage extends ConsumerWidget {
                   'Includes known conditions, lab tests, and AI summaries.',
                   style: TextStyle(color: AppColors.secondary, fontSize: 13),
                 ),
-                Text(
-                  'Manage conditions.',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 13,
-                    decoration: TextDecoration.underline,
+                InkWell(
+                  onTap: () {
+                    ref.read(navigationProvider.notifier).state = NavItem.conditions;
+                  },
+                  child: Text(
+                    'Manage conditions.',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 13,
+                      decoration: TextDecoration.underline,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 24),
-          _buildDateField(context, 'From', '13-10-2025'),
+          _buildDateField(context, 'From', results.isNotEmpty ? DateFormat('dd-MM-yyyy').format(results.last.date) : 'Start'),
           const SizedBox(width: 12),
-          _buildDateField(context, 'To', '13-01-2026'),
+          _buildDateField(context, 'To', results.isNotEmpty ? DateFormat('dd-MM-yyyy').format(results.first.date) : 'End'),
           const SizedBox(width: 24),
           ElevatedButton.icon(
             icon: const Icon(FontAwesomeIcons.download, size: 14),
@@ -153,7 +159,19 @@ class ResultsListPage extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            onPressed: () => PdfService.generateSummaryPdf(results),
+            onPressed: () async {
+              final profile = ref.read(userProfileProvider).asData?.value;
+              final patientName = profile != null ? "${profile['first_name']} ${profile['last_name']}" : null;
+              
+              final aiSummaryAsync = ref.read(healthHistoryAiSummaryProvider);
+              final aiSummary = aiSummaryAsync.asData?.value;
+
+              await PdfService.generateSummaryPdf(
+                results, 
+                patientName: patientName,
+                aiSummary: aiSummary,
+              );
+            },
           ),
         ],
       ),
@@ -244,7 +262,7 @@ class ResultsListPage extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).dividerColor.withOpacity(0.1),
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(Icons.description_outlined, color: AppColors.secondary, size: 20),
@@ -295,9 +313,16 @@ class ResultsListPage extends ConsumerWidget {
                 const SizedBox(width: 16),
                 IconButton(
                   icon: const Icon(Icons.picture_as_pdf, color: AppColors.secondary, size: 20),
-                  onPressed: () {
+                  onPressed: () async {
                     if (result.testResults != null) {
-                      PdfService.generateLabReportPdf(result, result.testResults!);
+                      final profile = ref.read(userProfileProvider).asData?.value;
+                      final patientName = profile != null ? "${profile['first_name']} ${profile['last_name']}" : null;
+
+                      await PdfService.generateLabReportPdf(
+                        result, 
+                        result.testResults!,
+                        patientName: patientName,
+                      );
                     }
                   },
                 ),

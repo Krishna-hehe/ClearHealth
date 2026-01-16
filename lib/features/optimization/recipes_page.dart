@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/theme.dart';
 import '../../core/providers.dart';
 
@@ -61,7 +60,7 @@ class RecipesPage extends ConsumerWidget {
       child: Column(
         children: [
           const SizedBox(height: 48),
-          Icon(Icons.check_circle_outline, size: 64, color: AppColors.success.withOpacity(0.5)),
+          Icon(Icons.check_circle_outline, size: 64, color: AppColors.success.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           const Text(
             'All your lab values are looking great!',
@@ -87,7 +86,7 @@ class RecipesPage extends ConsumerWidget {
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -103,7 +102,7 @@ class RecipesPage extends ConsumerWidget {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.primary.withOpacity(0.8), AppColors.primary],
+                colors: [AppColors.primary.withValues(alpha: 0.8), AppColors.primary],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -115,7 +114,7 @@ class RecipesPage extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: AppColors.secondary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(

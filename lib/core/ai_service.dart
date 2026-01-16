@@ -1,9 +1,8 @@
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'vector_service.dart';
-import 'app_config.dart';
 import 'utils/rate_limiter.dart';
 
 class LabTestAnalysis {
@@ -36,15 +35,26 @@ class LabTestAnalysis {
 }
 
 class AiService {
-  static final String _apiKey = AppConfig.geminiApiKey;
-  static final _model = GenerativeModel(
-    model: 'gemini-1.5-flash',
-    apiKey: _apiKey,
-  );
+  final String apiKey;
+  final VectorService vectorService;
+  late final GenerativeModel _model;
   
-  static final _rateLimiter = RateLimiter(maxRequests: 15, duration: const Duration(minutes: 1));
+  // Rate limiter is now per-instance, which is fine if we use a singleton provider
+  final _rateLimiter = RateLimiter(maxRequests: 15, duration: const Duration(minutes: 1));
 
-  static String _sanitizeInput(String input) {
+  AiService({required this.apiKey, required this.vectorService}) {
+    if (apiKey.isEmpty) {
+      debugPrint('❌ AiService: API Key is empty!');
+    } else {
+      debugPrint('🚀 AiService: Initializing with key starting with: ${apiKey.substring(0, min(5, apiKey.length))}...');
+    }
+    _model = GenerativeModel(
+      model: 'gemma-3-4b-it',
+      apiKey: apiKey,
+    );
+  }
+
+  String _sanitizeInput(String input) {
     // Basic sanitization: remove potential script injections or extremely long inputs
     // In a medical context, we want to allow most text but limit length to prevent DoS via token exhaustion
     if (input.length > 2000) {
@@ -53,7 +63,7 @@ class AiService {
     return input;
   }
 
-  static Future<LabTestAnalysis> getSingleTestAnalysis({
+  Future<LabTestAnalysis> getSingleTestAnalysis({
     required String testName,
     required double value,
     required String unit,
@@ -75,21 +85,29 @@ class AiService {
     referenceRange = _sanitizeInput(referenceRange);
     
     final prompt = '''
-      Analyze the following lab test result and provide a structured JSON response.
-      Test Name: $testName
-      Result Value: $value
-      Unit: $unit
+      You are a medical AI assistant. Analyze this lab test result and provide a comprehensive, patient-friendly explanation.
+      
+      Test: $testName
+      Result: $value $unit
       Reference Range: $referenceRange
-
-      JSON Format:
+      
+      Provide your analysis in the following JSON format:
       {
-        "description": "Short explanation of what the test is",
-        "status": "Low/Normal/High",
-        "resultContext": "Sentence describing the result in context",
-        "meaning": "What this result means for the user's health",
-        "factors": ["Factor 1", "Factor 2"],
-        "questions": ["Question 1", "Question 2"]
+        "description": "A detailed 3-4 sentence explanation of what this test measures and why it's important for health",
+        "status": "High, Low, or Normal based on the reference range",
+        "resultContext": "2-3 sentences explaining what THIS SPECIFIC result value means for the patient",
+        "meaning": "3-4 sentences about the clinical significance of this result. If abnormal, explain potential causes and implications. If normal, explain what this indicates about health.",
+        "factors": ["List 4-6 specific lifestyle, dietary, or medical factors that can affect this test result"],
+        "questions": ["List 4-6 specific, relevant questions the patient should ask their doctor based on THIS result. Make them actionable and personalized to the result value."]
       }
+      
+      Important guidelines:
+      - Be specific to the actual result value, not generic
+      - If the result is abnormal, explain severity and urgency
+      - Use clear, patient-friendly language
+      - Be encouraging but honest
+      - Include actionable insights
+      
       ONLY return the JSON.
     ''';
 
@@ -124,15 +142,26 @@ class AiService {
     }
   }
 
-  static Future<String> getBatchSummary(List<Map<String, dynamic>> tests) async {
+  Future<String> getBatchSummary(List<Map<String, dynamic>> tests) async {
     if (tests.isEmpty) return 'No lab results available for analysis.';
 
     final prompt = '''
-      Analyze these lab results and provide a 2-3 sentence summary for a patient.
-      Results: ${jsonEncode(tests)}
+      You are a medical AI assistant. Analyze these lab test results and provide a comprehensive summary for the patient.
       
-      Focus on highlighting if things are generally normal or if there are specific areas of concern.
-      Be encouraging but professional.
+      Lab Results: ${jsonEncode(tests)}
+      
+      Provide a detailed summary (5-7 sentences minimum) that includes:
+      1. Overall health assessment - are results generally normal or concerning?
+      2. Specific abnormal findings with their severity (mild, moderate, severe)
+      3. Any patterns or correlations between test results
+      4. Immediate actions needed (if any critical values)
+      5. Short-term recommendations (lifestyle, diet, follow-up)
+      6. Positive findings worth celebrating
+      7. Overall tone should be professional, encouraging, and actionable
+      
+      Focus on being specific about which tests are abnormal and what they mean together.
+      Use clear, patient-friendly language but be medically accurate.
+      If everything is normal, explain what this indicates about overall health.
     ''';
 
     try {
@@ -144,7 +173,7 @@ class AiService {
     }
   }
 
-  static Future<String> chat(String query) async {
+  Future<String> chat(String query) async {
     if (!_rateLimiter.canRequest()) {
       return 'Rate limit exceeded. Please wait a moment.';
     }
@@ -153,15 +182,12 @@ class AiService {
 
     try {
       // 1. Get relevant context from Vector Store
-      final vectorService = VectorService();
       final relevantChunks = await vectorService.searchSimilarChunks(query);
       
       final contextChunks = relevantChunks.map((chunk) {
-        final content = chunk['content'] as String;
-        final metadata = chunk['metadata'] as Map<String, dynamic>;
         return '''
-Content: $content
-Date: ${metadata['date']}
+Content: ${chunk['content']}
+Date: ${chunk['metadata']['date']}
 ''';
       }).toList();
 
@@ -171,28 +197,30 @@ Date: ${metadata['date']}
         contextChunks: contextChunks,
       );
     } catch (e) {
-      return 'I encountered an error analyzing your health data: $e';
+      return 'I encountered an error analyzing your health data: \$e';
     }
   }
 
-  static Future<String> getChatResponseWithContext({
+  Future<String> getChatResponseWithContext({
     required String query,
     required List<String> contextChunks,
   }) async {
     final contextText = contextChunks.isEmpty 
         ? "No specific lab results found relative to this query."
-        : contextChunks.join('\n\n---\n\n');
+        : contextChunks.join('\\n\\n---\\n\\n');
         
     final prompt = '''
       You are LabSense AI, a medical assistant. Use the following lab result history (context) to answer the user's question.
+
+      CONTEXT:
+      $contextText
+
+      USER QUESTION:
+      $query
+
       If the context doesn't contain the answer, say you don't have that specific data in your records but answer based on general medical knowledge while being clear about the distinction.
       
       Always be professional, encouraging, and remind the user this is educational, not medical advice.
-      
-      User Health Context:
-      $contextText
-      
-      User Question: $query
     ''';
 
     try {
@@ -200,13 +228,13 @@ Date: ${metadata['date']}
       final response = await _model.generateContent(content);
       return response.text?.trim() ?? 'I was unable to generate a response at this time.';
     } catch (e) {
-      return 'Error generating response: $e';
+      return 'Error generating response: \$e';
     }
   }
 
-  static Future<Map<String, dynamic>?> parseLabReport(Uint8List imageBytes, String mimeType) async {
+  Future<Map<String, dynamic>?> parseLabReport(Uint8List imageBytes, String mimeType) async {
     final prompt = '''
-      You are a specialized medical lab report parser. Your task is to extract ALL test results from the provided image and return them in a valid JSON format.
+      You are a specialized medical lab report parser. Your task is to extract ALL test results from the provided document and return them in a valid JSON format.
       
       The JSON structure MUST be:
       {
@@ -225,9 +253,9 @@ Date: ${metadata['date']}
       }
       
       Important rules:
-      1. ONLY return the JSON object. No other text.
+      1. ONLY return the JSON object. No other text. Use valid JSON syntax.
       2. If a field is missing, leave it as an empty string or null.
-      3. Be as accurate as possible.
+      3. Be as accurate as possible. Even if you're unsure, provide the best guess based on the text.
     ''';
 
     try {
@@ -239,22 +267,123 @@ Date: ${metadata['date']}
       ];
 
       final response = await _model.generateContent(content);
-      final jsonStr = response.text?.replaceAll('```json', '').replaceAll('```', '').trim() ?? '{}';
-      final data = jsonDecode(jsonStr);
-      return data;
+      final text = response.text;
+      if (text == null || text.isEmpty) {
+        throw Exception('AI returned an empty response. This may be due to safety filters or an unreadable file.');
+      }
+
+      // Robust JSON extraction
+      String jsonStr = text;
+      if (jsonStr.contains('```')) {
+        jsonStr = jsonStr.split('```').firstWhere((element) => element.contains('{'), orElse: () => jsonStr);
+        jsonStr = jsonStr.replaceFirst('json', '').trim();
+      }
+      
+      final parsed = jsonDecode(jsonStr);
+      if (parsed == null || parsed is! Map<String, dynamic>) {
+        throw Exception('AI returned invalid data format. Expected a JSON object.');
+      }
+
+      // Validate required fields
+      if (!parsed.containsKey('test_results')) {
+        throw Exception('AI response missing required field: test_results');
+      }
+
+      // Post-process: Calculate accurate status based on reference ranges
+      if (parsed['test_results'] is List) {
+        for (var test in parsed['test_results']) {
+          if (test is Map<String, dynamic>) {
+            final calculatedStatus = _calculateStatus(
+              test['result_value']?.toString() ?? '',
+              test['reference_range']?.toString() ?? '',
+            );
+            // Override AI-provided status with calculated one
+            if (calculatedStatus != null) {
+              test['status'] = calculatedStatus;
+            }
+          }
+        }
+      }
+
+      return parsed;
     } catch (e) {
-      debugPrint('Error parsing lab report with AI: $e');
-      return null;
+      debugPrint('Error parsing lab report: $e');
+      // Rethrow with a more descriptive message if it's a known error type
+      if (e is FormatException) {
+        throw Exception('AI returned invalid data format. Please try another clear image.');
+      }
+      rethrow;
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getOptimizationTips(List<Map<String, dynamic>> abnormalTests) async {
+  /// Intelligently calculates test status by comparing result value against reference range
+  String? _calculateStatus(String resultValue, String referenceRange) {
+    if (resultValue.isEmpty || referenceRange.isEmpty) return null;
+
+    // Handle non-numeric results (e.g., "Positive", "Negative", "Detected")
+    final resultLower = resultValue.toLowerCase();
+    if (resultLower.contains('positive') || resultLower.contains('detected')) {
+      return 'High';
+    }
+    if (resultLower.contains('negative') || resultLower.contains('not detected')) {
+      return 'Normal';
+    }
+
+    // Extract numeric value from result
+    final numericMatch = RegExp(r'([0-9]+\.?[0-9]*)').firstMatch(resultValue);
+    if (numericMatch == null) return null;
+    
+    final value = double.tryParse(numericMatch.group(1)!);
+    if (value == null) return null;
+
+    // Parse reference range - handle multiple formats:
+    // "10-20", "10 - 20", "< 5", "> 100", "10-20 mg/dL", etc.
+    final rangeLower = referenceRange.toLowerCase();
+    
+    // Handle "< X" format (upper limit only)
+    if (rangeLower.contains('<')) {
+      final maxMatch = RegExp(r'<\s*([0-9]+\.?[0-9]*)').firstMatch(rangeLower);
+      if (maxMatch != null) {
+        final max = double.tryParse(maxMatch.group(1)!);
+        if (max != null && value >= max) return 'High';
+        return 'Normal';
+      }
+    }
+    
+    // Handle "> X" format (lower limit only)
+    if (rangeLower.contains('>')) {
+      final minMatch = RegExp(r'>\s*([0-9]+\.?[0-9]*)').firstMatch(rangeLower);
+      if (minMatch != null) {
+        final min = double.tryParse(minMatch.group(1)!);
+        if (min != null && value <= min) return 'Low';
+        return 'Normal';
+      }
+    }
+
+    // Handle "X - Y" or "X-Y" format (range)
+    final rangeMatch = RegExp(r'([0-9]+\.?[0-9]*)\s*-\s*([0-9]+\.?[0-9]*)').firstMatch(rangeLower);
+    if (rangeMatch != null) {
+      final min = double.tryParse(rangeMatch.group(1)!);
+      final max = double.tryParse(rangeMatch.group(2)!);
+      
+      if (min != null && max != null) {
+        if (value < min) return 'Low';
+        if (value > max) return 'High';
+        return 'Normal';
+      }
+    }
+
+    // If we can't parse the range, return null to keep AI's original status
+    return null;
+  }
+
+  Future<List<Map<String, dynamic>>> getOptimizationTips(List<Map<String, dynamic>> abnormalTests) async {
     if (abnormalTests.isEmpty) return [];
 
     final prompt = '''
       You are a health optimization expert. Analyze these abnormal lab results and provide 3-4 personalized nutritional "Recipes" or "Optimization Tips".
       
-      Results: ${jsonEncode(abnormalTests)}
+      Results: \${jsonEncode(abnormalTests)}
       
       JSON Format:
       [
@@ -278,7 +407,7 @@ Date: ${metadata['date']}
       final List<dynamic> data = jsonDecode(jsonStr);
       return data.cast<Map<String, dynamic>>();
     } catch (e) {
-      debugPrint('Error fetching optimization tips: $e');
+      debugPrint('Error fetching optimization tips: \$e');
       return [];
     }
   }

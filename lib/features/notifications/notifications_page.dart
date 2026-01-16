@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../core/navigation.dart';
-import '../../core/supabase_service.dart';
 import '../../core/providers.dart';
+import '../../core/providers/user_providers.dart';
 
 class NotificationsPage extends ConsumerStatefulWidget {
   const NotificationsPage({super.key});
@@ -15,7 +15,7 @@ class NotificationsPage extends ConsumerStatefulWidget {
 
 class _NotificationsPageState extends ConsumerState<NotificationsPage> {
   Future<void> _markRead(String id) async {
-    await SupabaseService().markNotificationAsRead(id);
+    await ref.read(userRepositoryProvider).markNotificationAsRead(id);
     // Realtime stream will auto-update
   }
 
@@ -58,8 +58,8 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Theme.of(context).dividerColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(Icons.notifications_none_outlined, size: 24, color: AppColors.secondary),
         ),
@@ -135,7 +135,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isRead ? Theme.of(context).dividerColor.withOpacity(0.1) : Theme.of(context).primaryColor.withOpacity(0.1),
+                color: isRead ? Theme.of(context).dividerColor.withValues(alpha: 0.1) : Theme.of(context).primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(

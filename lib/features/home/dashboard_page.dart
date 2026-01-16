@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
 import '../../core/theme.dart';
-import '../../core/supabase_service.dart';
-import '../../core/ai_service.dart';
+import '../../core/models.dart';
+import '../../core/providers.dart';
 import '../../core/navigation.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
@@ -16,17 +17,10 @@ class DashboardPage extends ConsumerStatefulWidget {
 class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late List<Animation<double>> _animations;
-  bool _isLoading = true;
-  String _firstName = 'User';
-  int _conditionsCount = 0;
-  int _prescriptionsCount = 0;
-  List<Map<String, dynamic>> _recentResults = [];
-  String _aiInsight = 'Loading insights...';
 
   @override
   void initState() {
     super.initState();
-    _fetchDashboardData();
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -41,6 +35,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
         curve: Interval(start, end, curve: Curves.easeOutCubic),
       );
     });
+    
+    // Trigger animation when data is ready
+    _controller.forward();
   }
 
   @override
@@ -49,82 +46,64 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
     super.dispose();
   }
 
-  Future<void> _fetchDashboardData() async {
-    final supabase = SupabaseService();
-    try {
-      // 1. Fetch Profile for Name & Conditions
-      final profile = await supabase.getProfile();
-      if (profile != null) {
-        // Assuming first_name field exists, otherwise use a fallback or parse email/name
-        _firstName = profile['first_name'] ?? 'Krishna'; 
-        final conditions = profile['conditions'] as List<dynamic>? ?? [];
-        _conditionsCount = conditions.length;
-      }
-
-      // 2. Fetch Active Prescriptions
-      _prescriptionsCount = await supabase.getActivePrescriptionsCount();
-
-      // 3. Fetch Recent Lab Results (limit 3)
-      _recentResults = await supabase.getLabResults(limit: 3);
-
-      // 4. Generate AI Insight if we have results
-      if (_recentResults.isNotEmpty) {
-        _aiInsight = await AiService.getBatchSummary(_recentResults);
-      } else {
-        _aiInsight = 'No recent lab results found. Upload a report to get AI insights.';
-      }
-    } catch (e) {
-      debugPrint('Error fetching dashboard data: $e');
-      _aiInsight = 'Unable to load insights at this time.';
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _controller.forward();
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    final profileAsync = ref.watch(userProfileProvider);
+    final recentResultsAsync = ref.watch(recentLabResultsProvider);
+    final prescriptionsCountAsync = ref.watch(activePrescriptionsCountProvider);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildAnimatedItem(0, _buildWelcomeHeader()),
-          const SizedBox(height: 32),
-          _buildAnimatedItem(1, _buildQuickStats()),
-          const SizedBox(height: 32),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 2,
+    return profileAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, s) => Center(child: Text('Error: $e')),
+      data: (profile) => recentResultsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, s) => Center(child: Text('Error: $e')),
+        data: (recentResults) => prescriptionsCountAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, s) => Center(child: Text('Error: $e')),
+          data: (pCount) {
+             final firstName = profile?['first_name'] ?? 'User';
+             final conditions = profile?['conditions'] as List? ?? [];
+             
+             return SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildAnimatedItem(2, _buildAiInsightsCard()),
-                    const SizedBox(height: 24),
-                    _buildAnimatedItem(3, _buildRecentResults()),
+                    _buildAnimatedItem(0, _buildWelcomeHeader(firstName)),
+                    const SizedBox(height: 32),
+                    _buildAnimatedItem(1, _buildQuickStats(recentResults, conditions.length, pCount)),
+                    const SizedBox(height: 32),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            children: [
+                              _buildAnimatedItem(2, _buildAiInsightsCard(recentResults)),
+                              const SizedBox(height: 24),
+                              _buildAnimatedItem(3, _buildRecentResults(recentResults)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              _buildAnimatedItem(4, _buildHealthTipsCard(recentResults)),
+                              const SizedBox(height: 24),
+                              _buildAnimatedItem(5, _buildUpcomingTasks()),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 24),
-              Expanded(
-                child: Column(
-                  children: [
-                    _buildAnimatedItem(4, _buildHealthTipsCard()),
-                    const SizedBox(height: 24),
-                    _buildAnimatedItem(5, _buildUpcomingTasks()),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
+              );
+          },
+        ),
       ),
     );
   }
@@ -142,12 +121,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
     );
   }
 
-  Widget _buildWelcomeHeader() {
+  Widget _buildWelcomeHeader(String firstName) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Welcome back, $_firstName',
+          'Welcome back, $firstName',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -166,19 +145,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
     );
   }
 
-  Widget _buildQuickStats() {
+  Widget _buildQuickStats(List<LabReport> recentResults, int conditionsCount, int prescriptionsCount) {
     String lastResultDate = 'N/A';
     String lastResultStatus = 'N/A';
     Color lastResultColor = AppColors.secondary;
     Color lastResultBg = const Color(0xFFF3F4F6);
 
-    if (_recentResults.isNotEmpty) {
-      final last = _recentResults.first;
-      if (last['date'] != null) {
-        final date = DateTime.parse(last['date'].toString());
-        lastResultDate = '${date.month}/${date.day}'; // Simple formatting
-      }
-      lastResultStatus = last['status'] ?? 'Unknown';
+    if (recentResults.isNotEmpty) {
+      final last = recentResults.first;
+      lastResultDate = DateFormat('MMM d').format(last.date);
+      lastResultStatus = last.status;
       
       if (lastResultStatus == 'Abnormal') {
         lastResultColor = AppColors.danger;
@@ -193,9 +169,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
       children: [
         _buildStatCard('Last Lab Result', lastResultDate, lastResultStatus, Icons.description_outlined, lastResultBg, lastResultColor),
         const SizedBox(width: 16),
-        _buildStatCard('Known Conditions', '$_conditionsCount Active', 'Stable', Icons.favorite_border, const Color(0xFFF0FDF4), AppColors.success),
+        _buildStatCard('Known Conditions', '$conditionsCount Active', 'Stable', Icons.favorite_border, const Color(0xFFF0FDF4), AppColors.success),
         const SizedBox(width: 16),
-        _buildStatCard('Active Medications', '$_prescriptionsCount Prescriptions', 'On Track', Icons.medication_outlined, const Color(0xFFEFF6FF), const Color(0xFF3B82F6)),
+        _buildStatCard('Active Medications', '$prescriptionsCount Prescriptions', 'On Track', Icons.medication_outlined, const Color(0xFFEFF6FF), const Color(0xFF3B82F6)),
       ],
     );
   }
@@ -246,63 +222,72 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
     );
   }
 
-  Widget _buildAiInsightsCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF4F46E5).withAlpha((0.3 * 255).toInt()),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(FontAwesomeIcons.robot, color: Colors.white, size: 20),
-              SizedBox(width: 12),
-              Text(
-                'AI Health Insight',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+  Widget _buildAiInsightsCard(List<LabReport> recentResults) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final insightAsync = ref.watch(dashboardAiInsightProvider);
+        
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF4F46E5).withAlpha((0.3 * 255).toInt()),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            _aiInsight,
-            style: TextStyle(color: Colors.white.withAlpha((0.9 * 255).toInt()), fontSize: 14, height: 1.5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(FontAwesomeIcons.robot, color: Colors.white, size: 20),
+                  SizedBox(width: 12),
+                  Text(
+                    'AI Health Insight',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              insightAsync.when(
+                data: (insight) => Text(
+                  insight,
+                  style: TextStyle(color: Colors.white.withAlpha((0.9 * 255).toInt()), fontSize: 14, height: 1.5),
+                ),
+                loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
+                error: (e, s) => Text('Failed to load insight: $e', style: const TextStyle(color: Colors.white)),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                   ref.read(navigationProvider.notifier).state = NavItem.healthChat;
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF4F46E5),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('View Full Analysis', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
           ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              // Navigate to full analysis or chat
-               ref.read(navigationProvider.notifier).state = NavItem.healthChat;
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF4F46E5),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('View Full Analysis', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+        );
+      }
     );
   }
 
-  Widget _buildRecentResults() {
+  Widget _buildRecentResults(List<LabReport> recentResults) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -324,24 +309,23 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
             ],
           ),
           const SizedBox(height: 16),
-          if (_recentResults.isEmpty)
+          if (recentResults.isEmpty)
              const Padding(
                padding: EdgeInsets.all(16.0),
                child: Text('No results yet.', style: TextStyle(color: AppColors.secondary)),
              )
           else
-            ..._recentResults.map((result) {
-              final dateStr = result['date']?.toString().split(' ')[0] ?? 'Unknown';
-              final status = result['status'] ?? 'Unknown';
+            ...recentResults.map((result) {
+              final dateStr = DateFormat('MMM d, yyyy').format(result.date);
+              final status = result.status;
               final isAbnormal = status == 'Abnormal';
               final bgColor = isAbnormal ? const Color(0xFFFEF2F2) : const Color(0xFFF0FDF4);
               final statusColor = isAbnormal ? AppColors.danger : AppColors.success;
               
-              // We can display test count or some summary
-              final testCount = result['test_count'] ?? 0; // Assuming this field exists or we just show generic text
+              final testCount = result.testCount;
 
               return _buildResultItem(dateStr, '$testCount tests included', status, bgColor, statusColor);
-            }).toList(),
+            }),
         ],
       ),
     );
@@ -386,7 +370,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
     );
   }
 
-  Widget _buildHealthTipsCard() {
+  Widget _buildHealthTipsCard(List<LabReport> recentResults) {
+    String tipText = 'Upload your lab reports to receive personalized health tips.';
+    if (recentResults.isNotEmpty) {
+      final latest = recentResults.first;
+      final abnormal = latest.testResults?.where((t) => t.status.toLowerCase() != 'normal').toList() ?? [];
+      if (abnormal.isNotEmpty) {
+        tipText = 'Focus on optimizing your ${abnormal.first.name} levels. Consult the Optimization tab for personalized recipes.';
+      } else {
+        tipText = 'Your recent results look great! Continue maintaining your current lifestyle and hydration.';
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -397,8 +392,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.lightbulb_outline, color: Color(0xFFD97706), size: 20),
               SizedBox(width: 12),
               Text(
@@ -408,9 +403,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Keep drinking at least 2.5L of water daily to support your kidney function as seen in your recent creatinine trends.',
-            style: TextStyle(color: Color(0xFF92400E), fontSize: 14, height: 1.5),
+          Text(
+            tipText,
+            style: const TextStyle(color: Color(0xFF92400E), fontSize: 14, height: 1.5),
           ),
         ],
       ),

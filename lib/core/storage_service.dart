@@ -1,9 +1,10 @@
-import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 
 class StorageService {
-  final _supabase = Supabase.instance.client;
+  final SupabaseClient _supabase;
+
+  StorageService(this._supabase);
 
   Future<String?> uploadLabReport(Uint8List bytes, String fileName) async {
     try {

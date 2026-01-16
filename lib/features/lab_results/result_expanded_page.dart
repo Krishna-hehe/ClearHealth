@@ -4,8 +4,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../core/navigation.dart';
-import '../../core/ai_service.dart';
 import '../../core/models.dart';
+import '../../core/providers.dart';
 
 class ResultExpandedPage extends ConsumerWidget {
   const ResultExpandedPage({super.key});
@@ -32,7 +32,7 @@ class ResultExpandedPage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(context, ref, report),
-          if (tests.isNotEmpty) _buildAiSummary(context, tests),
+          if (tests.isNotEmpty) _buildAiSummary(context, tests, ref),
           if (tests.isNotEmpty) _buildTable(context, tests, ref)
           else Padding(
             padding: const EdgeInsets.all(40.0),
@@ -59,7 +59,7 @@ class ResultExpandedPage extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).dividerColor.withOpacity(0.1),
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(FontAwesomeIcons.fileLines, size: 20, color: Color(0xFF10B981)),
@@ -104,7 +104,7 @@ class ResultExpandedPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildAiSummary(BuildContext context, List<TestResult> tests) {
+  Widget _buildAiSummary(BuildContext context, List<TestResult> tests, WidgetRef ref) {
     final testData = tests.map((t) => <String, dynamic>{
       'name': t.name,
       'result': t.result,
@@ -112,7 +112,7 @@ class ResultExpandedPage extends ConsumerWidget {
     }).toList();
 
     return FutureBuilder<String>(
-      future: AiService.getBatchSummary(testData),
+      future: ref.read(aiServiceProvider).getBatchSummary(testData),
       builder: (context, snapshot) {
         final summary = snapshot.data ?? 'Analyzing your results with AI...';
         final isLoading = snapshot.connectionState == ConnectionState.waiting;
@@ -121,7 +121,7 @@ class ResultExpandedPage extends ConsumerWidget {
           margin: const EdgeInsets.symmetric(horizontal: 24),
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Theme.of(context).dividerColor.withOpacity(0.05),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -233,9 +233,9 @@ class ResultExpandedPage extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isAbnormal ? AppColors.danger.withOpacity(0.1) : AppColors.success.withOpacity(0.1),
+                  color: isAbnormal ? AppColors.danger.withValues(alpha: 0.1) : AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isAbnormal ? AppColors.danger.withOpacity(0.3) : AppColors.success.withOpacity(0.3)),
+                  border: Border.all(color: isAbnormal ? AppColors.danger.withValues(alpha: 0.3) : AppColors.success.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,

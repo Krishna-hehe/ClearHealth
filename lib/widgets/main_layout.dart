@@ -15,11 +15,7 @@ import '../features/notifications/notifications_page.dart';
 import '../features/chat/health_chat_page.dart';
 import '../features/auth/login_page.dart';
 import '../features/share/share_results_page.dart';
-import '../core/supabase_service.dart';
-import '../core/storage_service.dart';
-import '../core/ai_service.dart';
 import '../core/providers.dart';
-import '../core/auth_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:mime/mime.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -40,19 +36,37 @@ class MainLayout extends ConsumerStatefulWidget {
 class _MainLayoutState extends ConsumerState<MainLayout> {
   String _email = '';
   bool _isUploading = false;
-  String _uploadStatus = '';
+  // No _uploadStatus
 
   @override
   void initState() {
     super.initState();
-    _email = SupabaseService().currentUser?.email ?? '';
+    // We can use ref.read here as it's safe in initState or after
+    // But since SupabaseService is provided, we should probably read it via ref
+    // However, ref.read in initState is restricted for providers. 
+    // Actually, ref.read(provider) is valid in initState if we don't watch. 
+    // A better approach for initState dependencies is to use `ref.read` in a post-frame callback OR just use `ref` in build or use `ConsumerState` lifecycle.
+    // Let's use ref.read inside the methods or setup a local variable if needed.
+    // For initState, we can just defer to _checkOnboarding which is async.
+    
+    // _email = ref.read(supabaseServiceProvider).currentUser?.email ?? ''; // This is risky in initState if provider depends on something dynamic, but here it's likely fine. 
+    // Safe way:
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = ref.read(authServiceProvider).currentUser;
+      if (mounted && user != null) {
+        setState(() {
+          _email = user.email ?? '';
+        });
+      }
+    });
+
     _checkOnboarding();
   }
 
   Future<void> _checkOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     final hasSeenTour = prefs.getBool('has_seen_tour') ?? false;
-    final currentUser = SupabaseService().currentUser;
+    final currentUser = ref.read(authServiceProvider).currentUser;
     if (!hasSeenTour && currentUser != null) {
       ref.read(showOnboardingProvider.notifier).state = true;
     }
@@ -67,7 +81,20 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   @override
   Widget build(BuildContext context) {
     bool isDesktop = MediaQuery.of(context).size.width > 1100;
+    // Data export placeholder
     final currentNav = ref.watch(navigationProvider);
+    final currentUser = ref.watch(currentUserProvider);
+
+    // Auth Guard
+    if (currentUser == null && currentNav != NavItem.landing && currentNav != NavItem.auth) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(navigationProvider.notifier).state = NavItem.landing;
+      });
+    } else if (currentUser != null && currentNav == NavItem.auth) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(navigationProvider.notifier).state = NavItem.dashboard;
+      });
+    }
 
     return Stack(
       children: [
@@ -136,14 +163,16 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
             children: [
               TextButton(
                 onPressed: () {
-                   ref.read(navigationProvider.notifier).state = NavItem.dashboard; // Forces auth check in main.dart
+                   ref.read(isSignUpModeProvider.notifier).state = false;
+                   ref.read(navigationProvider.notifier).state = NavItem.auth;
                 },
                 child: const Text('Log in', style: TextStyle(color: Color(0xFF4B5563), fontWeight: FontWeight.w500)),
               ),
               const SizedBox(width: 20),
               ElevatedButton(
                 onPressed: () {
-                   ref.read(navigationProvider.notifier).state = NavItem.dashboard;
+                   ref.read(isSignUpModeProvider.notifier).state = true;
+                   ref.read(navigationProvider.notifier).state = NavItem.auth;
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2D2D2D),
@@ -299,7 +328,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         ),
         child: const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, s) => const SizedBox.shrink(),
     );
   }
 
@@ -333,7 +362,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
       setState(() {
         _isUploading = true;
-        _uploadStatus = 'Uploading document...';
+        // _uploadStatus = 'Uploading document...';
       });
 
       final file = result.files.first;
@@ -343,35 +372,33 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       final fileName = file.name;
       final mimeType = lookupMimeType(fileName) ?? 'image/jpeg';
 
-      // 1. Upload to Storage
-      final storagePath = await StorageService().uploadLabReport(bytes, fileName);
+      // 1. Upload to Storage (StorageService is fine, it's stateless or singleton-like if not refactored yet, assuming it works)
+      // Note: StorageService was not refactored in plan, assuming it's okay or stateless.
+      final storagePath = await ref.read(storageServiceProvider).uploadLabReport(bytes, fileName);
       if (storagePath == null) throw Exception('Failed to upload to storage');
 
-      setState(() => _uploadStatus = 'Analyzing with AI...');
+      setState(() {}); // Removed _uploadStatus
 
       // 2. AI Parse (Gemini Vision)
-      final parsedData = await AiService.parseLabReport(bytes, mimeType);
-      if (parsedData == null) throw Exception('AI failed to parse document');
-
+      final parsedData = await ref.read(aiServiceProvider).parseLabReport(bytes, mimeType);
+      
+      if (!mounted) return;
       // 3. Review Step
       final confirmedData = await showDialog<Map<String, dynamic>>(
         context: context,
         barrierDismissible: false,
-        builder: (context) => _OcrReviewDialog(initialData: parsedData),
+        builder: (context) => _OcrReviewDialog(initialData: parsedData!),
       );
 
       if (confirmedData == null) {
         setState(() {
           _isUploading = false;
-          _uploadStatus = '';
         });
         return;
       }
 
-      setState(() => _uploadStatus = 'Saving to records...');
-
       // 4. Save to Database
-      await SupabaseService().createLabResult(confirmedData);
+      await ref.read(labRepositoryProvider).createLabResult(confirmedData);
 
       // 5. Refresh data
       ref.invalidate(labResultsProvider);
@@ -382,16 +409,31 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         );
       }
     } catch (e) {
+      debugPrint('Upload error: $e');
       if (mounted) {
+        String errorMessage = e.toString();
+        // Extract message from Exception wrapper if present
+        if (errorMessage.startsWith('Exception: ')) {
+          errorMessage = errorMessage.substring(11);
+        }
+
+        if (errorMessage.contains('lab-reports')) {
+          errorMessage = 'Storage bucket missing or inaccessible. Please contact support.';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e'), backgroundColor: AppColors.danger),
+          SnackBar(
+            content: Text('Upload failed: $errorMessage'),
+            backgroundColor: AppColors.danger,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 6),
+          ),
         );
       }
     } finally {
       if (mounted) {
         setState(() {
           _isUploading = false;
-          _uploadStatus = '';
         });
       }
     }
@@ -505,7 +547,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
               if (value == 'settings') {
                 ref.read(navigationProvider.notifier).state = NavItem.settings;
               } else if (value == 'signout') {
-                await SupabaseService().signOut();
+                await ref.read(authServiceProvider).signOut();
                 // Navigate to landing page after sign out
                 ref.read(navigationProvider.notifier).state = NavItem.landing;
                 // Invalidate user-related providers

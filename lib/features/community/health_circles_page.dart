@@ -91,7 +91,7 @@ class _HealthCirclesPageState extends State<HealthCirclesPage> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(Icons.group_outlined, color: AppColors.primary, size: 20),
@@ -123,7 +123,7 @@ class _HealthCirclesPageState extends State<HealthCirclesPage> {
               return ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 leading: CircleAvatar(
-                  backgroundColor: AppColors.border.withOpacity(0.5),
+                  backgroundColor: Theme.of(context).dividerColor.withValues(alpha: 0.1),
                   child: Text(member['name'][0], style: const TextStyle(color: AppColors.primary)),
                 ),
                 title: Text(
@@ -141,7 +141,7 @@ class _HealthCirclesPageState extends State<HealthCirclesPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.amber.withOpacity(0.1),
+                          color: Colors.amber.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Text(
@@ -273,7 +273,7 @@ class _HealthCirclesPageState extends State<HealthCirclesPage> {
       title: Text(title, style: const TextStyle(fontSize: 14)),
       value: value,
       onChanged: onChanged,
-      activeColor: AppColors.primary,
+      activeThumbColor: AppColors.primary,
       contentPadding: EdgeInsets.zero,
     );
   }

@@ -1,23 +1,40 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
+import '../supabase_service.dart';
 import '../models.dart';
+import '../cache_service.dart';
 
 class LabRepository {
-  final SupabaseClient _client = Supabase.instance.client;
+  final SupabaseService _supabaseService;
+  final CacheService _cacheService;
 
-  Future<List<LabReport>> getLabResults() async {
+  LabRepository(this._supabaseService, this._cacheService);
+
+  Future<List<LabReport>> getLabResults({int limit = 10}) async {
     try {
-      final response = await _client
-          .from('lab_results')
-          .select()
-          .order('date', ascending: false);
-
-      return (response as List).map((json) => LabReport.fromJson(json)).toList();
+      final data = await _supabaseService.getLabResults(limit: limit);
+      await _cacheService.cacheLabResults(data);
+      return data.map((json) => LabReport.fromJson(json)).toList();
     } catch (e) {
-      // In a real app, you might rethrow or return a Result type
-      // print('Error fetching lab results: $e'); // Avoid print in production code
+      debugPrint('Supabase fetch failed, falling back to cache: $e');
+      final cachedData = _cacheService.getCachedLabResults();
+      return cachedData.map((json) => LabReport.fromJson(json)).toList();
+    }
+  }
+
+  Future<void> createLabResult(Map<String, dynamic> data) async {
+    await _supabaseService.createLabResult(data);
+  }
+
+  Future<List<Map<String, dynamic>>> getTrendData(String testName) async {
+    try {
+      return await _supabaseService.getTrendData(testName);
+    } catch (e) {
+      debugPrint('Error fetching trend data: $e');
       return [];
     }
   }
 
-  // Add other methods (upload, delete) here
+  Future<List<String>> getDistinctTests() async {
+    return await _supabaseService.getDistinctTests();
+  }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/theme.dart';
-import '../../core/ai_service.dart';
+import '../../core/providers.dart';
 
 
 
@@ -53,7 +53,8 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
     });
 
     try {
-      final response = await AiService.chat(query);
+      final aiService = ref.read(aiServiceProvider);
+      final response = await aiService.chat(query);
       if (!mounted) return;
       setState(() {
         _messages.add(Message(text: response, isUser: false, timestamp: DateTime.now()));

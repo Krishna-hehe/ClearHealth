@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
-import '../../core/supabase_service.dart';
+import '../../core/providers/user_providers.dart';
+import '../../core/providers.dart';
 
-class ConditionsPage extends StatefulWidget {
+class ConditionsPage extends ConsumerStatefulWidget {
   const ConditionsPage({super.key});
 
   @override
-  State<ConditionsPage> createState() => _ConditionsPageState();
+  ConsumerState<ConditionsPage> createState() => _ConditionsPageState();
 }
 
-class _ConditionsPageState extends State<ConditionsPage> {
+class _ConditionsPageState extends ConsumerState<ConditionsPage> {
   final List<String> _quickAdds = [
     'Diabetes (Type 1)',
     'Diabetes (Type 2)',
@@ -33,7 +35,8 @@ class _ConditionsPageState extends State<ConditionsPage> {
   Future<void> _fetchConditions() async {
     setState(() => _isLoading = true);
     try {
-      final profile = await SupabaseService().getProfile();
+      final userRepo = ref.read(userRepositoryProvider);
+      final profile = await userRepo.getProfile();
       if (profile != null && profile['conditions'] != null) {
         setState(() {
           _conditions.addAll(List<String>.from(profile['conditions']));
@@ -42,14 +45,15 @@ class _ConditionsPageState extends State<ConditionsPage> {
     } catch (e) {
       debugPrint('Error fetching conditions: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _saveConditions() async {
     setState(() => _isLoading = true);
     try {
-      await SupabaseService().saveConditions(_conditions);
+      final userRepo = ref.read(userRepositoryProvider);
+      await userRepo.saveConditions(_conditions);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Conditions saved successfully')),
@@ -63,7 +67,7 @@ class _ConditionsPageState extends State<ConditionsPage> {
         );
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -97,7 +101,7 @@ class _ConditionsPageState extends State<ConditionsPage> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Theme.of(context).dividerColor.withOpacity(0.1),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(Icons.favorite_border, size: 24, color: Theme.of(context).colorScheme.secondary),
@@ -120,7 +124,7 @@ class _ConditionsPageState extends State<ConditionsPage> {
         ElevatedButton(
           onPressed: _saveConditions,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.secondary.withAlpha((0.5 * 255).toInt()),
+            backgroundColor: AppColors.secondary.withValues(alpha: 0.5),
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -226,7 +230,7 @@ class _ConditionsPageState extends State<ConditionsPage> {
     return ActionChip(
       label: Text(label),
       onPressed: () => _addCondition(label),
-      backgroundColor: Theme.of(context).dividerColor.withOpacity(0.1),
+      backgroundColor: Theme.of(context).dividerColor.withValues(alpha: 0.1),
       labelStyle: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

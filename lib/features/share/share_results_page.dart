@@ -5,7 +5,6 @@ import '../../core/theme.dart';
 import '../../core/navigation.dart';
 import '../../core/providers.dart';
 import '../../core/pdf_service.dart';
-import '../../core/ai_service.dart';
 
 class ShareResultsPage extends ConsumerWidget {
   const ShareResultsPage({super.key});
@@ -132,14 +131,14 @@ class ShareResultsPage extends ConsumerWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+          colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -193,7 +192,7 @@ class ShareResultsPage extends ConsumerWidget {
                 }
               }
               
-              final aiSummary = await AiService.getBatchSummary(flatTests);
+              final aiSummary = await ref.read(aiServiceProvider).getBatchSummary(flatTests);
               await PdfService.generateSummaryPdf(reports, aiSummary: aiSummary);
             },
           ),

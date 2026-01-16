@@ -44,17 +44,17 @@ class _OnboardingOverlayState extends State<OnboardingOverlay> {
     final step = _steps[_currentStep];
 
     return Material(
-      color: Colors.black.withOpacity(0.85),
+      color: Colors.black.withValues(alpha: 0.85),
       child: Center(
         child: Container(
           width: 450,
           padding: const EdgeInsets.all(40),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 20,
                 spreadRadius: 5,
               ),
@@ -82,7 +82,7 @@ class _OnboardingOverlayState extends State<OnboardingOverlay> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(step.icon, size: 48, color: AppColors.primary),

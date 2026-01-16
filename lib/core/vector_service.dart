@@ -1,17 +1,16 @@
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'models.dart';
-import 'supabase_service.dart';
-import 'app_config.dart';
 
 class VectorService {
-  static final String _apiKey = AppConfig.geminiApiKey;
-  static final _model = GenerativeModel(
-    model: 'text-embedding-004',
-    apiKey: _apiKey,
-  );
+  final GenerativeModel _model;
+  final SupabaseClient _client;
 
-  final SupabaseClient _client = SupabaseService().client;
+  VectorService(this._client, {required String apiKey}) 
+      : _model = GenerativeModel(
+          model: 'text-embedding-004', 
+          apiKey: apiKey,
+        );
 
   /// Generates a vector embedding for the given text using Gemini.
   Future<List<double>> generateEmbedding(String text) async {
@@ -22,7 +21,7 @@ class VectorService {
 
   /// Ingests a [TestResult] into the vector database.
   Future<void> ingestLabResult(TestResult result, String date) async {
-    final user = SupabaseService().currentUser;
+    final user = _client.auth.currentUser;
     if (user == null) return;
 
     final content = '''

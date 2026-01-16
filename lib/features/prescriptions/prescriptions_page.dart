@@ -1,34 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
-import '../../core/supabase_service.dart';
 import '../../core/notification_service.dart';
+import '../../core/providers/user_providers.dart';
+import '../../core/providers.dart';
 
-class PrescriptionsPage extends StatefulWidget {
+class PrescriptionsPage extends ConsumerStatefulWidget {
   const PrescriptionsPage({super.key});
 
   @override
-  State<PrescriptionsPage> createState() => _PrescriptionsPageState();
+  ConsumerState<PrescriptionsPage> createState() => _PrescriptionsPageState();
 }
 
-class _PrescriptionsPageState extends State<PrescriptionsPage> with SingleTickerProviderStateMixin {
+class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<Map<String, dynamic>> _prescriptions = [];
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _fetchPrescriptions();
-  }
-
-  Future<void> _fetchPrescriptions() async {
-    setState(() => _isLoading = true);
-    final data = await SupabaseService().getPrescriptions();
-    setState(() {
-      _prescriptions = data;
-      _isLoading = false;
-    });
   }
 
   Future<void> _addPrescription() async {
@@ -38,34 +29,43 @@ class _PrescriptionsPageState extends State<PrescriptionsPage> with SingleTicker
     );
 
     if (result == true) {
-      _fetchPrescriptions();
+      ref.invalidate(prescriptionsProvider);
+      ref.invalidate(activePrescriptionsCountProvider);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(),
-        const SizedBox(height: 32),
-        _buildTabs(),
-        const SizedBox(height: 24),
-        if (_isLoading)
-          const Center(child: CircularProgressIndicator())
-        else if (_prescriptions.isEmpty)
-          _buildEmptyState()
-        else
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildPrescriptionList(true),
-                _buildPrescriptionList(false),
-              ],
-            ),
-          ),
-      ],
+    final prescriptionsAsync = ref.watch(prescriptionsProvider);
+
+    return prescriptionsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, s) => Center(child: Text('Error: $e')),
+      data: (prescriptions) {
+        _prescriptions = prescriptions;
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 32),
+            _buildTabs(),
+            const SizedBox(height: 24),
+            if (prescriptions.isEmpty)
+              _buildEmptyState()
+            else
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildPrescriptionList(true),
+                    _buildPrescriptionList(false),
+                  ],
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -92,7 +92,7 @@ class _PrescriptionsPageState extends State<PrescriptionsPage> with SingleTicker
                  Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(Icons.medication_outlined, color: Theme.of(context).primaryColor, size: 24),
@@ -115,7 +115,7 @@ class _PrescriptionsPageState extends State<PrescriptionsPage> with SingleTicker
                        Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: active ? AppColors.success.withOpacity(0.1) : Theme.of(context).dividerColor.withOpacity(0.1),
+                          color: active ? AppColors.success.withValues(alpha: 0.1) : Theme.of(context).dividerColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -141,7 +141,7 @@ class _PrescriptionsPageState extends State<PrescriptionsPage> with SingleTicker
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Theme.of(context).dividerColor.withOpacity(0.1),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(Icons.link, size: 24, color: AppColors.secondary),
@@ -179,7 +179,7 @@ class _PrescriptionsPageState extends State<PrescriptionsPage> with SingleTicker
   Widget _buildTabs() {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).dividerColor.withOpacity(0.1),
+        color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       padding: const EdgeInsets.all(4),
@@ -189,7 +189,7 @@ class _PrescriptionsPageState extends State<PrescriptionsPage> with SingleTicker
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(6),
           boxShadow: [
-            BoxShadow(color: Colors.black.withAlpha((0.05 * 255).toInt()), blurRadius: 4, offset: const Offset(0, 2)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2)),
           ],
         ),
         labelColor: Theme.of(context).colorScheme.primary,
@@ -217,7 +217,7 @@ class _PrescriptionsPageState extends State<PrescriptionsPage> with SingleTicker
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Theme.of(context).dividerColor.withOpacity(0.1),
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.medical_services_outlined, size: 48, color: AppColors.border),
@@ -244,14 +244,14 @@ class _PrescriptionsPageState extends State<PrescriptionsPage> with SingleTicker
   }
 }
 
-class _AddPrescriptionDialog extends StatefulWidget {
+class _AddPrescriptionDialog extends ConsumerStatefulWidget {
   const _AddPrescriptionDialog();
 
   @override
-  State<_AddPrescriptionDialog> createState() => _AddPrescriptionDialogState();
+  ConsumerState<_AddPrescriptionDialog> createState() => _AddPrescriptionDialogState();
 }
 
-class _AddPrescriptionDialogState extends State<_AddPrescriptionDialog> {
+class _AddPrescriptionDialogState extends ConsumerState<_AddPrescriptionDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _dosageController = TextEditingController();
@@ -264,7 +264,8 @@ class _AddPrescriptionDialogState extends State<_AddPrescriptionDialog> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        await SupabaseService().addPrescription({
+        final userRepo = ref.read(userRepositoryProvider);
+        await userRepo.addPrescription({
           'name': _nameController.text,
           'dosage': _dosageController.text,
           'frequency': _frequencyController.text,
@@ -352,7 +353,7 @@ class _AddPrescriptionDialogState extends State<_AddPrescriptionDialog> {
                 title: const Text('Remind Me', style: TextStyle(fontSize: 14)),
                 subtitle: const Text('Daily reminder at 9:00 AM', style: TextStyle(fontSize: 12)),
                 value: _remindMe,
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
                 onChanged: (v) => setState(() => _remindMe = v),
               ),
             ],
