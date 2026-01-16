@@ -1,0 +1,344 @@
+import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../core/theme.dart';
+
+class LandingPage extends StatelessWidget {
+  const LandingPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    debugPrint('🎨 LandingPage.build called');
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeroSection(),
+          _buildFeatureGrid(),
+          _buildHowItWorks(),
+          _buildCtaSection(),
+          _buildFooter(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 24),
+      decoration: const BoxDecoration(
+        color: Color(0xFFFCFBF7),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'What Do My Lab Results Actually Mean?',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 52,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2937),
+              letterSpacing: -1,
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Upload your lab reports and get instant, AI-powered explanations in plain\nlanguage. Understand your health without the confusion.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 20, 
+              color: Color(0xFF6B7280), 
+              height: 1.6,
+            ),
+          ),
+          const SizedBox(height: 48),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2D2D2D),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 22),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
+                ),
+                child: const Row(
+                  children: [
+                    Text('Get Started', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    SizedBox(width: 8),
+                    Icon(Icons.arrow_forward, size: 18),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 20),
+              OutlinedButton(
+                onPressed: () {},
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 22),
+                  side: const BorderSide(color: Color(0xFFE5E7EB)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  backgroundColor: Colors.white,
+                ),
+                child: const Text(
+                  'See How It Works',
+                  style: TextStyle(color: Color(0xFF1F2937), fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'No credit card required • 3 free uploads per month',
+            style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureGrid() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 24),
+      color: Colors.white,
+      child: Column(
+        children: [
+          const Text(
+            'Everything you need to understand your health',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2937),
+            ),
+          ),
+          const SizedBox(height: 64),
+          Center(
+            child: Wrap(
+              spacing: 32,
+              runSpacing: 32,
+              alignment: WrapAlignment.center,
+              children: [
+                _buildModernFeatureCard(
+                  FontAwesomeIcons.brain,
+                  'AI-Powered Insights',
+                  'Advanced AI analyzes your results and provides clear, easy-to-understand explanations.',
+                ),
+                _buildModernFeatureCard(
+                  FontAwesomeIcons.chartLine,
+                  'Track Your Trends',
+                  'See how your health markers change over time with beautiful visualizations.',
+                ),
+                _buildModernFeatureCard(
+                  FontAwesomeIcons.shieldHalved,
+                  'HIPAA Compliant',
+                  'Your health data is encrypted and protected with enterprise-grade security.',
+                ),
+                _buildModernFeatureCard(
+                  FontAwesomeIcons.fileLines,
+                  'Any Lab Format',
+                  'Upload photos, PDFs, or spreadsheets. We support all major lab report formats.',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernFeatureCard(IconData icon, String title, String description) {
+    return Container(
+      width: 280,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: const Color(0xFF6B7280), size: 24),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 15, color: Color(0xFF6B7280), height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHowItWorks() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 100, horizontal: 24),
+      color: const Color(0xFFFCFBF7),
+      child: Column(
+        children: [
+          const Text(
+            'How It Works',
+            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+          ),
+          const SizedBox(height: 80),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildStepCard(
+                '1',
+                Icons.upload_outlined,
+                'Upload Your Results',
+                'Take a photo or upload your lab report PDF.',
+              ),
+              _buildArrow(),
+              _buildStepCard(
+                '2',
+                FontAwesomeIcons.wandMagicSparkles,
+                'AI Processing',
+                'Our AI extracts and analyzes all your test values.',
+              ),
+              _buildArrow(),
+              _buildStepCard(
+                '3',
+                FontAwesomeIcons.chartArea,
+                'Get Insights',
+                'Receive clear explanations and track your health trends.',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepCard(String number, IconData icon, String title, String description) {
+    return Container(
+      width: 320,
+      padding: const EdgeInsets.all(40),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: const BoxDecoration(
+              color: Color(0xFF2D2D2D),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                number,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Icon(icon, size: 32, color: const Color(0xFF6B7280)),
+          const SizedBox(height: 24),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 15, color: Color(0xFF6B7280), height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildArrow() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[300]),
+    );
+  }
+
+  Widget _buildCtaSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 120, horizontal: 24),
+      color: Colors.white,
+      child: Column(
+        children: [
+          const Text(
+            'Ready to understand your lab results?',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Join thousands of users who now understand their health better.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 18, color: Color(0xFF6B7280)),
+          ),
+          const SizedBox(height: 48),
+          ElevatedButton(
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2D2D2D),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 22),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 0,
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Get Started Free', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                SizedBox(width: 8),
+                Icon(Icons.arrow_forward, size: 18),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 48),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'LabSense',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+          ),
+          Row(
+            children: [
+              Text('Privacy', style: TextStyle(color: Colors.grey[600])),
+              const SizedBox(width: 24),
+              Text('Terms', style: TextStyle(color: Colors.grey[600])),
+              const SizedBox(width: 24),
+              Text('Contact', style: TextStyle(color: Colors.grey[600])),
+            ],
+          ),
+          Text(
+            '© 2024 LabSense. All rights reserved.',
+            style: TextStyle(color: Colors.grey[500], fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+}
