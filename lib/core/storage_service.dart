@@ -11,7 +11,7 @@ class StorageService {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return null;
 
-      final path = 'lab_reports/$userId/${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final path = '$userId/${DateTime.now().millisecondsSinceEpoch}_$fileName';
       
       await _supabase.storage.from('lab-reports').uploadBinary(
         path,
@@ -27,24 +27,20 @@ class StorageService {
   }
 
   Future<String?> uploadProfilePhoto(Uint8List bytes) async {
-    try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return null;
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('User not logged in');
 
-      final path = 'profiles/$userId.jpg';
-      
-      await _supabase.storage.from('profiles').uploadBinary(
-        path,
-        bytes,
-        fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
-      );
+    // Use userId as folder to match RLS: (storage.foldername(name))[1] == auth.uid()
+    final path = '$userId/profile.jpg';
+    
+    await _supabase.storage.from('profiles').uploadBinary(
+      path,
+      bytes,
+      fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+    );
 
-      final String publicUrl = _supabase.storage.from('profiles').getPublicUrl(path);
-      return publicUrl;
-    } catch (e) {
-      debugPrint('Error uploading profile photo: $e');
-      return null;
-    }
+    final String publicUrl = _supabase.storage.from('profiles').getPublicUrl(path);
+    return publicUrl;
   }
 
   Future<String?> uploadPrescriptionImage(Uint8List bytes) async {
@@ -52,7 +48,7 @@ class StorageService {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return null;
 
-      final path = 'prescriptions/$userId/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final path = '$userId/${DateTime.now().millisecondsSinceEpoch}.jpg';
       
       await _supabase.storage.from('prescriptions').uploadBinary(
         path,

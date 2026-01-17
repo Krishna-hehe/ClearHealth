@@ -61,32 +61,48 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       _resultReminders = profile['result_reminders'] ?? true;
     }
     
-    _canCheckBiometrics = await BiometricService().canCheckBiometrics();
-    _biometricEnabled = await BiometricService().isEnabled();
+    try {
+      _canCheckBiometrics = await BiometricService().canCheckBiometrics();
+      _biometricEnabled = await BiometricService().isEnabled();
+    } catch (e) {
+      debugPrint('Error initializing biometrics: $e');
+      _canCheckBiometrics = false;
+      _biometricEnabled = false;
+    }
     
     setState(() => _isLoading = false);
   }
 
   Future<void> _saveProfile() async {
     setState(() => _isSaving = true);
-    await ref.read(userRepositoryProvider).updateProfile({
-      'first_name': _firstNameController.text,
-      'last_name': _lastNameController.text,
-      'phone_number': _phoneController.text,
-      'state': _stateController.text,
-      'postal_code': _postalCodeController.text,
-      'country': _countryController.text,
-      'dob': _dob != 'Not set' ? _dob : null,
-      'gender': _gender != 'Not set' ? _gender : null,
-      'email_notifications': _emailNotifications,
-      'result_reminders': _resultReminders,
-    });
-    ref.invalidate(userProfileProvider);
-    setState(() => _isSaving = false);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully'), backgroundColor: AppColors.success),
-      );
+    try {
+      await ref.read(userRepositoryProvider).updateProfile({
+        'first_name': _firstNameController.text,
+        'last_name': _lastNameController.text,
+        'phone_number': _phoneController.text,
+        'state': _stateController.text,
+        'postal_code': _postalCodeController.text,
+        'country': _countryController.text,
+        'dob': _dob != 'Not set' ? _dob : null,
+        'gender': _gender != 'Not set' ? _gender : null,
+        'email_notifications': _emailNotifications,
+        'result_reminders': _resultReminders,
+      });
+      ref.invalidate(userProfileProvider);
+      ref.invalidate(userProfileStreamProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully'), backgroundColor: AppColors.success),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating profile: $e'), backgroundColor: AppColors.danger),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -105,6 +121,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       if (publicUrl != null) {
         await ref.read(userRepositoryProvider).updateProfile({'avatar_url': publicUrl});
         ref.invalidate(userProfileProvider);
+        ref.invalidate(userProfileStreamProvider);
         setState(() => _avatarUrl = publicUrl);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
