@@ -207,6 +207,7 @@ class _LandingPageState extends ConsumerState<LandingPage> {
 
   Widget _buildComplianceSection() {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 24),
       color: const Color(0xFFF9FAFB),
       child: Column(
