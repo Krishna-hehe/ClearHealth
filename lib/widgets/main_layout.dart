@@ -402,6 +402,8 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
       // 5. Refresh data
       ref.invalidate(labResultsProvider);
+      ref.invalidate(recentLabResultsProvider);
+      ref.invalidate(dashboardAiInsightProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -501,7 +503,8 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
             ),
           ),
           const SizedBox(width: 24),
-          _buildUpgradeBadge(),
+          // _buildUpgradeBadge() removed
+
           IconButton(
             icon: const Icon(Icons.notifications_none_outlined, color: AppColors.secondary),
             onPressed: () => ref.read(navigationProvider.notifier).state = NavItem.notifications,
@@ -602,31 +605,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
           );
   }
 
-  Widget _buildUpgradeBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          const Text('Uploads left: ', style: TextStyle(fontSize: 12)),
-          const Text('3/3', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-          const SizedBox(width: 8),
-          const Text(
-            'Upgrade',
-            style: TextStyle(
-              color: AppColors.secondary,
-              fontSize: 12,
-              decoration: TextDecoration.underline,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Badge removed as per user request
+
+
 }
 
 class _OcrReviewDialog extends StatefulWidget {

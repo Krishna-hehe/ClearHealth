@@ -49,7 +49,7 @@ class AiService {
       debugPrint('🚀 AiService: Initializing with key starting with: ${apiKey.substring(0, min(5, apiKey.length))}...');
     }
     _model = GenerativeModel(
-      model: 'gemma-3-4b-it',
+      model: 'gemini-1.5-flash',
       apiKey: apiKey,
     );
   }
@@ -197,7 +197,7 @@ Date: ${chunk['metadata']['date']}
         contextChunks: contextChunks,
       );
     } catch (e) {
-      return 'I encountered an error analyzing your health data: \$e';
+      return 'I encountered an error analyzing your health data: $e';
     }
   }
 
@@ -228,7 +228,7 @@ Date: ${chunk['metadata']['date']}
       final response = await _model.generateContent(content);
       return response.text?.trim() ?? 'I was unable to generate a response at this time.';
     } catch (e) {
-      return 'Error generating response: \$e';
+      return 'Error generating response: $e';
     }
   }
 

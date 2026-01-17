@@ -26,8 +26,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
       duration: const Duration(milliseconds: 1200),
     );
 
-    // Create 6 staggered animations
-    _animations = List.generate(6, (index) {
+    // Create 5 staggered animations
+    _animations = List.generate(5, (index) {
       double start = index * 0.1;
       double end = (start + 0.4).clamp(0.0, 1.0);
       return CurvedAnimation(
@@ -88,12 +88,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
                           ),
                         ),
                         const SizedBox(width: 24),
-                        Expanded(
+                      Expanded(
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               _buildAnimatedItem(4, _buildHealthTipsCard(recentResults)),
-                              const SizedBox(height: 24),
-                              _buildAnimatedItem(5, _buildUpcomingTasks()),
+                              // Upcoming Tasks removed
                             ],
                           ),
                         ),
@@ -146,8 +146,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
   }
 
   Widget _buildQuickStats(List<LabReport> recentResults, int conditionsCount, int prescriptionsCount) {
-    String lastResultDate = 'N/A';
-    String lastResultStatus = 'N/A';
+    String lastResultDate = 'No Data';
+    String lastResultStatus = '-';
     Color lastResultColor = AppColors.secondary;
     Color lastResultBg = const Color(0xFFF3F4F6);
 
@@ -169,9 +169,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
       children: [
         _buildStatCard('Last Lab Result', lastResultDate, lastResultStatus, Icons.description_outlined, lastResultBg, lastResultColor),
         const SizedBox(width: 16),
-        _buildStatCard('Known Conditions', '$conditionsCount Active', 'Stable', Icons.favorite_border, const Color(0xFFF0FDF4), AppColors.success),
+        _buildStatCard('Known Conditions', '$conditionsCount Active', conditionsCount > 0 ? 'Managed' : '-', Icons.favorite_border, const Color(0xFFF0FDF4), AppColors.success),
         const SizedBox(width: 16),
-        _buildStatCard('Active Medications', '$prescriptionsCount Prescriptions', 'On Track', Icons.medication_outlined, const Color(0xFFEFF6FF), const Color(0xFF3B82F6)),
+        _buildStatCard('Active Medications', '$prescriptionsCount Prescriptions', prescriptionsCount > 0 ? 'Active' : '-', Icons.medication_outlined, const Color(0xFFEFF6FF), const Color(0xFF3B82F6)),
       ],
     );
   }
@@ -199,17 +199,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
                   child: Icon(icon, size: 20, color: statusColor),
                 ),
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(12),
+                if (status != '-') // Only show status badge if there is a status
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      status,
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor),
+                    ),
                   ),
-                  child: Text(
-                    status,
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor),
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -223,6 +224,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
   }
 
   Widget _buildAiInsightsCard(List<LabReport> recentResults) {
+    // ... (existing implementation)
     return Consumer(
       builder: (context, ref, child) {
         final insightAsync = ref.watch(dashboardAiInsightProvider);
@@ -288,7 +290,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
   }
 
   Widget _buildRecentResults(List<LabReport> recentResults) {
-    return Container(
+     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
@@ -326,45 +328,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
 
               return _buildResultItem(dateStr, '$testCount tests included', status, bgColor, statusColor);
             }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResultItem(String date, String tests, String status, Color bgColor, Color statusColor) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.description_outlined, color: AppColors.secondary, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(date, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                Text(tests, style: const TextStyle(color: AppColors.secondary, fontSize: 12)),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              status,
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor),
-            ),
-          ),
         ],
       ),
     );
@@ -412,45 +375,38 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
     );
   }
 
-  Widget _buildUpcomingTasks() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Upcoming', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 16),
-          _buildTaskItem('Follow-up Lab', 'In 2 months', true),
-          _buildTaskItem('Dr. Review', 'Jan 20, 2026', false),
-          _buildTaskItem('Prescription Renewal', 'Feb 05, 2026', false),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTaskItem(String title, String deadline, bool isUrgent) {
+  Widget _buildResultItem(String date, String tests, String status, Color bgColor, Color statusColor) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
-          Icon(
-            isUrgent ? Icons.error_outline : Icons.calendar_today_outlined,
-            size: 16,
-            color: isUrgent ? AppColors.danger : AppColors.secondary,
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.description_outlined, color: AppColors.secondary, size: 20),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                Text(deadline, style: const TextStyle(color: AppColors.secondary, fontSize: 11)),
+                Text(date, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(tests, style: const TextStyle(color: AppColors.secondary, fontSize: 12)),
               ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              status,
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor),
             ),
           ),
         ],
