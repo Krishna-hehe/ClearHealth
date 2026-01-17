@@ -41,6 +41,7 @@ class _LandingPageState extends ConsumerState<LandingPage> {
         children: [
           _buildHeroSection(),
           _buildFeatureGrid(),
+          _buildComplianceSection(),
           _buildHowItWorks(),
           _buildCtaSection(),
           _buildFooter(),
@@ -157,9 +158,9 @@ class _LandingPageState extends ConsumerState<LandingPage> {
                   'See how your health markers change over time with beautiful visualizations.',
                 ),
                 _buildModernFeatureCard(
-                  FontAwesomeIcons.shieldHalved,
-                  'HIPAA Compliant',
-                  'Your health data is encrypted and protected with enterprise-grade security.',
+                  FontAwesomeIcons.users,
+                  'Health Circles',
+                  'Securely share your health data with family members and doctors for better care.',
                 ),
                 _buildModernFeatureCard(
                   FontAwesomeIcons.fileLines,
@@ -192,6 +193,97 @@ class _LandingPageState extends ConsumerState<LandingPage> {
           Text(
             title,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 15, color: Color(0xFF6B7280), height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComplianceSection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 24),
+      color: const Color(0xFFF9FAFB),
+      child: Column(
+        children: [
+          const Text(
+            'Uncompromised Privacy & Compliance',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'We adhere to the strictest global standards to keep your health data safe.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 18, color: Color(0xFF6B7280)),
+          ),
+          const SizedBox(height: 64),
+          Wrap(
+            spacing: 32,
+            runSpacing: 32,
+            alignment: WrapAlignment.center,
+            children: [
+              _buildComplianceCard(
+                FontAwesomeIcons.userShield,
+                'HIPAA Compliant',
+                'Fully aligned with US Health Insurance Portability and Accountability Act standards.',
+                const Color(0xFF0F766E), // Teal
+              ),
+              _buildComplianceCard(
+                FontAwesomeIcons.gavel,
+                'DPDP Act Ready',
+                'Compliant with the Digital Personal Data Protection Act for data sovereignty and user rights.',
+                const Color(0xFF7C3AED), // Violet
+              ),
+              _buildComplianceCard(
+                FontAwesomeIcons.lock,
+                'End-to-End Encryption',
+                'Your data is encrypted at rest and in transit using AES-256 and TLS 1.3 protocols.',
+                const Color(0xFF0369A1), // Blue
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComplianceCard(IconData icon, String title, String description, Color color) {
+    return Container(
+      width: 320,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 32),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
           ),
           const SizedBox(height: 12),
           Text(
