@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/theme.dart';
 import '../../core/providers.dart';
+import '../../core/providers/lab_providers.dart';
+import '../../core/providers/user_providers.dart';
 
 
 
@@ -52,9 +54,47 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
       _controller.clear();
     });
 
+    // Gather Context
+    final labResults = ref.read(labResultsProvider).value ?? [];
+    final prescriptions = ref.read(prescriptionsProvider).value ?? [];
+
+    // Filter Abnormal Labs
+    final abnormalLabs = <Map<String, dynamic>>[];
+    for (var report in labResults) {
+      if (report.testResults != null) {
+        for (var test in report.testResults!) {
+          if (test.status.toLowerCase() == 'high' || test.status.toLowerCase() == 'low') {
+            abnormalLabs.add({
+              'test_name': test.name,
+              'value': test.result,
+              'unit': test.unit,
+              'status': test.status,
+              'date': report.date.toIso8601String().split('T')[0],
+            });
+          }
+        }
+      }
+    }
+
+    // Filter Active Prescriptions
+    final activePrescriptions = prescriptions
+        .where((p) => p['is_active'] == true)
+        .map((p) => {
+              'medication': p['medication_name'],
+              'dosage': p['dosage'],
+              'frequency': p['frequency'],
+            })
+        .toList();
+
     try {
       final aiService = ref.read(aiServiceProvider);
-      final response = await aiService.chat(query);
+      final response = await aiService.chat(
+        query, 
+        healthContext: {
+          'abnormal_labs': abnormalLabs,
+          'active_prescriptions': activePrescriptions,
+        }
+      );
       if (!mounted) return;
       setState(() {
         _messages.add(Message(text: response, isUser: false, timestamp: DateTime.now()));
@@ -103,12 +143,72 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 const SizedBox(height: 16),
+                _buildSuggestions(),
+                const SizedBox(height: 12),
                 _buildInputArea(),
               ],
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSuggestions() {
+    final labResults = ref.watch(labResultsProvider).value ?? [];
+    final prescriptions = ref.watch(prescriptionsProvider).value ?? [];
+    
+    final suggestions = <String>{
+      "How can I improve my immunity?",
+      "Explain my latest lab report",
+      "What foods should I avoid?",
+    };
+
+    // Add context-aware suggestions
+    for (var report in labResults) {
+      if (report.testResults != null) {
+        for (var test in report.testResults!) {
+          if (test.status.toLowerCase() == 'high') {
+            suggestions.add("How to lower ${test.name}?");
+            suggestions.add("Diet for high ${test.name}");
+          } else if (test.status.toLowerCase() == 'low') {
+            suggestions.add("How to increase ${test.name}?");
+          }
+        }
+      }
+    }
+
+    for (var p in prescriptions) {
+      if (p['is_active'] == true) {
+        suggestions.add("Side effects of ${p['medication_name']}");
+        suggestions.add("Interactions with ${p['medication_name']}");
+      }
+    }
+
+    final initialList = suggestions.take(5).toList();
+
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: initialList.length,
+        separatorBuilder: (c, i) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          return ActionChip(
+            label: Text(initialList[index]),
+            backgroundColor: const Color(0xFFEEF2FF),
+            labelStyle: const TextStyle(color: AppColors.primary, fontSize: 12),
+            onPressed: () {
+              _controller.text = initialList[index];
+              _sendMessage();
+            },
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: const BorderSide(color: Colors.transparent),
+            ),
+          );
+        },
+      ),
     );
   }
 

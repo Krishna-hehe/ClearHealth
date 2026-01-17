@@ -46,4 +46,25 @@ class StorageService {
       return null;
     }
   }
+
+  Future<String?> uploadPrescriptionImage(Uint8List bytes) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return null;
+
+      final path = 'prescriptions/$userId/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      
+      await _supabase.storage.from('prescriptions').uploadBinary(
+        path,
+        bytes,
+        fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
+      );
+
+      final String publicUrl = _supabase.storage.from('prescriptions').getPublicUrl(path);
+      return publicUrl;
+    } catch (e) {
+      debugPrint('Error uploading prescription image: $e');
+      return null;
+    }
+  }
 }

@@ -25,3 +25,7 @@ final activePrescriptionsCountProvider = FutureProvider<int>((ref) async {
 final prescriptionsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   return await ref.watch(userRepositoryProvider).getPrescriptions();
 });
+
+final healthCirclesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  return await ref.watch(userRepositoryProvider).getHealthCircles();
+});

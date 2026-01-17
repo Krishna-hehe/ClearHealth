@@ -123,7 +123,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                             ),
                           if (currentNav != NavItem.landing) _buildNavbar(),
                           Expanded(
-                            child: SingleChildScrollView(
+                            child: Padding(
                               padding: currentNav == NavItem.landing ? EdgeInsets.zero : const EdgeInsets.all(24.0),
                               child: _getPageContent(currentNav),
                             ),

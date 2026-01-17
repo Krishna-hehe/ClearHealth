@@ -35,6 +35,24 @@ class NotificationService {
     );
   }
 
+  Future<void> showNotification(int id, String title, String body) async {
+    await _notificationsPlugin.show(
+      id,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'general_notifications',
+          'General Notifications',
+          channelDescription: 'General app notifications',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+    );
+  }
+
   Future<void> scheduleMedicationReminder({
     required int id,
     required String name,

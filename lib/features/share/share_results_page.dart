@@ -32,14 +32,14 @@ class ShareResultsPage extends ConsumerWidget {
         const SizedBox(height: 32),
         _buildProfessionalPdfCard(context, ref),
         const SizedBox(height: 24),
-        _buildShareOptions(),
+        _buildShareOptions(context),
         const SizedBox(height: 24),
         _buildSharingHistory(),
       ],
     );
   }
 
-  Widget _buildShareOptions() {
+  Widget _buildShareOptions(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -68,7 +68,19 @@ class ShareResultsPage extends ConsumerWidget {
           ElevatedButton.icon(
             icon: const Icon(Icons.link, size: 18),
             label: const Text('Generate Share Link'),
-            onPressed: () {},
+            onPressed: () {
+               // Simulate link generation
+               final link = 'https://labsense.app/share/${DateTime.now().millisecondsSinceEpoch}';
+               ScaffoldMessenger.of(context).showSnackBar(
+                 SnackBar(
+                   content: Text('Link generated: $link'), 
+                   action: SnackBarAction(label: 'Copy', onPressed: () {
+                     // Clipboard.setData(ClipboardData(text: link));
+                   })
+                 )
+               );
+               // Ideally, save to backend here
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,

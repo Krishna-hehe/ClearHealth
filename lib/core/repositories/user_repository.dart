@@ -40,6 +40,8 @@ class UserRepository {
   
   Future<void> addPrescription(Map<String, dynamic> data) => _supabaseService.addPrescription(data);
   
+  Future<void> updatePrescription(String id, Map<String, dynamic> data) => _supabaseService.updatePrescription(id, data);
+  
   Future<int> getActivePrescriptionsCount() => _supabaseService.getActivePrescriptionsCount();
   
   Future<List<Map<String, dynamic>>> getNotifications() => _supabaseService.getNotifications();
@@ -47,4 +49,8 @@ class UserRepository {
   Stream<List<Map<String, dynamic>>> getNotificationsStream() => _supabaseService.getNotificationsStream();
   
   Future<void> markNotificationAsRead(String id) => _supabaseService.markNotificationAsRead(id);
+  
+  Future<List<Map<String, dynamic>>> getHealthCircles() => _supabaseService.getHealthCircles();
+  
+  Future<void> updateHealthCircles(List<Map<String, dynamic>> circles) => _supabaseService.updateHealthCircles(circles);
 }

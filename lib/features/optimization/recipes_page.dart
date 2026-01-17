@@ -10,48 +10,50 @@ class RecipesPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final optimizationAsync = ref.watch(optimizationTipsProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Health Optimization',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Personalized nutritional recipes and lifestyle tips based on your latest lab results.',
-          style: TextStyle(color: AppColors.secondary, fontSize: 16),
-        ),
-        const SizedBox(height: 32),
-        optimizationAsync.when(
-          data: (tips) {
-            if (tips.isEmpty) {
-              return _buildEmptyState();
-            }
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 450,
-                mainAxisSpacing: 24,
-                crossAxisSpacing: 24,
-                mainAxisExtent: 380,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Health Optimization',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Personalized nutritional recipes and lifestyle tips based on your latest lab results.',
+            style: TextStyle(color: AppColors.secondary, fontSize: 16),
+          ),
+          const SizedBox(height: 32),
+          optimizationAsync.when(
+            data: (tips) {
+              if (tips.isEmpty) {
+                return _buildEmptyState();
+              }
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 450,
+                  mainAxisSpacing: 24,
+                  crossAxisSpacing: 24,
+                  mainAxisExtent: 380,
+                ),
+                itemCount: tips.length,
+                itemBuilder: (context, index) => _buildRecipeCard(context, tips[index]),
+              );
+            },
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(40.0),
+                child: CircularProgressIndicator(),
               ),
-              itemCount: tips.length,
-              itemBuilder: (context, index) => _buildRecipeCard(context, tips[index]),
-            );
-          },
-          loading: () => const Center(
-            child: Padding(
-              padding: EdgeInsets.all(40.0),
-              child: CircularProgressIndicator(),
+            ),
+            error: (err, stack) => Center(
+              child: Text('Error generating optimization tips: $err'),
             ),
           ),
-          error: (err, stack) => Center(
-            child: Text('Error generating optimization tips: $err'),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

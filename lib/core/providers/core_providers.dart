@@ -29,6 +29,7 @@ final aiServiceProvider = Provider<AiService>((ref) {
   final vectorService = ref.read(vectorServiceProvider);
   return AiService(
     apiKey: AppConfig.geminiApiKey,
+    chatApiKey: AppConfig.labSenseChatApiKey,
     vectorService: vectorService
   );
 });

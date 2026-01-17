@@ -32,6 +32,12 @@ class _ConditionsPageState extends ConsumerState<ConditionsPage> {
     _fetchConditions();
   }
 
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchConditions() async {
     setState(() => _isLoading = true);
     try {
@@ -85,13 +91,15 @@ class _ConditionsPageState extends ConsumerState<ConditionsPage> {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(),
-        const SizedBox(height: 32),
-        _buildConditionsCard(),
-      ],
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(),
+          const SizedBox(height: 32),
+          _buildConditionsCard(),
+        ],
+      ),
     );
   }
 

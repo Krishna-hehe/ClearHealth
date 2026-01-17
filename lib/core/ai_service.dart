@@ -36,21 +36,35 @@ class LabTestAnalysis {
 
 class AiService {
   final String apiKey;
+  final String? chatApiKey; // Optional separate key for chat
   final VectorService vectorService;
-  late final GenerativeModel _model;
+  late final GenerativeModel _textModel;
+  late final GenerativeModel _visionModel;
+  late final GenerativeModel _chatModel; // New model for chat
   
   // Rate limiter is now per-instance, which is fine if we use a singleton provider
   final _rateLimiter = RateLimiter(maxRequests: 15, duration: const Duration(minutes: 1));
 
-  AiService({required this.apiKey, required this.vectorService}) {
+  AiService({required this.apiKey, this.chatApiKey, required this.vectorService}) {
     if (apiKey.isEmpty) {
       debugPrint('❌ AiService: API Key is empty!');
     } else {
       debugPrint('🚀 AiService: Initializing with key starting with: ${apiKey.substring(0, min(5, apiKey.length))}...');
     }
-    _model = GenerativeModel(
-      model: 'gemini-1.5-flash',
+    _textModel = GenerativeModel(
+      model: 'gemini-2.0-flash',
       apiKey: apiKey,
+    );
+     _visionModel = GenerativeModel(
+      model: 'gemini-2.0-flash',
+      apiKey: apiKey,
+    );
+     // Initialize Chat Model - prefer chatApiKey, fallback to main apiKey
+     final effectiveChatKey = (chatApiKey != null && chatApiKey!.isNotEmpty) ? chatApiKey! : apiKey;
+     debugPrint('💬 AiService: Chat initialized with key starting with: ${effectiveChatKey.substring(0, min(5, effectiveChatKey.length))}...');
+     _chatModel = GenerativeModel(
+      model: 'gemini-2.0-flash',
+      apiKey: effectiveChatKey,
     );
   }
 
@@ -113,7 +127,7 @@ class AiService {
 
     try {
       final content = [Content.text(prompt)];
-      final response = await _model.generateContent(content);
+      final response = await _textModel.generateContent(content);
       final jsonStr = response.text?.replaceAll('```json', '').replaceAll('```', '').trim() ?? '{}';
       final data = jsonDecode(jsonStr);
       return LabTestAnalysis.fromJson(data);
@@ -166,14 +180,14 @@ class AiService {
 
     try {
       final content = [Content.text(prompt)];
-      final response = await _model.generateContent(content);
+      final response = await _textModel.generateContent(content);
       return response.text?.trim() ?? 'All values appear to be within the expected range based on the provided data.';
     } catch (e) {
       return 'Based on these lab results, most of your values fall within the normal range. Please discuss any outliers with your healthcare provider.';
     }
   }
 
-  Future<String> chat(String query) async {
+  Future<String> chat(String query, {Map<String, dynamic>? healthContext}) async {
     if (!_rateLimiter.canRequest()) {
       return 'Rate limit exceeded. Please wait a moment.';
     }
@@ -195,6 +209,7 @@ Date: ${chunk['metadata']['date']}
       return await getChatResponseWithContext(
         query: query,
         contextChunks: contextChunks,
+        healthContext: healthContext,
       );
     } catch (e) {
       return 'I encountered an error analyzing your health data: $e';
@@ -204,15 +219,26 @@ Date: ${chunk['metadata']['date']}
   Future<String> getChatResponseWithContext({
     required String query,
     required List<String> contextChunks,
+    Map<String, dynamic>? healthContext,
   }) async {
     final contextText = contextChunks.isEmpty 
-        ? "No specific lab results found relative to this query."
-        : contextChunks.join('\\n\\n---\\n\\n');
+        ? "No specific lab results found relative to this query in the archives."
+        : contextChunks.join('\n\n---\n\n');
         
-    final prompt = '''
-      You are LabSense AI, a medical assistant. Use the following lab result history (context) to answer the user's question.
+    final healthContextStr = healthContext != null
+        ? '''
+    CURRENT PATIENT STATUS:
+    Abnormal Labs: ${jsonEncode(healthContext['abnormal_labs'])}
+    Active Prescriptions: ${jsonEncode(healthContext['active_prescriptions'])}
+    '''
+        : '';
 
-      CONTEXT:
+    final prompt = '''
+      You are LabSense AI, a medical assistant. Use the following patient status and lab result history to answer the user's question.
+
+      $healthContextStr
+
+      ARCHIVED LAB CONTEXT:
       $contextText
 
       USER QUESTION:
@@ -225,7 +251,7 @@ Date: ${chunk['metadata']['date']}
 
     try {
       final content = [Content.text(prompt)];
-      final response = await _model.generateContent(content);
+      final response = await _chatModel.generateContent(content);
       return response.text?.trim() ?? 'I was unable to generate a response at this time.';
     } catch (e) {
       return 'Error generating response: $e';
@@ -266,7 +292,7 @@ Date: ${chunk['metadata']['date']}
         ])
       ];
 
-      final response = await _model.generateContent(content);
+      final response = await _visionModel.generateContent(content);
       final text = response.text;
       if (text == null || text.isEmpty) {
         throw Exception('AI returned an empty response. This may be due to safety filters or an unreadable file.');
@@ -402,7 +428,7 @@ Date: ${chunk['metadata']['date']}
 
     try {
       final content = [Content.text(prompt)];
-      final response = await _model.generateContent(content);
+      final response = await _textModel.generateContent(content);
       final jsonStr = response.text?.replaceAll('```json', '').replaceAll('```', '').trim() ?? '[]';
       final List<dynamic> data = jsonDecode(jsonStr);
       return data.cast<Map<String, dynamic>>();

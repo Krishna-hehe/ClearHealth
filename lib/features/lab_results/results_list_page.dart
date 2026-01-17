@@ -8,8 +8,6 @@ import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/pdf_service.dart';
 
-
-
 class ResultsListPage extends ConsumerWidget {
   const ResultsListPage({super.key});
 
@@ -19,26 +17,28 @@ class ResultsListPage extends ConsumerWidget {
     final isComparisonMode = ref.watch(isComparisonModeProvider);
     final selectedReportsForComparison = ref.watch(selectedComparisonReportsProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(context, ref, isComparisonMode, selectedReportsForComparison),
-        const SizedBox(height: 24),
-        labResultsAsync.when(
-          data: (results) {
-            final data = results.isEmpty ? _getMockResults() : results;
-            return Column(
-              children: [
-                _buildPdfDownloadCard(context, ref, data),
-                const SizedBox(height: 32),
-                ...data.map((result) => _buildResultCard(context, ref, result, isComparisonMode, selectedReportsForComparison)),
-              ],
-            );
-          },
-          error: (err, stack) => Center(child: Text('Error: $err')),
-          loading: () => const Center(child: CircularProgressIndicator()),
-        ),
-      ],
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(context, ref, isComparisonMode, selectedReportsForComparison),
+          const SizedBox(height: 24),
+          labResultsAsync.when(
+            data: (results) {
+              final data = results.isEmpty ? _getMockResults() : results;
+              return Column(
+                children: [
+                  _buildPdfDownloadCard(context, ref, data),
+                  const SizedBox(height: 32),
+                  ...data.map((result) => _buildResultCard(context, ref, result, isComparisonMode, selectedReportsForComparison)),
+                ],
+              );
+            },
+            error: (err, stack) => Center(child: Text('Error: $err')),
+            loading: () => const Center(child: CircularProgressIndicator()),
+          ),
+        ],
+      ),
     );
   }
 
@@ -94,7 +94,6 @@ class ResultsListPage extends ConsumerWidget {
     );
   }
 
-  // Temporary mock data adapter to LabReport for smooth transition
   List<LabReport> _getMockResults() {
      return [
       LabReport(id: '1', date: DateTime(2025, 11, 14), status: 'Abnormal', testCount: 28, labName: 'INDIAN RED CROSS SOCIETY AHMEDABAD DISTRICT BRANCH'),
@@ -103,7 +102,6 @@ class ResultsListPage extends ConsumerWidget {
       LabReport(id: '4', date: DateTime(2011, 8, 25), status: 'Abnormal', testCount: 18, labName: 'GNU Solidario Hospital'),
     ];
   }
-
 
   Widget _buildPdfDownloadCard(BuildContext context, WidgetRef ref, List<LabReport> results) {
     return Container(

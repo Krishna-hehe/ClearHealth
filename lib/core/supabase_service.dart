@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'notification_service.dart';
 
 
 class SupabaseService {
@@ -58,7 +59,8 @@ class SupabaseService {
 
   Future<void> updateProfile(Map<String, dynamic> data) async {
     if (client.auth.currentUser == null) return;
-    await client.from('profiles').update(data).eq('id', client.auth.currentUser!.id);
+    // Use upsert to create the profile if it doesn't exist
+    await client.from('profiles').upsert({'id': client.auth.currentUser!.id, ...data});
   }
 
   Future<List<Map<String, dynamic>>> getPrescriptions() async {
@@ -77,6 +79,11 @@ class SupabaseService {
   Future<void> addPrescription(Map<String, dynamic> data) async {
     if (client.auth.currentUser == null) return;
     await client.from('prescriptions').insert({...data, 'user_id': client.auth.currentUser!.id});
+  }
+
+  Future<void> updatePrescription(String id, Map<String, dynamic> data) async {
+    if (client.auth.currentUser == null) return;
+    await client.from('prescriptions').update(data).eq('id', id).eq('user_id', client.auth.currentUser!.id);
   }
 
   Future<int> getActivePrescriptionsCount() async {
@@ -200,9 +207,40 @@ class SupabaseService {
         'test_count': testResults.length,
         'test_results': testResults,
       });
+      
+      // Trigger notification
+      await NotificationService().showNotification(
+        DateTime.now().millisecond, 
+        'Upload Complete', 
+        'Your lab report has been successfully processed.'
+      );
     } catch (e) {
       debugPrint('Error creating lab result: $e');
       rethrow;
     }
+  }
+
+  Future<List<Map<String, dynamic>>> getHealthCircles() async {
+    if (client.auth.currentUser == null) return [];
+    try {
+      final data = await client
+          .from('profiles')
+          .select('health_circles')
+          .eq('id', client.auth.currentUser!.id)
+          .single();
+      
+      if (data['health_circles'] != null) {
+        return List<Map<String, dynamic>>.from(data['health_circles']);
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching health circles: $e');
+      return [];
+    }
+  }
+
+  Future<void> updateHealthCircles(List<Map<String, dynamic>> circles) async {
+    if (client.auth.currentUser == null) return;
+    await client.from('profiles').update({'health_circles': circles}).eq('id', client.auth.currentUser!.id);
   }
 }
