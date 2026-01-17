@@ -53,4 +53,8 @@ class UserRepository {
   Future<List<Map<String, dynamic>>> getHealthCircles() => _supabaseService.getHealthCircles();
   
   Future<void> updateHealthCircles(List<Map<String, dynamic>> circles) => _supabaseService.updateHealthCircles(circles);
+
+  Future<void> deleteAccountData() => _supabaseService.deleteAccountData();
+
+  Future<String> generateShareLink() => _supabaseService.generateShareLink();
 }

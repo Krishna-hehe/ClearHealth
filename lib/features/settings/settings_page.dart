@@ -174,7 +174,24 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
 
     if (confirmed == true) {
-      await _signOut();
+      if (!mounted) return;
+      setState(() => _isLoading = true); // Show loading
+      try {
+        await ref.read(userRepositoryProvider).deleteAccountData();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Your account and data have been permanently deleted.'), backgroundColor: AppColors.success),
+          );
+        }
+        await _signOut();
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error closing account: $e'), backgroundColor: AppColors.danger),
+          );
+        }
+      }
     }
   }
 

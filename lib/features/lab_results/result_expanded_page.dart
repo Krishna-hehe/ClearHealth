@@ -28,25 +28,28 @@ class ResultExpandedPage extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Theme.of(context).dividerColor),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(context, ref, report),
-          if (tests.isNotEmpty) _buildAiSummary(context, tests, ref),
-          if (tests.isNotEmpty) _buildTable(context, tests, ref)
-          else Padding(
-            padding: const EdgeInsets.all(40.0),
-            child: Center(
-              child: Column(
-                children: const [
-                  Icon(Icons.info_outline, size: 48, color: AppColors.border),
-                  SizedBox(height: 16),
-                  Text('No detailed test data found for this report.', style: TextStyle(color: AppColors.secondary)),
-                ],
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(context, ref, report),
+            if (tests.isNotEmpty) _buildAiSummary(context, tests, ref),
+            if (tests.isNotEmpty) _buildTable(context, tests, ref)
+            else Padding(
+              padding: const EdgeInsets.all(40.0),
+              child: Center(
+                child: Column(
+                  children: const [
+                    Icon(Icons.info_outline, size: 48, color: AppColors.border),
+                    SizedBox(height: 16),
+                    Text('No detailed test data found for this report.', style: TextStyle(color: AppColors.secondary)),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

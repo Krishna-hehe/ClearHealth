@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/theme.dart';
 import '../../core/navigation.dart';
 import '../../core/providers.dart';
+import '../../core/providers/user_providers.dart';
 import '../../core/pdf_service.dart';
 
 class ShareResultsPage extends ConsumerWidget {
@@ -69,17 +70,9 @@ class ShareResultsPage extends ConsumerWidget {
             icon: const Icon(Icons.link, size: 18),
             label: const Text('Generate Share Link'),
             onPressed: () {
-               // Simulate link generation
-               final link = 'https://labsense.app/share/${DateTime.now().millisecondsSinceEpoch}';
                ScaffoldMessenger.of(context).showSnackBar(
-                 SnackBar(
-                   content: Text('Link generated: $link'), 
-                   action: SnackBarAction(label: 'Copy', onPressed: () {
-                     // Clipboard.setData(ClipboardData(text: link));
-                   })
-                 )
+                 const SnackBar(content: Text('Feature temporarily unavailable during debugging.')),
                );
-               // Ideally, save to backend here
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,

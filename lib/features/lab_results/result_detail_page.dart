@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../core/ai_service.dart';
+import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/pdf_service.dart';
 
@@ -14,6 +15,7 @@ class ResultDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedTest = ref.watch(selectedTestProvider);
     final selectedReport = ref.watch(selectedReportProvider);
+    final allReports = ref.watch(labResultsProvider).value ?? [];
 
     if (selectedTest == null) {
       return const Center(
@@ -22,17 +24,47 @@ class ResultDetailPage extends ConsumerWidget {
     }
 
     final testName = selectedTest.name;
-    final value = double.tryParse(selectedTest.result) ?? 0.0;
+    final valueStr = selectedTest.result.replaceAll(RegExp(r'[^0-9.]'), '');
+    final value = double.tryParse(valueStr) ?? 0.0;
     final unit = selectedTest.unit;
     final referenceRange = selectedTest.reference;
 
-    return FutureBuilder<LabTestAnalysis>(
-      future: ref.read(aiServiceProvider).getSingleTestAnalysis(
-        testName: testName,
-        value: value,
-        unit: unit,
-        referenceRange: referenceRange,
-      ),
+    // Extract history for trend analysis
+    final history = <Map<String, dynamic>>[];
+    for (var report in allReports) {
+      if (report.testResults != null) {
+        try {
+          final match = report.testResults!.firstWhere(
+            (t) => t.name.toLowerCase() == testName.toLowerCase(),
+            orElse: () => TestResult(name: '', loinc: '', result: '', unit: '', reference: '', status: ''),
+          );
+          
+          if (match.name.isNotEmpty) {
+             final v = double.tryParse(match.result.replaceAll(RegExp(r'[^0-9.]'), ''));
+             if (v != null) {
+               history.add({
+                 'date': report.date.toIso8601String(),
+                 'value': v,
+               });
+             }
+          }
+        } catch (_) {}
+      }
+    }
+
+    return FutureBuilder<List<dynamic>>(
+      future: Future.wait([
+        ref.read(aiServiceProvider).getSingleTestAnalysis(
+          testName: testName,
+          value: value,
+          unit: unit,
+          referenceRange: referenceRange,
+        ),
+        ref.read(aiServiceProvider).getTrendAnalysis(
+          testName: testName,
+          history: history,
+        ),
+      ]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -47,19 +79,23 @@ class ResultDetailPage extends ConsumerWidget {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
 
-        final analysis = snapshot.data!;
+        final analysis = snapshot.data![0] as LabTestAnalysis;
+        final trend = snapshot.data![1] as Map<String, dynamic>;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildRangeBanner(context, analysis.status),
-            const SizedBox(height: 24),
-            _buildResultHeader(context, testName, value, unit, referenceRange, selectedReport?.date, ref),
-            const SizedBox(height: 24),
-            _buildAnalysisSection(context, analysis),
-            const SizedBox(height: 24),
-            _buildTrendSection(context),
-          ],
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildRangeBanner(context, analysis.status),
+              const SizedBox(height: 24),
+              _buildResultHeader(context, testName, value, unit, referenceRange, selectedReport?.date, ref),
+              const SizedBox(height: 24),
+              _buildAnalysisSection(context, analysis),
+              const SizedBox(height: 24),
+              _buildTrendSection(context, trend, history.length),
+            ],
+          ),
         );
       },
     );
@@ -313,7 +349,28 @@ class ResultDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildTrendSection(BuildContext context) {
+  Widget _buildTrendSection(BuildContext context, Map<String, dynamic> trend, int count) {
+    final direction = trend['direction'] ?? 'Unknown';
+    final change = trend['change_percent'] ?? '--';
+    final analysis = trend['analysis'] ?? 'No trend analysis available.';
+
+    IconData icon;
+    Color color;
+
+    if (direction == 'Increasing') {
+      icon = FontAwesomeIcons.arrowTrendUp;
+      color = Colors.red; // Assuming higher is bad for many tests, but context matters.
+    } else if (direction == 'Decreasing') {
+      icon = FontAwesomeIcons.arrowTrendDown;
+      color = Colors.orange;
+    } else {
+      icon = FontAwesomeIcons.minus;
+      color = Colors.blue;
+    }
+    
+    // Simple heuristic: if "Stable" or "Normal", green. Else orange/red.
+    if (direction == 'Stable') color = Colors.green;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -328,43 +385,46 @@ class ResultDetailPage extends ConsumerWidget {
             children: [
               const Icon(FontAwesomeIcons.chartLine, size: 16, color: AppColors.secondary),
               const SizedBox(width: 12),
-              const Text('Trend Analysis (3 results)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text('Trend Analysis ($count results)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    shape: BoxShape.circle,
+          if (count < 2)
+            const Text('Not enough data to show trend analysis.', style: TextStyle(color: AppColors.secondary))
+          else
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, size: 16, color: color),
                   ),
-                  child: const Icon(FontAwesomeIcons.arrowTrendDown, size: 16, color: Colors.orange),
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Decreasing', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    const Text('+22.3% change', style: TextStyle(color: AppColors.secondary, fontSize: 12)),
-                  ],
-                ),
-              ],
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(direction, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: color)),
+                      Text('$change change', style: const TextStyle(color: AppColors.secondary, fontSize: 12)),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
           const SizedBox(height: 24),
           const Text('Analysis', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
           const SizedBox(height: 8),
-          const Text(
-            'Your creatinine levels were stable at 1.12 mg/dL in September 2024. By November 2025, the level decreased to 0.87 mg/dL, representing a notable downward trend.',
-            style: TextStyle(fontSize: 14, color: AppColors.secondary, height: 1.5),
+          Text(
+            analysis,
+            style: const TextStyle(fontSize: 14, color: AppColors.secondary, height: 1.5),
           ),
         ],
       ),

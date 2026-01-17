@@ -99,41 +99,37 @@ class AiService {
     referenceRange = _sanitizeInput(referenceRange);
     
     final prompt = '''
-      You are a medical AI assistant. Analyze this lab test result and provide a comprehensive, patient-friendly explanation.
+      You are a medical AI expert. Explain this lab test result for a patient clearly and concisely.
       
       Test: $testName
       Result: $value $unit
       Reference Range: $referenceRange
       
-      Provide your analysis in the following JSON format:
+      Return a valid JSON object with this EXACT structure (no markdown, no code blocks):
       {
-        "description": "A detailed 3-4 sentence explanation of what this test measures and why it's important for health",
-        "status": "High, Low, or Normal based on the reference range",
-        "resultContext": "2-3 sentences explaining what THIS SPECIFIC result value means for the patient",
-        "meaning": "3-4 sentences about the clinical significance of this result. If abnormal, explain potential causes and implications. If normal, explain what this indicates about health.",
-        "factors": ["List 4-6 specific lifestyle, dietary, or medical factors that can affect this test result"],
-        "questions": ["List 4-6 specific, relevant questions the patient should ask their doctor based on THIS result. Make them actionable and personalized to the result value."]
+        "description": "1 short sentence defining the test.",
+        "status": "High/Low/Normal based on range",
+        "resultContext": "1 sentence stating the result level and status.",
+        "meaning": "1-2 short sentences on the MOST LIKELY medical cause for this specific result. If normal, say it shows good function.",
+        "factors": ["3 common factors that affect this test (diet, meds, etc)"],
+        "questions": ["3 specific, smart questions to ask the doctor about THIS result"]
       }
       
-      Important guidelines:
-      - Be specific to the actual result value, not generic
-      - If the result is abnormal, explain severity and urgency
-      - Use clear, patient-friendly language
-      - Be encouraging but honest
-      - Include actionable insights
-      
-      ONLY return the JSON.
+      Keep the tone professional but easy to understand.
     ''';
 
     try {
       final content = [Content.text(prompt)];
       final response = await _textModel.generateContent(content);
-      final jsonStr = response.text?.replaceAll('```json', '').replaceAll('```', '').trim() ?? '{}';
+      String jsonStr = response.text?.trim() ?? '{}';
+      // Aggressive cleanup
+      jsonStr = jsonStr.replaceAll('```json', '').replaceAll('```', '').trim();
+      
       final data = jsonDecode(jsonStr);
       return LabTestAnalysis.fromJson(data);
     } catch (e) {
-      // Fallback to mock for now if API fails
-      // Try to extract limits from referenceRange if possible for basic status
+      debugPrint('AI Analysis Error: $e');
+      // Fallback logic preserved...
       String status = 'Normal';
       try {
         final parts = referenceRange.split(' - ');
@@ -146,13 +142,57 @@ class AiService {
       } catch (_) {}
 
       return LabTestAnalysis(
-        description: 'Failed to fetch AI analysis. This test measures $testName.',
+        description: 'Analysis unavailable. This measures $testName.',
         status: status,
-        resultContext: 'Your $testName level is $value $unit.',
-        meaning: 'Please consult your doctor for a detailed interpretation.',
-        factors: ['Hydration', 'Diet', 'Recently taken medications'],
-        questions: ['What does this result mean for me?'],
+        resultContext: 'Your level is $value $unit.',
+        meaning: 'Please consult your doctor for interpretation.',
+        factors: ['Hydration', 'Diet', 'Medication'],
+        questions: ['Is this result concerning?', 'Do I need to retest?', 'What lifestyle changes help?'],
       );
+    }
+  }
+
+  Future<Map<String, dynamic>> getTrendAnalysis({
+    required String testName,
+    required List<Map<String, dynamic>> history, // [{date: '2024-01-01', value: 10.5}]
+  }) async {
+    if (history.length < 2) {
+      return {
+        'direction': 'Stable',
+        'change_percent': '0.0%',
+        'analysis': 'Not enough data to identify a trend.'
+      };
+    }
+
+    // Sort by date just in case
+    history.sort((a, b) => DateTime.parse(a['date']).compareTo(DateTime.parse(b['date'])));
+    
+    final prompt = '''
+      Analyze the trend for this lab test:
+      Test: $testName
+      History: ${jsonEncode(history)}
+      
+      Return valid JSON only:
+      {
+        "direction": "Increasing, Decreasing, or Stable",
+        "change_percent": "Percentage change from first to last (e.g. +10%, -5%)",
+        "analysis": "1-2 sentences explaining the trend over time and if it is concerning or improving."
+      }
+    ''';
+
+    try {
+      final content = [Content.text(prompt)];
+      final response = await _textModel.generateContent(content);
+      String jsonStr = response.text?.trim() ?? '{}';
+      jsonStr = jsonStr.replaceAll('```json', '').replaceAll('```', '').trim();
+      return jsonDecode(jsonStr);
+    } catch (e) {
+      debugPrint('Trend Analysis Error: $e');
+      return {
+        'direction': 'Unknown',
+        'change_percent': '--',
+        'analysis': 'Unable to calculate trend at this time.'
+      };
     }
   }
 

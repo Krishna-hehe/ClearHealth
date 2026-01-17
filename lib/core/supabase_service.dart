@@ -243,4 +243,15 @@ class SupabaseService {
     if (client.auth.currentUser == null) return;
     await client.from('profiles').update({'health_circles': circles}).eq('id', client.auth.currentUser!.id);
   }
+
+  Future<void> deleteAccountData() async {
+    if (client.auth.currentUser == null) return;
+    await client.rpc('delete_account_data');
+  }
+
+  Future<String> generateShareLink() async {
+    if (client.auth.currentUser == null) throw Exception('User not logged in');
+    final token = await client.rpc<String>('generate_share_link');
+    return token;
+  }
 }
