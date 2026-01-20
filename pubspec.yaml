@@ -58,6 +58,8 @@ dependencies:
   hive_flutter: ^1.1.0
 
   mime: any
+  flutter_secure_storage: ^10.0.0
+  flutter_windowmanager: ^0.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

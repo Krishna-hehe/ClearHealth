@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lab_sense_app/core/services/secure_storage_service.dart';
 
 class BiometricService {
   static final BiometricService _instance = BiometricService._internal();
@@ -43,8 +43,8 @@ class BiometricService {
 
   Future<bool> isEnabled() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool(_enabledKey) ?? false;
+      final value = await SecureStorageService.read(key: _enabledKey);
+      return value == 'true';
     } catch (e) {
       return false;
     }
@@ -52,8 +52,7 @@ class BiometricService {
 
   Future<void> setEnabled(bool enabled) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_enabledKey, enabled);
+      await SecureStorageService.write(key: _enabledKey, value: enabled.toString());
     } catch (e) {
       debugPrint('Error setting biometric enabled: $e');
     }

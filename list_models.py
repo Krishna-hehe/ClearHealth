@@ -1,13 +1,15 @@
-import requests
+import google.generativeai as genai
+import os
 
-api_key = "AIzaSyAmlnKCQ7QSpsGKro9rrnpKTSKua6WYZaA"
-url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+api_key = 'AIzaSyB-g1FNoMqM4U0ucRAvw2wyjW9YWNnJsJ0'
+genai.configure(api_key=api_key)
 
-response = requests.get(url)
-if response.status_code == 200:
-    data = response.json()
-    for model in data.get("models", []):
-        if "gemini" in model['name'].lower() and "generateContent" in model['supportedGenerationMethods']:
-            print(f"Model: {model['name']}")
-else:
-    print(f"Error: {response.status_code}")
+print(f"Testing Key: {api_key[:5]}...")
+
+try:
+    print("Listing available models...")
+    for m in genai.list_models():
+        if 'generateContent' in m.supported_generation_methods:
+            print(f"- {m.name}")
+except Exception as e:
+    print(f"Error: {e}")

@@ -8,28 +8,37 @@ import 'utils/rate_limiter.dart';
 class LabTestAnalysis {
   final String description;
   final String status;
+  final String keyInsight;
+  final String clinicalSignificance;
   final String resultContext;
-  final String meaning;
+  final List<String> potentialCauses;
   final List<String> factors;
   final List<String> questions;
+  final String recommendation;
 
   LabTestAnalysis({
     required this.description,
     required this.status,
+    required this.keyInsight,
+    required this.clinicalSignificance,
     required this.resultContext,
-    required this.meaning,
+    required this.potentialCauses,
     required this.factors,
     required this.questions,
+    required this.recommendation,
   });
 
   factory LabTestAnalysis.fromJson(Map<String, dynamic> json) {
     return LabTestAnalysis(
       description: json['description'] ?? '',
       status: json['status'] ?? '',
+      keyInsight: json['keyInsight'] ?? '',
+      clinicalSignificance: json['clinicalSignificance'] ?? '',
       resultContext: json['resultContext'] ?? '',
-      meaning: json['meaning'] ?? '',
+      potentialCauses: List<String>.from(json['potentialCauses'] ?? []),
       factors: List<String>.from(json['factors'] ?? []),
       questions: List<String>.from(json['questions'] ?? []),
+      recommendation: json['recommendation'] ?? '',
     );
   }
 }
@@ -43,7 +52,8 @@ class AiService {
   late final GenerativeModel _chatModel; // New model for chat
   
   // Rate limiter is now per-instance, which is fine if we use a singleton provider
-  final _rateLimiter = RateLimiter(maxRequests: 15, duration: const Duration(minutes: 1));
+  // Reduced rate limit for better free-tier stability
+  final _rateLimiter = RateLimiter(maxRequests: 10, duration: const Duration(minutes: 1));
 
   AiService({required this.apiKey, this.chatApiKey, required this.vectorService}) {
     if (apiKey.isEmpty) {
@@ -52,18 +62,18 @@ class AiService {
       debugPrint('🚀 AiService: Initializing with key starting with: ${apiKey.substring(0, min(5, apiKey.length))}...');
     }
     _textModel = GenerativeModel(
-      model: 'gemini-2.0-flash',
+      model: 'gemini-flash-latest',
       apiKey: apiKey,
     );
      _visionModel = GenerativeModel(
-      model: 'gemini-2.0-flash',
+      model: 'gemini-flash-latest',
       apiKey: apiKey,
     );
      // Initialize Chat Model - prefer chatApiKey, fallback to main apiKey
      final effectiveChatKey = (chatApiKey != null && chatApiKey!.isNotEmpty) ? chatApiKey! : apiKey;
      debugPrint('💬 AiService: Chat initialized with key starting with: ${effectiveChatKey.substring(0, min(5, effectiveChatKey.length))}...');
      _chatModel = GenerativeModel(
-      model: 'gemini-2.0-flash',
+      model: 'gemini-flash-latest',
       apiKey: effectiveChatKey,
     );
   }
@@ -87,10 +97,13 @@ class AiService {
        return LabTestAnalysis(
         description: 'Rate limit exceeded.',
         status: 'Error',
-        resultContext: 'Please wait before requesting another analysis.',
-        meaning: 'System overloaded.',
+        keyInsight: 'Please wait before requesting another analysis.',
+        clinicalSignificance: 'System is temporarily overloaded.',
+        resultContext: 'Please try again in a moment.',
+        potentialCauses: [],
         factors: [],
         questions: [],
+        recommendation: 'Wait 1 minute and refresh.',
       );
     }
     
@@ -99,36 +112,52 @@ class AiService {
     referenceRange = _sanitizeInput(referenceRange);
     
     final prompt = '''
-      You are a medical AI expert. Explain this lab test result for a patient clearly and concisely.
+      You are a specialized medical interpreter for patients. Your goal is to translate a specific lab result into a detailed, educational, and reassuring narrative, similar to a high-quality medical report.
+
+      LAB TEST CONTEXT:
+      - Test Name: $testName
+      - Patient Result: $value $unit
+      - Reference Range: $referenceRange
+
+      TASK:
+      Analyze this specific result. Write in a conversational but professional tone.
       
-      Test: $testName
-      Result: $value $unit
-      Reference Range: $referenceRange
-      
-      Return a valid JSON object with this EXACT structure (no markdown, no code blocks):
+      REFERENECE STYLE GUIDELINES:
+      1. "Your Result": Don't just state the number. Compare it conversationally to the range (e.g., "Your MCHC value is 36.5%, which is slightly higher than the typical reference range... This means the concentration...").
+      2. "What This Means": Explain the biological mechanism. NOT just "It's high". Explain *why* (e.g., "A high MCHC can sometimes suggest that your red blood cells are more densely packed with hemoglobin...").
+      3. "Common Factors": List specific medical or lifestyle causes.
+
+      OUTPUT FORMAT (JSON ONLY, NO MARKDOWN):
       {
-        "description": "1 short sentence defining the test.",
-        "status": "High/Low/Normal based on range",
-        "resultContext": "1 sentence stating the result level and status.",
-        "meaning": "1-2 short sentences on the MOST LIKELY medical cause for this specific result. If normal, say it shows good function.",
-        "factors": ["3 common factors that affect this test (diet, meds, etc)"],
-        "questions": ["3 specific, smart questions to ask the doctor about THIS result"]
+        "description": "Definition of the test (max 20 words).",
+        "status": "Strictly: 'High', 'Low', or 'Normal'.",
+        "keyInsight": "A single bold sentence summarizing the main finding.",
+        "clinicalSignificance": "Detailed explanation of the biological implication (e.g., 'This value indicates...'). Max 60 words.",
+        "resultContext": "A conversational paragraph comparing the result to the range and explaining what that specific variance implies (approx 40-50 words).",
+        "potentialCauses": ["List 3-5 specific medical or lifestyle factors (e.g. 'Dehydration', 'Vitamin B12 deficiency')."],
+        "factors": ["3 primary influencing factors."],
+        "questions": ["3 specific questions for the doctor."],
+        "recommendation": "A clear next step."
       }
-      
-      Keep the tone professional but easy to understand.
+
+      TONE: Educational, calm, professional. Use full sentences for 'clinicalSignificance' and 'resultContext'.
     ''';
 
     try {
       final content = [Content.text(prompt)];
       final response = await _textModel.generateContent(content);
-      String jsonStr = response.text?.trim() ?? '{}';
-      // Aggressive cleanup
-      jsonStr = jsonStr.replaceAll('```json', '').replaceAll('```', '').trim();
+      String rawText = response.text?.trim() ?? '{}';
+      
+      debugPrint('🤖 AI Raw Response ($testName): $rawText');
+
+      // Enhanced robust JSON extraction
+      String jsonStr = _extractJson(rawText);
       
       final data = jsonDecode(jsonStr);
       return LabTestAnalysis.fromJson(data);
-    } catch (e) {
-      debugPrint('AI Analysis Error: $e');
+    } catch (e, stackTrace) {
+      debugPrint('❌ AI Analysis Error for $testName: $e');
+      debugPrint(stackTrace.toString());
       // Fallback logic preserved...
       String status = 'Normal';
       try {
@@ -144,10 +173,13 @@ class AiService {
       return LabTestAnalysis(
         description: 'Analysis unavailable. This measures $testName.',
         status: status,
+        keyInsight: 'Consult your doctor for a detailed interpretation of this result.',
+        clinicalSignificance: 'Individual test results should be viewed as part of your complete clinical picture.',
         resultContext: 'Your level is $value $unit.',
-        meaning: 'Please consult your doctor for interpretation.',
+        potentialCauses: ['Hydration', 'Recent Diet', 'Current Medication'],
         factors: ['Hydration', 'Diet', 'Medication'],
         questions: ['Is this result concerning?', 'Do I need to retest?', 'What lifestyle changes help?'],
+        recommendation: 'Discuss this result during your next medical appointment.',
       );
     }
   }
@@ -183,8 +215,8 @@ class AiService {
     try {
       final content = [Content.text(prompt)];
       final response = await _textModel.generateContent(content);
-      String jsonStr = response.text?.trim() ?? '{}';
-      jsonStr = jsonStr.replaceAll('```json', '').replaceAll('```', '').trim();
+      String rawText = response.text?.trim() ?? '{}';
+      String jsonStr = _extractJson(rawText);
       return jsonDecode(jsonStr);
     } catch (e) {
       debugPrint('Trend Analysis Error: $e');
@@ -339,11 +371,7 @@ Date: ${chunk['metadata']['date']}
       }
 
       // Robust JSON extraction
-      String jsonStr = text;
-      if (jsonStr.contains('```')) {
-        jsonStr = jsonStr.split('```').firstWhere((element) => element.contains('{'), orElse: () => jsonStr);
-        jsonStr = jsonStr.replaceFirst('json', '').trim();
-      }
+      String jsonStr = _extractJson(text);
       
       final parsed = jsonDecode(jsonStr);
       if (parsed == null || parsed is! Map<String, dynamic>) {
@@ -469,12 +497,40 @@ Date: ${chunk['metadata']['date']}
     try {
       final content = [Content.text(prompt)];
       final response = await _textModel.generateContent(content);
-      final jsonStr = response.text?.replaceAll('```json', '').replaceAll('```', '').trim() ?? '[]';
+      String rawText = response.text?.trim() ?? '[]';
+      final jsonStr = _extractJson(rawText);
       final List<dynamic> data = jsonDecode(jsonStr);
       return data.cast<Map<String, dynamic>>();
     } catch (e) {
-      debugPrint('Error fetching optimization tips: \$e');
+      debugPrint('Error fetching optimization tips: $e');
       return [];
     }
+  }
+
+  /// Robustly extracts JSON from potentially messy AI output
+  String _extractJson(String text) {
+    if (text.isEmpty) return '{}';
+    
+    // 1. Remove markdown blocks if they exist
+    if (text.contains('```')) {
+      final blocks = text.split('```');
+      for (var block in blocks) {
+        final trimmed = block.trim();
+        if (trimmed.startsWith('{') || trimmed.contains('{\n') || trimmed.startsWith('json')) {
+          text = trimmed.replaceFirst('json', '').trim();
+          break;
+        }
+      }
+    }
+
+    // 2. Find the first '{' and last '}'
+    final firstBrace = text.indexOf('{');
+    final lastBrace = text.lastIndexOf('}');
+    
+    if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
+      return text.substring(firstBrace, lastBrace + 1).trim();
+    }
+    
+    return text.trim();
   }
 }

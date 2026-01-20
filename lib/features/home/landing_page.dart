@@ -235,12 +235,7 @@ class _LandingPageState extends ConsumerState<LandingPage> {
                 'Fully aligned with US Health Insurance Portability and Accountability Act standards.',
                 const Color(0xFF0F766E), // Teal
               ),
-              _buildComplianceCard(
-                FontAwesomeIcons.gavel,
-                'DPDP Act Ready',
-                'Compliant with the Digital Personal Data Protection Act for data sovereignty and user rights.',
-                const Color(0xFF7C3AED), // Violet
-              ),
+
               _buildComplianceCard(
                 FontAwesomeIcons.lock,
                 'End-to-End Encryption',

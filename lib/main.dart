@@ -11,6 +11,7 @@ import 'core/biometric_service.dart';
 import 'features/auth/login_page.dart';
 import 'core/notification_service.dart';
 import 'core/cache_service.dart';
+import 'core/services/session_timeout_manager.dart';
 
 void main() async {
   runZonedGuarded(() async {
@@ -76,54 +77,110 @@ class LabSenseApp extends ConsumerWidget {
       themeMode: themeMode,
       home: currentUser == null 
           ? const LoginPage() 
-          : const MainLayout(child: SizedBox()),
+          : SessionTimeoutManager(
+              duration: const Duration(minutes: 5),
+              onTimeout: () {
+                // When timeout happens, we force the app into a locked state if biometrics are enabled,
+                // or just log them out.
+                // For better UX, let's prompt the SecurityWrapper to lock.
+                // We'll use a GlobalKey or a Riverpod state to trigger this.
+                // For now, let's just use a simple approach: invalidate auth or show lock screen.
+                // Let's use the lock screen approach by ensuring SecurityWrapper is effectively reset.
+                // However, SecurityWrapper is stateful.
+                // We will use a provider to trigger lock.
+                ref.read(appLockProvider.notifier).state = true;
+              },
+              child: const SecurityWrapper(
+                child: MainLayout(child: SizedBox()),
+              ),
+            ),
     );
   }
 }
 
-class SecurityWrapper extends StatefulWidget {
+// Add a simple provider for app lock state
+final appLockProvider = StateProvider<bool>((ref) => false);
+
+class SecurityWrapper extends ConsumerStatefulWidget {
   final Widget child;
   const SecurityWrapper({super.key, required this.child});
 
   @override
-  State<SecurityWrapper> createState() => _SecurityWrapperState();
+  ConsumerState<SecurityWrapper> createState() => _SecurityWrapperState();
 }
 
-class _SecurityWrapperState extends State<SecurityWrapper> {
-  bool _isLocked = true;
+class _SecurityWrapperState extends ConsumerState<SecurityWrapper> with WidgetsBindingObserver {
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkSecurity();
+    _secureScreen();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  Future<void> _secureScreen() async {
+    // Only works on mobile (Android/iOS)
+    /* 
+    // Commented out as package import needs to be conditional or handled for web
+    // You would import flutter_windowmanager normally
+    try {
+        if (!kIsWeb) {
+           await FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);
+        }
+    } catch (_) {} 
+    */
+    // Since we can't easily valid conditional imports in this snippet without more setup, 
+    // we will start with the logic structure.
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+       // App went to background - blur or lock could happen here if strict
+    }
   }
 
   Future<void> _checkSecurity() async {
     final enabled = await BiometricService().isEnabled();
+    
+    // If biometrics NOT enabled, we don't force lock, but we obey the manual lock provider
     if (!enabled) {
-      if (mounted) setState(() { _isLocked = false; _isLoading = false; });
+      if (mounted) setState(() { _isLoading = false; });
       return;
     }
 
+    // Determine initial lock state
+    // For now, assume locked on startup if biometrics enabled
+    ref.read(appLockProvider.notifier).state = true;
+    
     if (mounted) setState(() { _isLoading = false; });
-    _authenticate();
+    _authenticate(); 
   }
 
   Future<void> _authenticate() async {
     final success = await BiometricService().authenticate();
     if (success) {
-      if (mounted) setState(() { _isLocked = false; });
+      ref.read(appLockProvider.notifier).state = false;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLocked = ref.watch(appLockProvider);
+
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    if (_isLocked) {
+    if (isLocked) {
       return Scaffold(
         body: Center(
           child: Column(
@@ -131,17 +188,31 @@ class _SecurityWrapperState extends State<SecurityWrapper> {
             children: [
               const Icon(Icons.lock_outline, size: 64, color: AppColors.secondary),
               const SizedBox(height: 24),
-              const Text('LabSense is Locked', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              ElevatedButton(
+              const Text('Session Locked', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text('LabSense secured for your privacy', style: TextStyle(color: AppColors.secondary)),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.fingerprint),
                 onPressed: _authenticate,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Unlock with Biometrics'),
+                label: const Text('Unlock'),
               ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  // Logout option in case they can't unlock
+                   Supabase.instance.client.auth.signOut();
+                   // Reset lock state so next login isn't weirdly locked immediately unless desired
+                   ref.read(appLockProvider.notifier).state = false;
+                },
+                child: const Text('Log Out'),
+              )
             ],
           ),
         ),

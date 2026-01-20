@@ -227,6 +227,44 @@ class ResultDetailPage extends ConsumerWidget {
   Widget _buildAnalysisSection(BuildContext context, LabTestAnalysis analysis) {
     return Column(
       children: [
+        // Key Insight Highlight
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                   Icon(FontAwesomeIcons.lightbulb, size: 16, color: Colors.white),
+                   SizedBox(width: 8),
+                   Text('KEY INSIGHT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.2)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                analysis.keyInsight,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, height: 1.4),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -237,45 +275,61 @@ class ResultDetailPage extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Icon(FontAwesomeIcons.commentDots, size: 16, color: AppColors.secondary),
-                  const SizedBox(width: 12),
-                  const Text('Understanding Your Result', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                ],
-              ),
-              const SizedBox(height: 20),
               _buildInfoBlock(
                 FontAwesomeIcons.circleQuestion,
                 'What This Test Measures',
                 analysis.description,
               ),
               _buildInfoBlock(
-                FontAwesomeIcons.waveSquare,
-                'Your Result',
-                analysis.resultContext,
+                FontAwesomeIcons.stethoscope,
+                'Clinical Significance',
+                analysis.clinicalSignificance,
               ),
-              _buildInfoBlock(
-                FontAwesomeIcons.circleExclamation,
-                'What This Means',
-                analysis.meaning,
-              ),
-              const SizedBox(height: 8),
+              const Divider(height: 32),
               const Text(
-                'Common Factors That Can Affect This Test',
+                'Potential Causes',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
-              const SizedBox(height: 8),
-              ...analysis.factors.map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('• ', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Expanded(child: Text(item, style: const TextStyle(fontSize: 14, color: AppColors.secondary))),
-                      ],
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: analysis.potentialCauses.map((cause) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.2)),
+                  ),
+                  child: Text(cause, style: const TextStyle(fontSize: 12, color: AppColors.secondary)),
+                )).toList(),
+              ),
+              const SizedBox(height: 32),
+              // Next Step Recommendation
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.success.withValues(alpha: 0.1)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(FontAwesomeIcons.arrowRight, size: 14, color: AppColors.success),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('RECOMMENDED NEXT STEP', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1)),
+                          const SizedBox(height: 4),
+                          Text(analysis.recommendation, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                        ],
+                      ),
                     ),
-                  )),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
