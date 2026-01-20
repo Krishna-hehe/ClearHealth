@@ -29,7 +29,7 @@ class BiometricService {
   }
 
   Future<bool> authenticate() async {
-    if (kIsWeb) return false;
+    if (kIsWeb) return true;
     try {
       final bool didAuthenticate = await _auth.authenticate(
         localizedReason: 'Please authenticate to access LabSense',

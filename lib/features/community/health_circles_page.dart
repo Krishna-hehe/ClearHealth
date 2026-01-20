@@ -15,14 +15,7 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
   
   Future<void> _createCircle(String name) async {
     try {
-      final circles = await ref.read(healthCirclesProvider.future);
-      final newCircles = List<Map<String, dynamic>>.from(circles);
-      newCircles.add({
-        'id': DateTime.now().millisecondsSinceEpoch.toString(),
-        'name': name,
-        'members': [],
-      });
-      await ref.read(userRepositoryProvider).updateHealthCircles(newCircles);
+      await ref.read(userRepositoryProvider).createHealthCircle(name);
       ref.invalidate(healthCirclesProvider);
     } catch (e) {
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -31,28 +24,81 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
 
   Future<void> _inviteMember(String circleId, String email, String role) async {
     try {
-      final circles = await ref.read(healthCirclesProvider.future);
-      final newCircles = List<Map<String, dynamic>>.from(circles);
-      final index = newCircles.indexWhere((c) => c['id'] == circleId);
-      if (index != -1) {
-         Map<String, dynamic> circle = Map.from(newCircles[index]);
-         List members = List.from(circle['members'] ?? []);
-         members.add({
-           'name': email.split('@')[0], // Placeholder name
-           'role': role,
-           'status': 'Pending',
-           'permissions': 'View Only'
-         });
-         circle['members'] = members;
-         newCircles[index] = circle;
-         
-         await ref.read(userRepositoryProvider).updateHealthCircles(newCircles);
-         ref.invalidate(healthCirclesProvider);
-         if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invitation sent')));
-      }
+      await ref.read(userRepositoryProvider).inviteMember(circleId, email, role);
+      
+      // Force refresh
+      ref.invalidate(healthCirclesProvider);
+      
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invitation sent successfully')));
     } catch (e) {
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
+  }
+
+  Future<void> _joinCircle(String circleId) async {
+      try {
+           String id = circleId.trim();
+           // Handle full URL
+           if (id.contains('/join/')) {
+               id = id.split('/join/').last;
+           }
+           // Basic UUID validation could be added here
+           
+           await ref.read(userRepositoryProvider).joinCircle(id);
+           ref.invalidate(healthCirclesProvider);
+           if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Joined circle successfully')));
+      } catch (e) {
+         if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error joining: $e')));
+      }
+  }
+
+  void _showJoinCircleDialog() {
+       final controller = TextEditingController();
+       showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+             title: const Text('Join Health Circle'),
+             content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                   const Text('Enter the invite link or Circle ID shared with you.', style: TextStyle(color: AppColors.secondary, fontSize: 13)),
+                   const SizedBox(height: 16),
+                   TextField(
+                     controller: controller, 
+                     decoration: const InputDecoration(
+                       labelText: 'Circle Link or ID',
+                       border: OutlineInputBorder(),
+                       prefixIcon: Icon(Icons.link)
+                     )
+                   ),
+                ],
+             ),
+             actions: [
+                 TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                 ElevatedButton(
+                    onPressed: () {
+                        if (controller.text.isNotEmpty) {
+                            _joinCircle(controller.text);
+                            Navigator.pop(context);
+                        }
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+                    child: const Text('Join Circle')
+                 )
+             ]
+          )
+       );
+  }
+
+  void _showInviteDialog(String circleId, String circleName) {
+    showDialog(
+      context: context,
+      builder: (context) => _InviteDialog(
+        circleName: circleName,
+        onInvite: (email, role) => _inviteMember(circleId, email, role),
+        inviteLink: 'https://labsense.app/join/$circleId',
+      ),
+    );
   }
 
   @override
@@ -82,17 +128,33 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
                   ),
                 ],
               ),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Create New Circle'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: _showCreateCircleDialog,
-              ),
+                  Row(
+                    children: [
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.link, size: 18),
+                        label: const Text('Join Circle'),
+                        onPressed: _showJoinCircleDialog,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('Create New Circle'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: _showCreateCircleDialog,
+                      ),
+                    ],
+                  ),
             ],
           ),
           const SizedBox(height: 32),
@@ -258,50 +320,156 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
       ),
     );
   }
+}
 
-  void _showInviteDialog(String circleId, String circleName) {
-    final emailCtrl = TextEditingController();
-    final roleCtrl = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Invite to $circleName'),
-        content: Column(
+class _InviteDialog extends StatefulWidget {
+  final String circleName;
+  final Function(String, String) onInvite;
+  final String inviteLink;
+
+  const _InviteDialog({
+    required this.circleName,
+    required this.onInvite,
+    required this.inviteLink,
+  });
+
+  @override
+  State<_InviteDialog> createState() => _InviteDialogState();
+}
+
+class _InviteDialogState extends State<_InviteDialog> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final _emailCtrl = TextEditingController();
+  final _roleCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_handleTabSelection);
+  }
+
+  void _handleTabSelection() {
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_handleTabSelection);
+    _tabController.dispose();
+    _emailCtrl.dispose();
+    _roleCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Invite to ${widget.circleName}'),
+      contentPadding: EdgeInsets.zero,
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: emailCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Email Address',
-                border: OutlineInputBorder(),
-              ),
+            TabBar(
+              controller: _tabController,
+              labelColor: AppColors.primary,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: AppColors.primary,
+              tabs: const [
+                Tab(text: 'Email'),
+                Tab(text: 'Share Link'),
+              ],
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: roleCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Relationship',
-                hintText: 'e.g. Spouse, Primary Physician',
-                border: OutlineInputBorder(),
+            SizedBox(
+              height: 200,
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // Tab 1: Email Form
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _emailCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Email Address',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _roleCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Relationship',
+                            hintText: 'e.g. Doctor, Spouse',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Tab 2: Link
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Anyone with this link can request to join.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 13)),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                          child: SelectableText(
+                            widget.inviteLink,
+                            style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link copied to clipboard!')));
+                          },
+                          icon: const Icon(Icons.copy, size: 16),
+                          label: const Text('Copy Link'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: AppColors.primary,
+                            elevation: 0,
+                            side: const BorderSide(color: AppColors.primary),
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        if (_tabController.index == 0)
           ElevatedButton(
             onPressed: () {
-               if(emailCtrl.text.isNotEmpty && roleCtrl.text.isNotEmpty) {
-                 _inviteMember(circleId, emailCtrl.text, roleCtrl.text);
+               if(_emailCtrl.text.isNotEmpty && _roleCtrl.text.isNotEmpty) {
+                 widget.onInvite(_emailCtrl.text, _roleCtrl.text);
                  Navigator.pop(context);
                }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-            child: const Text('Send Invitation'),
+            child: const Text('Send Invite'),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

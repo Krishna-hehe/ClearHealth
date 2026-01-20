@@ -223,16 +223,40 @@ class SupabaseService {
   Future<List<Map<String, dynamic>>> getHealthCircles() async {
     if (client.auth.currentUser == null) return [];
     try {
-      final data = await client
-          .from('profiles')
-          .select('health_circles')
-          .eq('id', client.auth.currentUser!.id)
-          .single();
+      final response = await client
+          .from('health_circles')
+          .select('*, members:health_circle_members(*, profiles(*))')
+          .order('created_at', ascending: false);
       
-      if (data['health_circles'] != null) {
-        return List<Map<String, dynamic>>.from(data['health_circles']);
-      }
-      return [];
+      return (response as List).map((circle) {
+        final membersRaw = circle['members'] as List? ?? [];
+        final members = membersRaw.map((m) {
+          final profile = m['profiles'];
+          String name = 'Unknown';
+          if (profile != null && profile is Map) {
+             name = '${profile["first_name"] ?? ""} ${profile["last_name"] ?? ""}'.trim();
+             if (name.isEmpty) name = profile['email'] ?? 'Unknown';
+          } else if (m['email'] != null) {
+             name = m['email'];
+          }
+          
+          return {
+            'name': name,
+            'role': m['role'],
+            'status': m['status'],
+            'permissions': m['permissions'],
+            'email': m['email'] ?? (profile != null && profile is Map ? profile['email'] : ''),
+            'user_id': m['user_id']
+          };
+        }).toList();
+
+        return {
+          'id': circle['id'],
+          'name': circle['name'],
+          'owner_id': circle['owner_id'],
+          'members': members
+        };
+      }).toList();
     } catch (e) {
       debugPrint('Error fetching health circles: $e');
       return [];
@@ -240,8 +264,44 @@ class SupabaseService {
   }
 
   Future<void> updateHealthCircles(List<Map<String, dynamic>> circles) async {
+    debugPrint('updateHealthCircles is deprecated in favor of relational operations');
+  }
+
+  Future<void> createHealthCircle(String name) async {
     if (client.auth.currentUser == null) return;
-    await client.from('profiles').update({'health_circles': circles}).eq('id', client.auth.currentUser!.id);
+    try {
+      final user = client.auth.currentUser!;
+      final circle = await client.from('health_circles').insert({
+        'name': name,
+        'owner_id': user.id
+      }).select().single();
+      
+      await client.from('health_circle_members').insert({
+        'circle_id': circle['id'],
+        'user_id': user.id,
+        'role': 'Admin',
+        'permissions': 'Full Access',
+        'status': 'Active'
+      });
+    } catch (e) {
+       debugPrint('Error creating circle: $e');
+       rethrow;
+    }
+  }
+
+  Future<void> inviteMember(String circleId, String email, String role) async {
+    if (client.auth.currentUser == null) return;
+    await client.from('health_circle_members').insert({
+       'circle_id': circleId,
+       'email': email,
+       'role': role,
+       'status': 'Pending'
+    });
+  }
+
+  Future<void> joinCircle(String circleId) async {
+    if (client.auth.currentUser == null) return;
+    await client.rpc('join_health_circle', params: {'circle_id_param': circleId});
   }
 
   Future<void> deleteAccountData() async {
