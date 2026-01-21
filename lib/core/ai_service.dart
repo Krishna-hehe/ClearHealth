@@ -475,9 +475,12 @@ Date: ${chunk['metadata']['date']}
     if (abnormalTests.isEmpty) return [];
 
     final prompt = '''
-      You are a health optimization expert. Analyze these abnormal lab results and provide 3-4 personalized nutritional "Recipes" or "Optimization Tips".
+      You are a health optimization expert. Analyze these abnormal lab results and provide 4-6 personalized nutritional "Recipes" or "Optimization Tips".
       
       Results: \${jsonEncode(abnormalTests)}
+      
+      CRITICAL INSTRUCTION:
+      Provide a mix of Vegetarian and Non-Vegetarian options.
       
       JSON Format:
       [
@@ -487,7 +490,8 @@ Date: ${chunk['metadata']['date']}
           "ingredients": ["Ingredient 1", "Ingredient 2"],
           "instructions": "Simple action step or recipe instructions",
           "metric_targeted": "The lab test name this addresses",
-          "benefit": "Core health benefit"
+          "benefit": "Core health benefit",
+          "type": "Veg" or "Non-Veg"
         }
       ]
       

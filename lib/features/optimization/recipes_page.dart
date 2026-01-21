@@ -3,20 +3,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../core/providers.dart';
 
-class RecipesPage extends ConsumerWidget {
+class RecipesPage extends ConsumerStatefulWidget {
   const RecipesPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RecipesPage> createState() => _RecipesPageState();
+}
+
+class _RecipesPageState extends ConsumerState<RecipesPage> {
+  String _filter = 'All'; // 'All', 'Veg', 'Non-Veg'
+
+  @override
+  Widget build(BuildContext context) {
     final optimizationAsync = ref.watch(optimizationTipsProvider);
 
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Health Optimization',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Health Optimization',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              _buildFilterChips(),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
@@ -29,6 +42,20 @@ class RecipesPage extends ConsumerWidget {
               if (tips.isEmpty) {
                 return _buildEmptyState();
               }
+
+              final filteredTips = _filter == 'All' 
+                  ? tips 
+                  : tips.where((t) => (t['type'] ?? 'Veg') == _filter).toList();
+
+              if (filteredTips.isEmpty) {
+                 return SizedBox(
+                   height: 300,
+                   child: Center(
+                     child: Text('No $_filter recommendations found.', style: const TextStyle(color: AppColors.secondary)),
+                   ),
+                 );
+              }
+
               return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -36,10 +63,10 @@ class RecipesPage extends ConsumerWidget {
                   maxCrossAxisExtent: 450,
                   mainAxisSpacing: 24,
                   crossAxisSpacing: 24,
-                  mainAxisExtent: 380,
+                  mainAxisExtent: 400, // Slightly taller for tags
                 ),
-                itemCount: tips.length,
-                itemBuilder: (context, index) => _buildRecipeCard(context, tips[index]),
+                itemCount: filteredTips.length,
+                itemBuilder: (context, index) => _buildRecipeCard(context, filteredTips[index]),
               );
             },
             loading: () => const Center(
@@ -53,6 +80,47 @@ class RecipesPage extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChips() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          _buildChip('All'),
+          _buildChip('Veg'),
+          _buildChip('Non-Veg'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChip(String label) {
+    bool isSelected = _filter == label;
+    return InkWell(
+      onTap: () => setState(() => _filter = label),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : AppColors.secondary,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
       ),
     );
   }
@@ -80,6 +148,8 @@ class RecipesPage extends ConsumerWidget {
 
   Widget _buildRecipeCard(BuildContext context, Map<String, dynamic> tip) {
     final ingredients = List<String>.from(tip['ingredients'] ?? []);
+    final type = tip['type'] ?? 'Veg';
+    final isVeg = type == 'Veg';
 
     return Container(
       decoration: BoxDecoration(
@@ -104,7 +174,9 @@ class RecipesPage extends ConsumerWidget {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.primary.withValues(alpha: 0.8), AppColors.primary],
+                colors: isVeg 
+                  ? [Colors.green.shade400, Colors.green.shade700]
+                  : [Colors.orange.shade400, Colors.deepOrange.shade600],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -113,20 +185,39 @@ class RecipesPage extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    tip['metric_targeted'] ?? 'General Health',
-                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        tip['metric_targeted'] ?? 'General',
+                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.circle,
+                        size: 8,
+                        color: isVeg ? Colors.green : Colors.red,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Text(
                   tip['title'] ?? 'Optimization Tip',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -166,12 +257,18 @@ class RecipesPage extends ConsumerWidget {
                   const Divider(),
                   Row(
                     children: [
-                      const Icon(Icons.flash_on, size: 14, color: Colors.orange),
+                      Icon(Icons.flash_on, size: 14, color: isVeg ? Colors.green : Colors.orange),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           tip['benefit'] ?? '',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12, 
+                            fontWeight: FontWeight.bold, 
+                            color: isVeg ? Colors.green : Colors.orange
+                          ),
                         ),
                       ),
                       TextButton(
@@ -190,10 +287,19 @@ class RecipesPage extends ConsumerWidget {
   }
 
   void _showRecipeDetails(BuildContext context, Map<String, dynamic> tip) {
+    final type = tip['type'] ?? 'Veg';
+    final isVeg = type == 'Veg';
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(tip['title'] ?? 'Recipe Details'),
+        title: Row(
+          children: [
+            Icon(Icons.restaurant_menu, color: isVeg ? Colors.green : Colors.deepOrange),
+            const SizedBox(width: 12),
+            Expanded(child: Text(tip['title'] ?? 'Recipe Details')),
+          ],
+        ),
         content: SizedBox(
           width: 500,
           child: SingleChildScrollView(
@@ -201,6 +307,23 @@ class RecipesPage extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isVeg ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: isVeg ? Colors.green.withValues(alpha: 0.3) : Colors.orange.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    type,
+                    style: TextStyle(
+                      color: isVeg ? Colors.green : Colors.deepOrange,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 Text(tip['description'] ?? '', style: const TextStyle(fontSize: 14, height: 1.5)),
                 const SizedBox(height: 24),
                 const Text('Ingredients', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
