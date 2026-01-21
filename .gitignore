@@ -43,7 +43,23 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Sensitive data
 .env
-analysis_*.txt
+.env.*
+*.secret
+*.pem
+credentials.json
+
+# Development Tools & Archived scripts (containing keys)
+/dev_tools/
+/scripts/archived/
+test_*.dart
+test_*.py
 analyze_*.txt
+analysis_*.txt
 final_analysis*.txt
+valid_models.txt
+models*.json
+*.txt
+*.log

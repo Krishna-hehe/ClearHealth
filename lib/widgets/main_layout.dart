@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:typed_data';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../core/theme.dart';
 import '../core/navigation.dart';
@@ -24,6 +25,7 @@ import '../features/lab_results/comparison_page.dart';
 import '../features/optimization/recipes_page.dart';
 import '../features/community/health_circles_page.dart';
 import '../features/home/landing_page.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class MainLayout extends ConsumerStatefulWidget {
   final Widget child;
@@ -371,16 +373,32 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
       final fileName = file.name;
       final mimeType = lookupMimeType(fileName) ?? 'image/jpeg';
+      
+      // Compress if image
+      Uint8List? finalBytes = bytes;
+      if (mimeType.startsWith('image/') && bytes.isNotEmpty) {
+        try {
+          finalBytes = await FlutterImageCompress.compressWithList(
+            bytes,
+            minHeight: 1920,
+            minWidth: 1080,
+            quality: 75,
+          );
+        } catch (e) {
+          debugPrint('Compression failed, using original bytes: $e');
+        }
+      }
+      
+      if (finalBytes == null) throw Exception('File processing failed');
 
-      // 1. Upload to Storage (StorageService is fine, it's stateless or singleton-like if not refactored yet, assuming it works)
-      // Note: StorageService was not refactored in plan, assuming it's okay or stateless.
-      final storagePath = await ref.read(storageServiceProvider).uploadLabReport(bytes, fileName);
+      // 1. Upload to Storage
+      final storagePath = await ref.read(storageServiceProvider).uploadLabReport(finalBytes, fileName);
       if (storagePath == null) throw Exception('Failed to upload to storage');
 
       setState(() {}); // Removed _uploadStatus
 
       // 2. AI Parse (Gemini Vision)
-      final parsedData = await ref.read(aiServiceProvider).parseLabReport(bytes, mimeType);
+      final parsedData = await ref.read(aiServiceProvider).parseLabReport(finalBytes, mimeType);
       
       if (!mounted) return;
       // 3. Review Step

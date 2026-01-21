@@ -28,6 +28,11 @@ class SupabaseService {
     await client.from('lab_results').insert(data);
   }
 
+  Future<void> deleteLabResult(String id) async {
+    if (client.auth.currentUser == null) return;
+    await client.from('lab_results').delete().eq('id', id).eq('user_id', client.auth.currentUser!.id);
+  }
+
   // Profile Management
   Future<Map<String, dynamic>?> getProfile() async {
     if (client.auth.currentUser == null) return null;

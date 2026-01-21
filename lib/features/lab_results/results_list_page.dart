@@ -6,7 +6,7 @@ import '../../core/theme.dart';
 import '../../core/navigation.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
-import '../../core/pdf_service.dart';
+import '../../core/pdf_service.dart' deferred as pdfLib;
 
 class ResultsListPage extends ConsumerWidget {
   const ResultsListPage({super.key});
@@ -17,28 +17,41 @@ class ResultsListPage extends ConsumerWidget {
     final isComparisonMode = ref.watch(isComparisonModeProvider);
     final selectedReportsForComparison = ref.watch(selectedComparisonReportsProvider);
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(context, ref, isComparisonMode, selectedReportsForComparison),
-          const SizedBox(height: 24),
-          labResultsAsync.when(
-            data: (results) {
-              final data = results.isEmpty ? _getMockResults() : results;
-              return Column(
-                children: [
-                  _buildPdfDownloadCard(context, ref, data),
-                  const SizedBox(height: 32),
-                  ...data.map((result) => _buildResultCard(context, ref, result, isComparisonMode, selectedReportsForComparison)),
-                ],
-              );
-            },
-            error: (err, stack) => Center(child: Text('Error: $err')),
-            loading: () => const Center(child: CircularProgressIndicator()),
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.only(bottom: 24),
+          sliver: SliverToBoxAdapter(
+            child: _buildHeader(context, ref, isComparisonMode, selectedReportsForComparison),
           ),
-        ],
-      ),
+        ),
+        labResultsAsync.when(
+          data: (results) {
+            final data = results.isEmpty ? _getMockResults() : results;
+            return SliverMainAxisGroup(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 32),
+                    child: _buildPdfDownloadCard(context, ref, data),
+                  ),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final result = data[index];
+                      return _buildResultCard(context, ref, result, isComparisonMode, selectedReportsForComparison);
+                    },
+                    childCount: data.length,
+                  ),
+                ),
+              ],
+            );
+          },
+          error: (err, stack) => SliverToBoxAdapter(child: Center(child: Text('Error: $err'))),
+          loading: () => const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator())),
+        ),
+      ],
     );
   }
 
@@ -164,7 +177,8 @@ class ResultsListPage extends ConsumerWidget {
               final aiSummaryAsync = ref.read(healthHistoryAiSummaryProvider);
               final aiSummary = aiSummaryAsync.asData?.value;
 
-              await PdfService.generateSummaryPdf(
+              await pdfLib.loadLibrary();
+              await pdfLib.PdfService.generateSummaryPdf(
                 results, 
                 patientName: patientName,
                 aiSummary: aiSummary,
@@ -308,7 +322,49 @@ class ResultsListPage extends ConsumerWidget {
                 ),
               ),
               if (!isComparisonMode) ...[
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: AppColors.secondary, size: 20),
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Delete Report'),
+                        content: const Text('Are you sure you want to delete this lab report? This action cannot be undone.'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirm == true) {
+                      try {
+                        await ref.read(labRepositoryProvider).deleteLabResult(result.id);
+                        ref.invalidate(labResultsProvider);
+                        ref.invalidate(recentLabResultsProvider);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Report deleted successfully')),
+                          );
+                        }
+                      } catch (e) {
+                         if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error deleting report: $e')),
+                          );
+                        }
+                      }
+                    }
+                  },
+                ),
                 IconButton(
                   icon: const Icon(Icons.picture_as_pdf, color: AppColors.secondary, size: 20),
                   onPressed: () async {
@@ -316,7 +372,8 @@ class ResultsListPage extends ConsumerWidget {
                       final profile = ref.read(userProfileProvider).asData?.value;
                       final patientName = profile != null ? "${profile['first_name']} ${profile['last_name']}" : null;
 
-                      await PdfService.generateLabReportPdf(
+                      await pdfLib.loadLibrary();
+                      await pdfLib.PdfService.generateLabReportPdf(
                         result, 
                         result.testResults!,
                         patientName: patientName,

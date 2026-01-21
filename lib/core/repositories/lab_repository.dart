@@ -25,6 +25,10 @@ class LabRepository {
     await _supabaseService.createLabResult(data);
   }
 
+  Future<void> deleteLabResult(String id) async {
+    await _supabaseService.deleteLabResult(id);
+  }
+
   Future<List<Map<String, dynamic>>> getTrendData(String testName) async {
     try {
       return await _supabaseService.getTrendData(testName);

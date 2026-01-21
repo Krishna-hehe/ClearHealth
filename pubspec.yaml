@@ -59,7 +59,8 @@ dependencies:
 
   mime: any
   flutter_secure_storage: ^10.0.0
-  flutter_windowmanager: ^0.2.0
+  # flutter_windowmanager: ^0.2.0
+  flutter_image_compress: ^2.4.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

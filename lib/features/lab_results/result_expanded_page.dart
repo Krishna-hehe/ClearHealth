@@ -99,6 +99,46 @@ class ResultExpandedPage extends ConsumerWidget {
             ),
           ),
           IconButton(
+            icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Delete Report'),
+                  content: const Text('Are you sure you want to delete this lab report? This action cannot be undone.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true) {
+                try {
+                  await ref.read(labRepositoryProvider).deleteLabResult(report.id);
+                  ref.invalidate(labResultsProvider);
+                  ref.invalidate(recentLabResultsProvider);
+                  ref.read(navigationProvider.notifier).state = NavItem.labResults;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Report deleted successfully')),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error deleting report: $e')),
+                  );
+                }
+              }
+            },
+          ),
+          const SizedBox(width: 8),
+          IconButton(
             icon: const Icon(Icons.close, color: AppColors.secondary),
             onPressed: () => ref.read(navigationProvider.notifier).state = NavItem.labResults,
           ),
