@@ -42,6 +42,8 @@ class UserRepository {
   
   Future<void> updatePrescription(String id, Map<String, dynamic> data) => _supabaseService.updatePrescription(id, data);
   
+  Future<void> deletePrescription(String id) => _supabaseService.deletePrescription(id);
+  
   Future<int> getActivePrescriptionsCount() => _supabaseService.getActivePrescriptionsCount();
   
   Future<List<Map<String, dynamic>>> getNotifications() => _supabaseService.getNotifications();

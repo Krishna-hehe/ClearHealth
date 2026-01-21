@@ -90,12 +90,57 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
     }
   }
 
+  Future<void> _editPrescription(Map<String, dynamic> prescription) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => _AddPrescriptionDialog(prescription: prescription),
+    );
+
+    if (result == true) {
+      ref.invalidate(prescriptionsProvider);
+      ref.invalidate(activePrescriptionsCountProvider);
+    }
+  }
+
+  Future<void> _deletePrescription(String id) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Prescription'),
+        content: const Text('Are you sure you want to delete this prescription? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await ref.read(userRepositoryProvider).deletePrescription(id);
+        ref.invalidate(prescriptionsProvider);
+        ref.invalidate(activePrescriptionsCountProvider);
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Prescription deleted')));
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
   Widget _buildPrescriptionList(bool active) {
     final filtered = _prescriptions.where((p) => (p['is_active'] ?? true) == active).toList();
     if (filtered.isEmpty) {
       return Center(child: Text(active ? 'No active prescriptions' : 'No past prescriptions'));
     }
     return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 80),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
         final p = filtered[index];
@@ -140,7 +185,7 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
                          const SizedBox(height: 4),
                          Row(
                            children: [
-                             Icon(Icons.alarm, size: 12, color: AppColors.secondary),
+                             const Icon(Icons.alarm, size: 12, color: AppColors.secondary),
                              const SizedBox(width: 4),
                              Text(p['reminder_time'], style: const TextStyle(fontSize: 12, color: AppColors.secondary)),
                            ],
@@ -165,12 +210,27 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
                         ),
                       ),
                        const SizedBox(height: 8),
-                       if (active)
-                         IconButton(
-                           icon: const Icon(Icons.archive_outlined, size: 20, color: AppColors.secondary),
-                           tooltip: 'Move to Past',
-                           onPressed: () => _togglePrescriptionStatus(p['id'].toString(), true),
-                         )
+                       Row(
+                         mainAxisSize: MainAxisSize.min,
+                         children: [
+                           IconButton(
+                             icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.secondary),
+                             tooltip: 'Edit',
+                             onPressed: () => _editPrescription(p),
+                           ),
+                           if (active)
+                             IconButton(
+                               icon: const Icon(Icons.archive_outlined, size: 20, color: AppColors.secondary),
+                               tooltip: 'Move to Past',
+                               onPressed: () => _togglePrescriptionStatus(p['id'].toString(), true),
+                             ),
+                           IconButton(
+                             icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.danger),
+                             tooltip: 'Delete',
+                             onPressed: () => _deletePrescription(p['id'].toString()),
+                           ),
+                         ],
+                       )
                     ],
                  )
               ],
@@ -190,7 +250,7 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
             color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(Icons.link, size: 24, color: AppColors.secondary),
+          child: const Icon(Icons.medication_outlined, size: 24, color: AppColors.secondary),
         ),
         const SizedBox(width: 16),
         Column(
@@ -279,7 +339,7 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
               icon: const Icon(Icons.add, size: 16),
               label: const Text('Add Prescription'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6B7280),
+                backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -294,7 +354,8 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
 }
 
 class _AddPrescriptionDialog extends ConsumerStatefulWidget {
-  const _AddPrescriptionDialog();
+  final Map<String, dynamic>? prescription;
+  const _AddPrescriptionDialog({this.prescription});
 
   @override
   ConsumerState<_AddPrescriptionDialog> createState() => _AddPrescriptionDialogState();
@@ -312,6 +373,28 @@ class _AddPrescriptionDialogState extends ConsumerState<_AddPrescriptionDialog> 
   bool _remindMe = true;
   bool _isUploadingPhoto = false;
   String? _prescriptionImageUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.prescription != null) {
+      final p = widget.prescription!;
+      _nameController.text = p['name'] ?? '';
+      _dosageController.text = p['dosage'] ?? '';
+      _frequencyController.text = p['frequency'] ?? '';
+      if (p['start_date'] != null) _startDate = DateTime.parse(p['start_date']);
+      if (p['end_date'] != null) _endDate = DateTime.parse(p['end_date']);
+      
+      if (p['reminder_time'] != null) {
+        _remindMe = true;
+        final parts = p['reminder_time'].split(':');
+        _reminderTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      } else {
+        _remindMe = false;
+      }
+      _prescriptionImageUrl = p['image_url'];
+    }
+  }
 
   @override
   void dispose() {
@@ -345,7 +428,7 @@ class _AddPrescriptionDialogState extends ConsumerState<_AddPrescriptionDialog> 
       setState(() => _isLoading = true);
       try {
         final userRepo = ref.read(userRepositoryProvider);
-        await userRepo.addPrescription({
+        final data = {
           'name': _nameController.text,
           'dosage': _dosageController.text,
           'frequency': _frequencyController.text,
@@ -353,12 +436,20 @@ class _AddPrescriptionDialogState extends ConsumerState<_AddPrescriptionDialog> 
           'end_date': _endDate?.toIso8601String().split('T')[0],
           'reminder_time': _remindMe ? '${_reminderTime.hour}:${_reminderTime.minute}' : null,
           'image_url': _prescriptionImageUrl,
-          'is_active': true, 
-        });
+           // Keep existing status if editing, enable if new
+          'is_active': widget.prescription != null ? (widget.prescription!['is_active'] ?? true) : true, 
+        };
+
+        if (widget.prescription != null) {
+          await userRepo.updatePrescription(widget.prescription!['id'].toString(), data);
+        } else {
+          await userRepo.addPrescription(data);
+        }
 
         if (_remindMe) {
+          // Re-schedule reminder (simple logic: cancel old by id? Implementation details vary, 
+          // but scheduling overwrites if ID matches in many plug-ins. Here we just schedule new/update)
           final id = _nameController.text.hashCode;
-          // Simple local notification logic for now
           await NotificationService().scheduleMedicationReminder(
             id: id,
             name: _nameController.text,
@@ -382,7 +473,7 @@ class _AddPrescriptionDialogState extends ConsumerState<_AddPrescriptionDialog> 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add Prescription'),
+      title: Text(widget.prescription != null ? 'Edit Prescription' : 'Add Prescription'),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,

@@ -91,6 +91,11 @@ class SupabaseService {
     await client.from('prescriptions').update(data).eq('id', id).eq('user_id', client.auth.currentUser!.id);
   }
 
+  Future<void> deletePrescription(String id) async {
+    if (client.auth.currentUser == null) return;
+    await client.from('prescriptions').delete().eq('id', id).eq('user_id', client.auth.currentUser!.id);
+  }
+
   Future<int> getActivePrescriptionsCount() async {
     if (client.auth.currentUser == null) return 0;
     try {
