@@ -516,21 +516,38 @@ Date: ${chunk['metadata']['date']}
       final blocks = text.split('```');
       for (var block in blocks) {
         final trimmed = block.trim();
-        if (trimmed.startsWith('{') || trimmed.contains('{\n') || trimmed.startsWith('json')) {
+        if (trimmed.startsWith('{') || trimmed.startsWith('[') || trimmed.contains('{\n') || trimmed.startsWith('json')) {
           text = trimmed.replaceFirst('json', '').trim();
           break;
         }
       }
     }
 
-    // 2. Find the first '{' and last '}'
+    // 2. Determine if we are looking for an object or an array
     final firstBrace = text.indexOf('{');
-    final lastBrace = text.lastIndexOf('}');
+    final firstBracket = text.indexOf('[');
     
-    if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
-      return text.substring(firstBrace, lastBrace + 1).trim();
+    // If array comes first (or no object brace found), assume array
+    bool isArray = false;
+    if (firstBracket != -1) {
+      if (firstBrace == -1 || firstBracket < firstBrace) {
+        isArray = true;
+      }
     }
-    
+
+    if (isArray) {
+      final lastBracket = text.lastIndexOf(']');
+      if (firstBracket != -1 && lastBracket != -1 && lastBracket > firstBracket) {
+        return text.substring(firstBracket, lastBracket + 1).trim();
+      }
+    } else {
+      final lastBrace = text.lastIndexOf('}');
+      if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
+        return text.substring(firstBrace, lastBrace + 1).trim();
+      }
+    }
+
+    // Fallback: return trimmed text which might be raw JSON
     return text.trim();
   }
 }
