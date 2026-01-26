@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'notification_service.dart';
+import 'services/log_service.dart';
 
 
 class SupabaseService {
@@ -9,6 +10,31 @@ class SupabaseService {
   SupabaseService(this.client);
 
 
+
+  // MFA Operations
+  Future<MFAEnrollResponse> enrollMFA() async {
+    return await client.auth.mfa.enroll(factorType: FactorType.totp);
+  }
+
+  Future<AuthResponse> verifyMFA({
+    required String factorId,
+    required String code,
+  }) async {
+    final challenge = await client.auth.mfa.challenge(factorId: factorId);
+    return await client.auth.mfa.verify(
+      factorId: factorId,
+      challengeId: challenge.id,
+      code: code,
+    );
+  }
+
+  Future<void> unenrollMFA(String factorId) async {
+    await client.auth.mfa.unenroll(factorId: factorId);
+  }
+
+  Future<AuthState> getMFAFactors() async {
+    return await client.auth.mfa.listFactors();
+  }
 
   // Database Operations (Examples)
   Future<List<Map<String, dynamic>>> getLabResults({int limit = 10, int offset = 0}) async {
@@ -19,7 +45,7 @@ class SupabaseService {
           .order('date', ascending: false)
           .range(offset, offset + limit - 1);
     } catch (e) {
-      debugPrint('Supabase fetch failed: $e');
+      AppLogger.debug('Supabase fetch failed: $e');
       rethrow; // Let repository handle fallback
     }
   }
@@ -43,7 +69,7 @@ class SupabaseService {
           .eq('id', client.auth.currentUser!.id)
           .single();
     } catch (e) {
-      debugPrint('Supabase fetch failed: $e');
+      AppLogger.debug('Supabase fetch failed: $e');
       rethrow;
     }
   }
@@ -76,7 +102,7 @@ class SupabaseService {
           .select()
           .eq('user_id', client.auth.currentUser!.id);
     } catch (e) {
-      debugPrint('Error fetching prescriptions: $e');
+      AppLogger.debug('Error fetching prescriptions: $e');
       rethrow;
     }
   }
@@ -139,7 +165,7 @@ class SupabaseService {
       trendPoints.sort((a, b) => DateTime.parse(a['date']).compareTo(DateTime.parse(b['date'])));
       return trendPoints;
     } catch (e) {
-      debugPrint('Error fetching trend data: $e');
+      AppLogger.debug('Error fetching trend data: $e');
       return [];
     }
   }
@@ -160,7 +186,7 @@ class SupabaseService {
       }
       return testNames.toList()..sort();
     } catch (e) {
-      debugPrint('Error fetching distinct tests: $e');
+      AppLogger.debug('Error fetching distinct tests: $e');
       return [];
     }
   }
@@ -175,7 +201,7 @@ class SupabaseService {
           .order('created_at', ascending: false);
       return response;
     } catch (e) {
-      debugPrint('Error fetching notifications: $e');
+      AppLogger.debug('Error fetching notifications: $e');
       return [];
     }
   }
@@ -197,7 +223,7 @@ class SupabaseService {
           .update({'is_read': true})
           .eq('id', id);
     } catch (e) {
-      debugPrint('Error marking notification as read: $e');
+      AppLogger.debug('Error marking notification as read: $e');
     }
   }
 
@@ -226,7 +252,7 @@ class SupabaseService {
         'Your lab report has been successfully processed.'
       );
     } catch (e) {
-      debugPrint('Error creating lab result: $e');
+      AppLogger.debug('Error creating lab result: $e');
       rethrow;
     }
   }
@@ -269,13 +295,13 @@ class SupabaseService {
         };
       }).toList();
     } catch (e) {
-      debugPrint('Error fetching health circles: $e');
+      AppLogger.debug('Error fetching health circles: $e');
       return [];
     }
   }
 
   Future<void> updateHealthCircles(List<Map<String, dynamic>> circles) async {
-    debugPrint('updateHealthCircles is deprecated in favor of relational operations');
+    AppLogger.debug('updateHealthCircles is deprecated in favor of relational operations');
   }
 
   Future<void> createHealthCircle(String name) async {
@@ -295,7 +321,7 @@ class SupabaseService {
         'status': 'Active'
       });
     } catch (e) {
-       debugPrint('Error creating circle: $e');
+       AppLogger.debug('Error creating circle: $e');
        rethrow;
     }
   }
@@ -345,7 +371,7 @@ class SupabaseService {
         'metadata': metadata,
       });
     } catch (e) {
-      debugPrint('Failed to log access: $e');
+      AppLogger.debug('Failed to log access: $e');
     }
   }
 }

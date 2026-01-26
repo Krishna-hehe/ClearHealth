@@ -6,6 +6,8 @@ import '../../core/theme.dart';
 import '../../core/providers.dart';
 import '../../core/navigation.dart';
 import '../../core/biometric_service.dart';
+import 'mfa_setup_dialog.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -35,6 +37,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _isUploadingPhoto = false;
   bool _biometricEnabled = false;
   bool _canCheckBiometrics = false;
+  bool _mfaEnabled = false;
+  String? _mfaFactorId;
 
   @override
   void initState() {
@@ -68,6 +72,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       debugPrint('Error initializing biometrics: $e');
       _canCheckBiometrics = false;
       _biometricEnabled = false;
+    }
+
+    try {
+      final factors = await ref.read(supabaseServiceProvider).getMFAFactors();
+      if (factors.all.isNotEmpty) {
+        final activeFactor = factors.all.firstWhere((f) => f.status == FactorStatus.verified);
+        _mfaEnabled = true;
+        _mfaFactorId = activeFactor.id;
+      }
+    } catch (e) {
+      debugPrint('Error getting MFA factors: $e');
     }
     
     setState(() => _isLoading = false);
@@ -601,6 +616,28 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             'Delete', 
             isDestructive: true,
             onPressed: _deleteAccount
+          ),
+          const Divider(height: 32),
+          _buildSwitchTile(
+            'Two-Factor Authentication (2FA)', 
+            'Use an authenticator app to protect your account', 
+            _mfaEnabled,
+            (val) async {
+              if (val) {
+                final success = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => const MfaSetupDialog(),
+                );
+                if (success == true) {
+                  _fetchProfile(); // Refresh MFA status
+                }
+              } else {
+                if (_mfaFactorId != null) {
+                  await ref.read(supabaseServiceProvider).unenrollMFA(_mfaFactorId!);
+                  _fetchProfile();
+                }
+              }
+            }
           ),
         ],
       ),

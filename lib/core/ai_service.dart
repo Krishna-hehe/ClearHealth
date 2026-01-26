@@ -4,6 +4,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'dart:convert';
 import 'vector_service.dart';
 import 'utils/rate_limiter.dart';
+import 'services/log_service.dart';
 
 class LabTestAnalysis {
   final String description;
@@ -57,9 +58,9 @@ class AiService {
 
   AiService({required this.apiKey, this.chatApiKey, required this.vectorService}) {
     if (apiKey.isEmpty) {
-      debugPrint('❌ AiService: API Key is empty!');
+      AppLogger.debug('❌ AiService: API Key is empty!');
     } else {
-      debugPrint('🚀 AiService: Initializing with key starting with: ${apiKey.substring(0, min(5, apiKey.length))}...');
+      AppLogger.debug('🚀 AiService: Initializing with key starting with: ${apiKey.substring(0, min(5, apiKey.length))}...');
     }
     _textModel = GenerativeModel(
       model: 'gemini-flash-latest',
@@ -71,7 +72,7 @@ class AiService {
     );
      // Initialize Chat Model - prefer chatApiKey, fallback to main apiKey
      final effectiveChatKey = (chatApiKey != null && chatApiKey!.isNotEmpty) ? chatApiKey! : apiKey;
-     debugPrint('💬 AiService: Chat initialized with key starting with: ${effectiveChatKey.substring(0, min(5, effectiveChatKey.length))}...');
+     AppLogger.debug('💬 AiService: Chat initialized with key starting with: ${effectiveChatKey.substring(0, min(5, effectiveChatKey.length))}...');
      _chatModel = GenerativeModel(
       model: 'gemini-flash-latest',
       apiKey: effectiveChatKey,
@@ -148,7 +149,7 @@ class AiService {
       final response = await _textModel.generateContent(content);
       String rawText = response.text?.trim() ?? '{}';
       
-      debugPrint('🤖 AI Raw Response ($testName): $rawText');
+      AppLogger.debug('🤖 AI Raw Response ($testName): $rawText', containsPII: true);
 
       // Enhanced robust JSON extraction
       String jsonStr = _extractJson(rawText);
@@ -156,8 +157,8 @@ class AiService {
       final data = jsonDecode(jsonStr);
       return LabTestAnalysis.fromJson(data);
     } catch (e, stackTrace) {
-      debugPrint('❌ AI Analysis Error for $testName: $e');
-      debugPrint(stackTrace.toString());
+      AppLogger.debug('❌ AI Analysis Error for $testName: $e');
+      AppLogger.debug(stackTrace.toString());
       // Fallback logic preserved...
       String status = 'Normal';
       try {
@@ -219,7 +220,7 @@ class AiService {
       String jsonStr = _extractJson(rawText);
       return jsonDecode(jsonStr);
     } catch (e) {
-      debugPrint('Trend Analysis Error: $e');
+      AppLogger.debug('Trend Analysis Error: $e');
       return {
         'direction': 'Unknown',
         'change_percent': '--',
@@ -401,7 +402,7 @@ Date: ${chunk['metadata']['date']}
 
       return parsed;
     } catch (e) {
-      debugPrint('Error parsing lab report: $e');
+      AppLogger.error('Error parsing lab report: $e', containsPII: true);
       // Rethrow with a more descriptive message if it's a known error type
       if (e is FormatException) {
         throw Exception('AI returned invalid data format. Please try another clear image.');
@@ -506,7 +507,7 @@ Date: ${chunk['metadata']['date']}
       final List<dynamic> data = jsonDecode(jsonStr);
       return data.cast<Map<String, dynamic>>();
     } catch (e) {
-      debugPrint('Error fetching optimization tips: $e');
+      AppLogger.debug('Error fetching optimization tips: $e');
       return [];
     }
   }

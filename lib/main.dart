@@ -12,30 +12,31 @@ import 'features/auth/login_page.dart';
 import 'core/notification_service.dart';
 import 'core/cache_service.dart';
 import 'core/services/session_timeout_manager.dart';
+import 'core/services/log_service.dart';
 import 'package:flutter_windowmanager/flutter_windowmanager.dart';
 import 'package:flutter/foundation.dart';
 
 void main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
-    debugPrint('🚀 App Starting...');
+    AppLogger.info('🚀 App Starting...');
 
     try {
       await dotenv.load(fileName: ".env");
-      debugPrint('✅ Environment loaded');
+      AppLogger.info('✅ Environment loaded');
     } catch (e) {
-      debugPrint('❌ Failed to load .env: $e');
+      AppLogger.error('❌ Failed to load .env: $e', containsPII: false);
     }
 
     try {
-      debugPrint('🔌 Initializing Supabase...');
+      AppLogger.info('🔌 Initializing Supabase...');
       await Supabase.initialize(
         url: SupabaseConfig.url,
         anonKey: SupabaseConfig.anonKey,
       );
-      debugPrint('✅ Supabase initialized');
+      AppLogger.info('✅ Supabase initialized');
     } catch (e) {
-      debugPrint('❌ Supabase initialization failed: $e');
+      AppLogger.error('❌ Supabase initialization failed: $e', containsPII: false);
     }
 
     try {
@@ -58,8 +59,7 @@ void main() async {
       ),
     );
   }, (error, stack) {
-    debugPrint('🔴 Uncaught error in main zone: $error');
-    debugPrint(stack.toString());
+    AppLogger.error('🔴 Uncaught error in main zone: $error', stackTrace: stack);
   });
 }
 
