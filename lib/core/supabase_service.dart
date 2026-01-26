@@ -11,13 +11,13 @@ class SupabaseService {
 
 
   // Database Operations (Examples)
-  Future<List<Map<String, dynamic>>> getLabResults({int limit = 10}) async {
+  Future<List<Map<String, dynamic>>> getLabResults({int limit = 10, int offset = 0}) async {
     try {
       return await client
           .from('lab_results')
           .select()
           .order('date', ascending: false)
-          .limit(limit);
+          .range(offset, offset + limit - 1);
     } catch (e) {
       debugPrint('Supabase fetch failed: $e');
       rethrow; // Let repository handle fallback
@@ -216,6 +216,7 @@ class SupabaseService {
         'status': status,
         'test_count': testResults.length,
         'test_results': testResults,
+        'storage_path': data['storage_path'],
       });
       
       // Trigger notification
@@ -305,8 +306,17 @@ class SupabaseService {
        'circle_id': circleId,
        'email': email,
        'role': role,
-       'status': 'Pending'
+       'status': 'Pending',
+       'permissions': 'Read-Only' // Default
     });
+  }
+
+  Future<void> updateMemberPermissions(String circleId, String userId, String permissions) async {
+    if (client.auth.currentUser == null) return;
+    await client.from('health_circle_members')
+        .update({'permissions': permissions})
+        .eq('circle_id', circleId)
+        .eq('user_id', userId);
   }
 
   Future<void> joinCircle(String circleId) async {
@@ -323,5 +333,19 @@ class SupabaseService {
     if (client.auth.currentUser == null) throw Exception('User not logged in');
     final token = await client.rpc<String>('generate_share_link');
     return token;
+  }
+
+  Future<void> logAccess({required String action, String? resourceId, Map<String, dynamic>? metadata}) async {
+    if (client.auth.currentUser == null) return;
+    try {
+      await client.from('access_logs').insert({
+        'user_id': client.auth.currentUser!.id,
+        'action': action,
+        'resource_id': resourceId,
+        'metadata': metadata,
+      });
+    } catch (e) {
+      debugPrint('Failed to log access: $e');
+    }
   }
 }

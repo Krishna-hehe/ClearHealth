@@ -60,6 +60,9 @@ class UserRepository {
   
   Future<void> inviteMember(String circleId, String email, String role) => _supabaseService.inviteMember(circleId, email, role);
   
+  Future<void> updateMemberPermissions(String circleId, String userId, String permissions) => 
+      _supabaseService.updateMemberPermissions(circleId, userId, permissions);
+  
   Future<void> joinCircle(String circleId) => _supabaseService.joinCircle(circleId);
 
   Future<void> deleteAccountData() => _supabaseService.deleteAccountData();

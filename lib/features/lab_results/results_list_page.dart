@@ -8,16 +8,43 @@ import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/pdf_service.dart' deferred as pdfLib;
 
-class ResultsListPage extends ConsumerWidget {
+class ResultsListPage extends ConsumerStatefulWidget {
   const ResultsListPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ResultsListPage> createState() => _ResultsListPageState();
+}
+
+class _ResultsListPageState extends ConsumerState<ResultsListPage> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      ref.read(labResultsProvider.notifier).fetchNextPage();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final labResultsAsync = ref.watch(labResultsProvider);
     final isComparisonMode = ref.watch(isComparisonModeProvider);
     final selectedReportsForComparison = ref.watch(selectedComparisonReportsProvider);
+    final searchQuery = ref.watch(searchQueryProvider).toLowerCase();
 
     return CustomScrollView(
+      controller: _scrollController,
       slivers: [
         SliverPadding(
           padding: const EdgeInsets.only(bottom: 24),
@@ -26,8 +53,28 @@ class ResultsListPage extends ConsumerWidget {
           ),
         ),
         labResultsAsync.when(
-          data: (results) {
-            final data = results.isEmpty ? _getMockResults() : results;
+          data: (allData) {
+            final data = searchQuery.isEmpty
+                ? allData
+                : allData.where((report) {
+                    final matchLab = report.labName.toLowerCase().contains(searchQuery);
+                    final matchDate = report.date.toString().contains(searchQuery);
+                    final matchTests = report.testResults?.any((t) =>
+                            t.name.toLowerCase().contains(searchQuery)) ??
+                        false;
+                    return matchLab || matchDate || matchTests;
+                  }).toList();
+
+            if (data.isEmpty) {
+              return SliverToBoxAdapter(
+                child: searchQuery.isEmpty 
+                    ? _buildEmptyState(context)
+                    : _buildNoSearchResults(context),
+              );
+            }
+
+            final notifier = ref.watch(labResultsProvider.notifier);
+
             return SliverMainAxisGroup(
               slivers: [
                 SliverToBoxAdapter(
@@ -39,19 +86,79 @@ class ResultsListPage extends ConsumerWidget {
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
+                      if (index == data.length) {
+                        return _buildLoader(notifier);
+                      }
                       final result = data[index];
                       return _buildResultCard(context, ref, result, isComparisonMode, selectedReportsForComparison);
                     },
-                    childCount: data.length,
+                    childCount: data.length + (notifier.hasMore ? 1 : 0),
                   ),
                 ),
               ],
             );
           },
           error: (err, stack) => SliverToBoxAdapter(child: Center(child: Text('Error: $err'))),
-          loading: () => const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator())),
+          loading: () => const SliverToBoxAdapter(child: Center(child: Padding(
+            padding: EdgeInsets.all(32.0),
+            child: CircularProgressIndicator(),
+          ))),
         ),
       ],
+    );
+  }
+  
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.description_outlined, size: 64, color: AppColors.secondary),
+          const SizedBox(height: 16),
+          const Text('No lab results found', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          const Text('Upload your first lab report to get started.', style: TextStyle(color: AppColors.secondary)),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+               // Navigation to upload is usually in MainLayout, 
+               // but we can maybe trigger it or just show a message.
+            },
+            child: const Text('Upload Now'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoSearchResults(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 64),
+          const Icon(Icons.search_off, size: 64, color: AppColors.secondary),
+          const SizedBox(height: 16),
+          const Text('No matches found', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          const Text('Try adjusting your search criteria.', style: TextStyle(color: AppColors.secondary)),
+          const SizedBox(height: 24),
+          TextButton(
+            onPressed: () => ref.read(searchQueryProvider.notifier).state = '',
+            child: const Text('Clear Search'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoader(LabResultsNotifier notifier) {
+    if (!notifier.hasMore) return const SizedBox.shrink();
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: CircularProgressIndicator(),
+      ),
     );
   }
 
@@ -347,7 +454,10 @@ class ResultsListPage extends ConsumerWidget {
 
                     if (confirm == true) {
                       try {
-                        await ref.read(labRepositoryProvider).deleteLabResult(result.id);
+                        await ref.read(labRepositoryProvider).deleteLabResult(
+                          result.id, 
+                          storagePath: result.storagePath,
+                        );
                         ref.invalidate(labResultsProvider);
                         ref.invalidate(recentLabResultsProvider);
                         if (context.mounted) {

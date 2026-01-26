@@ -63,4 +63,12 @@ class StorageService {
       return null;
     }
   }
+  Future<void> deleteLabReportFile(String? path) async {
+    if (path == null || path.isEmpty) return;
+    try {
+      await _supabase.storage.from('lab-reports').remove([path]);
+    } catch (e) {
+      debugPrint('Error deleting lab report file from storage: $e');
+    }
+  }
 }

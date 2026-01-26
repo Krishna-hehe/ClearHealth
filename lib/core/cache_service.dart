@@ -1,19 +1,40 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class CacheService {
   static final CacheService _instance = CacheService._internal();
   factory CacheService() => _instance;
   CacheService._internal();
 
-  static const String _profileBox = 'profile_box';
-  static const String _labResultsBox = 'lab_results_box';
-  static const String _prescriptionsBox = 'prescriptions_box';
+  final _secureStorage = const FlutterSecureStorage();
+  static const String _profileBox = 'profile_box_enc';
+  static const String _labResultsBox = 'lab_results_box_enc';
+  static const String _prescriptionsBox = 'prescriptions_box_enc';
 
   Future<void> init() async {
     await Hive.initFlutter();
-    await Hive.openBox(_profileBox);
-    await Hive.openBox(_labResultsBox);
-    await Hive.openBox(_prescriptionsBox);
+    
+    // Get or create encryption key
+    final encryptionKeyString = await _secureStorage.read(key: 'hive_encryption_key');
+    Uint8List encryptionKey;
+    
+    if (encryptionKeyString == null) {
+      final key = Hive.generateSecureKey();
+      await _secureStorage.write(
+        key: 'hive_encryption_key',
+        value: base64UrlEncode(key),
+      );
+      encryptionKey = Uint8List.fromList(key);
+    } else {
+      encryptionKey = base64Url.decode(encryptionKeyString);
+    }
+
+    // Open boxes with encryption
+    await Hive.openBox(_profileBox, encryptionCipher: HiveAesCipher(encryptionKey));
+    await Hive.openBox(_labResultsBox, encryptionCipher: HiveAesCipher(encryptionKey));
+    await Hive.openBox(_prescriptionsBox, encryptionCipher: HiveAesCipher(encryptionKey));
   }
 
   // Profile Cache

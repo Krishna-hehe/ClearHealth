@@ -12,6 +12,8 @@ import 'features/auth/login_page.dart';
 import 'core/notification_service.dart';
 import 'core/cache_service.dart';
 import 'core/services/session_timeout_manager.dart';
+import 'package:flutter_windowmanager/flutter_windowmanager.dart';
+import 'package:flutter/foundation.dart';
 
 void main() async {
   runZonedGuarded(() async {
@@ -127,18 +129,13 @@ class _SecurityWrapperState extends ConsumerState<SecurityWrapper> with WidgetsB
   }
 
   Future<void> _secureScreen() async {
-    // Only works on mobile (Android/iOS)
-    /* 
-    // Commented out as package import needs to be conditional or handled for web
-    // You would import flutter_windowmanager normally
     try {
-        if (!kIsWeb) {
-           await FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);
-        }
-    } catch (_) {} 
-    */
-    // Since we can't easily valid conditional imports in this snippet without more setup, 
-    // we will start with the logic structure.
+      if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android)) {
+        await FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);
+      }
+    } catch (e) {
+      debugPrint('Failed to set secure flags: $e');
+    }
   }
 
   @override

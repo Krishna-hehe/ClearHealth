@@ -14,3 +14,4 @@ final themeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.light);
 // Temporary: Selected Result Provider
 final selectedReportProvider = StateProvider<LabReport?>((ref) => null); 
 final selectedTestProvider = StateProvider<TestResult?>((ref) => null);
+final searchQueryProvider = StateProvider<String>((ref) => '');

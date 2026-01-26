@@ -7,11 +7,38 @@ import '../../core/navigation.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 
-class ResultExpandedPage extends ConsumerWidget {
+class ResultExpandedPage extends ConsumerStatefulWidget {
   const ResultExpandedPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ResultExpandedPage> createState() => _ResultExpandedPageState();
+}
+
+class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _logAccess();
+    });
+  }
+
+  void _logAccess() {
+    final report = ref.read(selectedReportProvider);
+    if (report != null) {
+      ref.read(supabaseServiceProvider).logAccess(
+        action: 'View Lab Report',
+        resourceId: report.id,
+        metadata: {
+          'lab_name': report.labName,
+          'test_count': report.testCount,
+        },
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final report = ref.watch(selectedReportProvider);
 
     if (report == null) {
@@ -122,7 +149,10 @@ class ResultExpandedPage extends ConsumerWidget {
 
               if (confirm == true) {
                 try {
-                  await ref.read(labRepositoryProvider).deleteLabResult(report.id);
+                  await ref.read(labRepositoryProvider).deleteLabResult(
+                    report.id,
+                    storagePath: report.storagePath,
+                  );
                   ref.invalidate(labResultsProvider);
                   ref.invalidate(recentLabResultsProvider);
                   ref.read(navigationProvider.notifier).state = NavItem.labResults;

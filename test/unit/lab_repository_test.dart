@@ -21,7 +21,7 @@ void main() {
   group('LabRepository', () {
     test('getLabResults returns empty list on error and fallback to empty cache', () async {
        // Mock Supabase to throw
-       when(() => mockSupabaseService.getLabResults(limit: any(named: 'limit')))
+       when(() => mockSupabaseService.getLabResults(limit: any(named: 'limit'), offset: any(named: 'offset')))
           .thenThrow(Exception('Network Error'));
        
        // Mock Cache to return empty list
@@ -32,7 +32,7 @@ void main() {
        expect(results, isEmpty);
        
        // Verify both were called
-       verify(() => mockSupabaseService.getLabResults(limit: 10)).called(1);
+       verify(() => mockSupabaseService.getLabResults(limit: 10, offset: 0)).called(1);
        verify(() => mockCacheService.getCachedLabResults()).called(1);
     });
 
@@ -47,7 +47,7 @@ void main() {
          }
        ];
 
-       when(() => mockSupabaseService.getLabResults(limit: any(named: 'limit')))
+       when(() => mockSupabaseService.getLabResults(limit: any(named: 'limit'), offset: any(named: 'offset')))
           .thenThrow(Exception('Network Error'));
        
        when(() => mockCacheService.getCachedLabResults()).thenReturn(mockCachedJson);
@@ -57,7 +57,7 @@ void main() {
        expect(results, isNotEmpty);
        expect(results.first.labName, 'Cached Lab');
        
-       verify(() => mockSupabaseService.getLabResults(limit: 10)).called(1);
+       verify(() => mockSupabaseService.getLabResults(limit: 10, offset: 0)).called(1);
        verify(() => mockCacheService.getCachedLabResults()).called(1);
     });
 

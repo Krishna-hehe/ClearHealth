@@ -269,7 +269,7 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
                         )
                       : IconButton(
                           icon: const Icon(Icons.settings_outlined, size: 20, color: AppColors.secondary),
-                          onPressed: () {}, // _showPermissionDialog(member),
+                          onPressed: () => _showPermissionDialog(circle['id'], member),
                         ),
                 );
               },
@@ -278,6 +278,64 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
         ],
       ),
     );
+  }
+
+  void _showPermissionDialog(String circleId, Map<String, dynamic> member) {
+    String currentPermissions = member['permissions'] ?? 'Read-Only';
+    final userId = member['user_id'];
+
+    if (userId == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Manage Permissions: ${member['name']}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<String>(
+                title: const Text('Read-Only'),
+                subtitle: const Text('Can view lab results and AI summaries.'),
+                value: 'Read-Only',
+                groupValue: currentPermissions,
+                onChanged: (val) => setDialogState(() => currentPermissions = val!),
+                activeColor: AppColors.primary,
+              ),
+              RadioListTile<String>(
+                title: const Text('Full Access'),
+                subtitle: const Text('Can view results and help manage data.'),
+                value: 'Full Access',
+                groupValue: currentPermissions,
+                onChanged: (val) => setDialogState(() => currentPermissions = val!),
+                activeColor: AppColors.primary,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                await _updatePermissions(circleId, userId, currentPermissions);
+                if (mounted) Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+              child: const Text('Update'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _updatePermissions(String circleId, String userId, String permissions) async {
+    try {
+      await ref.read(userRepositoryProvider).updateMemberPermissions(circleId, userId, permissions);
+      ref.invalidate(healthCirclesProvider);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Permissions updated')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
   }
 
   void _showCreateCircleDialog() {

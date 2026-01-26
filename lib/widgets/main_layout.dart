@@ -416,7 +416,11 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       }
 
       // 4. Save to Database
-      await ref.read(labRepositoryProvider).createLabResult(confirmedData);
+      final Map<String, dynamic> finalData = {
+        ...confirmedData,
+        'storage_path': storagePath,
+      };
+      await ref.read(labRepositoryProvider).createLabResult(finalData);
 
       // 5. Refresh data
       ref.invalidate(labResultsProvider);
@@ -510,12 +514,15 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: AppColors.border),
               ),
-              child: const TextField(
+              child: TextField(
+                onChanged: (text) {
+                  ref.read(searchQueryProvider.notifier).state = text;
+                },
                 decoration: InputDecoration(
                   hintText: 'Search results, tests...',
-                  prefixIcon: Icon(Icons.search, size: 18),
+                  prefixIcon: const Icon(Icons.search, size: 18),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.only(top: 8),
+                  contentPadding: const EdgeInsets.only(top: 8),
                 ),
               ),
             ),

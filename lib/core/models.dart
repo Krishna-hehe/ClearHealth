@@ -46,6 +46,7 @@ class LabReport {
   final int abnormalCount;
   final String status;
   final bool isSelected;
+  final String? storagePath;
   final List<TestResult>? testResults;
 
   LabReport({
@@ -56,6 +57,7 @@ class LabReport {
     this.abnormalCount = 0,
     required this.status,
     this.isSelected = false,
+    this.storagePath,
     this.testResults,
   });
 
@@ -67,6 +69,7 @@ class LabReport {
       testCount: json['tests'] is int ? json['tests'] : (json['test_results'] as List?)?.length ?? 0,
       abnormalCount: json['abnormal_count'] ?? 0,
       status: json['status'] ?? 'Normal',
+      storagePath: json['storage_path'],
       testResults: (json['test_results'] as List?)?.map((t) => TestResult.fromJson(t)).toList(),
     );
   }
@@ -79,6 +82,7 @@ class LabReport {
       'tests': testCount,
       'abnormal_count': abnormalCount,
       'status': status,
+      'storage_path': storagePath,
       'test_results': testResults?.map((t) => t.toJson()).toList(),
     };
   }
