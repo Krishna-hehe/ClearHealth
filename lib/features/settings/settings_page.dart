@@ -7,6 +7,7 @@ import '../../core/providers.dart';
 import '../../core/navigation.dart';
 import '../../core/biometric_service.dart';
 import 'mfa_setup_dialog.dart';
+import 'data_export_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
@@ -162,13 +163,22 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _exportData() async {
-    // Results/Profile/Prescriptions fetch successful. 
-    // Data export placeholder
-    // In a real app, you would share this as a file. For now, we'll show success.
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Data exported successfully. Check your email.'), backgroundColor: AppColors.success),
-      );
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(dataExportServiceProvider).exportUserData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Data exported successfully!'), backgroundColor: AppColors.success),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e'), backgroundColor: AppColors.danger),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -633,7 +643,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 }
               } else {
                 if (_mfaFactorId != null) {
-                  await ref.read(supabaseServiceProvider).unenrollMFA(_mfaFactorId!);
+                  await ref.read(supabaseServiceProvider).removeMfaFactor(_mfaFactorId!);
                   _fetchProfile();
                 }
               }

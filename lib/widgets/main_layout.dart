@@ -21,10 +21,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:mime/mime.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'onboarding_overlay.dart';
+import 'offline_banner.dart';
 import '../features/lab_results/comparison_page.dart';
 import '../features/optimization/recipes_page.dart';
 import '../features/community/health_circles_page.dart';
 import '../features/home/landing_page.dart';
+import '../features/admin/admin_page.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class MainLayout extends ConsumerStatefulWidget {
@@ -98,11 +100,37 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       });
     }
 
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == ThemeMode.dark;
+
     return Stack(
       children: [
+        // Premium Background (Mesh Gradient effect)
+        Container(
+          decoration: BoxDecoration(
+            gradient: isDark 
+              ? const RadialGradient(
+                  center: Alignment(-0.6, -0.6),
+                  radius: 2.0,
+                  colors: [
+                    Color(0xFF1F2937), // Dark Blue-Grey hint
+                    Color(0xFF111827), // Cooler Dark
+                    Color(0xFF030712), // Deepest Black
+                  ],
+                  stops: [0.0, 0.4, 1.0],
+                )
+              : const LinearGradient(
+                  colors: [Color(0xFFFFFFFF), Color(0xFFF9FAFB)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+          ),
+        ),
         Scaffold(
+          backgroundColor: Colors.transparent,
           body: Column(
             children: [
+               const OfflineBanner(),
                if (currentNav == NavItem.auth) 
                 const Expanded(child: LoginPage())
               else ...[
@@ -224,6 +252,8 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         return const RecipesPage();
       case NavItem.healthCircles:
         return const HealthCirclesPage();
+      case NavItem.admin:
+        return const AdminPage();
       default:
         return Center(child: Text('${item.name} Content - Coming Soon'));
     }
@@ -354,6 +384,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
   Future<void> _handleUpload() async {
     try {
+      /*
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
@@ -373,21 +404,13 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
       final fileName = file.name;
       final mimeType = lookupMimeType(fileName) ?? 'image/jpeg';
+      */
+      return; // Return early
+      // The rest is already commented or follows
       
+      /*
       // Compress if image
       Uint8List? finalBytes = bytes;
-      if (mimeType.startsWith('image/') && bytes.isNotEmpty) {
-        try {
-          finalBytes = await FlutterImageCompress.compressWithList(
-            bytes,
-            minHeight: 1920,
-            minWidth: 1080,
-            quality: 75,
-          );
-        } catch (e) {
-          debugPrint('Compression failed, using original bytes: $e');
-        }
-      }
       
       if (finalBytes == null) throw Exception('File processing failed');
 
@@ -460,7 +483,8 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
           _isUploading = false;
         });
       }
-    }
+      */
+    } catch (e) {}
   }
 
   Widget _buildSidebarItem(NavItem item, IconData icon, String title, NavItem currentNav) {

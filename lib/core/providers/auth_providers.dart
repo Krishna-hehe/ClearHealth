@@ -1,12 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
+import '../services/audit_service.dart'; // Import audit service
 
 import 'core_providers.dart';
 
 // Auth Service Provider
 final authServiceProvider = Provider<AuthService>((ref) {
-  return AuthService(ref.watch(supabaseClientProvider));
+  return AuthService(
+    ref.watch(supabaseClientProvider),
+    ref.watch(auditServiceProvider),
+  );
 });
 
 // Auth State Provider

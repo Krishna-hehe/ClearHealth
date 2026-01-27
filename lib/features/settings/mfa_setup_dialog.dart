@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/theme.dart';
 import '../../core/providers.dart';
@@ -28,9 +29,9 @@ class _MfaSetupDialogState extends ConsumerState<MfaSetupDialog> {
 
   Future<void> _enroll() async {
     try {
-      final response = await ref.read(supabaseServiceProvider).enrollMFA();
+      final AuthMFAEnrollResponse response = await ref.read(supabaseServiceProvider).enrollMFA();
       setState(() {
-        _qrUri = response.totp.uri;
+        _qrUri = response.totp?.uri;
         _factorId = response.id;
         _isLoading = false;
       });

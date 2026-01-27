@@ -397,9 +397,21 @@ class _ResultsListPageState extends ConsumerState<ResultsListPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${result.testCount} lab results found',
-                      style: const TextStyle(color: AppColors.secondary, fontSize: 13),
+                      '${result.testCount} lab results found${result.abnormalCount > 0 ? " • ${result.abnormalCount} Abnormal" : ""}',
+                      style: TextStyle(
+                        color: result.abnormalCount > 0 ? AppColors.danger : AppColors.secondary,
+                        fontSize: 13,
+                        fontWeight: result.abnormalCount > 0 ? FontWeight.bold : FontWeight.normal,
+                      ),
                     ),
+                    if (result.abnormalCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          '${result.abnormalCount} Abnormal Result${result.abnormalCount > 1 ? "s" : ""}',
+                          style: const TextStyle(color: AppColors.danger, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -411,20 +423,33 @@ class _ResultsListPageState extends ConsumerState<ResultsListPage> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      isAbnormal ? Icons.error_outline : Icons.check_circle_outline,
-                      size: 14,
-                      color: isAbnormal ? AppColors.danger : AppColors.success,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      status,
-                      style: TextStyle(
-                        color: isAbnormal ? AppColors.danger : AppColors.success,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                    if (status == 'Pending Sync') ...[
+                      const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2)),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Syncing...',
+                        style: TextStyle(
+                          color: AppColors.secondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
+                    ] else ...[
+                      Icon(
+                        isAbnormal ? Icons.error_outline : Icons.check_circle_outline,
+                        size: 14,
+                        color: isAbnormal ? AppColors.danger : AppColors.success,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        status,
+                        style: TextStyle(
+                          color: isAbnormal ? AppColors.danger : AppColors.success,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

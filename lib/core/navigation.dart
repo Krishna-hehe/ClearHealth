@@ -16,7 +16,9 @@ enum NavItem {
   healthCircles,
   resultExpanded,
   healthChat,
+
   auth,
+  admin,
 }
 
 final navigationProvider = StateProvider<NavItem>((ref) => NavItem.landing);

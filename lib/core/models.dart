@@ -67,7 +67,11 @@ class LabReport {
       date: DateTime.tryParse(json['date'] ?? '') ?? DateTime.now(),
       labName: json['lab_name'] ?? 'Unknown Lab',
       testCount: json['tests'] is int ? json['tests'] : (json['test_results'] as List?)?.length ?? 0,
-      abnormalCount: json['abnormal_count'] ?? 0,
+      abnormalCount: json['abnormal_count'] ?? 
+          (json['test_results'] as List?)?.where((t) {
+            final s = t['status']?.toString().toLowerCase() ?? '';
+            return s == 'abnormal' || s == 'high' || s == 'low';
+          }).length ?? 0,
       status: json['status'] ?? 'Normal',
       storagePath: json['storage_path'],
       testResults: (json['test_results'] as List?)?.map((t) => TestResult.fromJson(t)).toList(),

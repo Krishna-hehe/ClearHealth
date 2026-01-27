@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class StorageService {
   final SupabaseClient _supabase;
@@ -30,12 +31,15 @@ class StorageService {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) throw Exception('User not logged in');
 
+    // Compress
+    final compressedBytes = await _compressImage(bytes);
+
     // Use userId as folder to match RLS: (storage.foldername(name))[1] == auth.uid()
     final path = '$userId/profile.jpg';
     
     await _supabase.storage.from('profiles').uploadBinary(
       path,
-      bytes,
+      compressedBytes,
       fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
     );
 
@@ -48,11 +52,13 @@ class StorageService {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return null;
 
+      final compressedBytes = await _compressImage(bytes);
+
       final path = '$userId/${DateTime.now().millisecondsSinceEpoch}.jpg';
       
       await _supabase.storage.from('prescriptions').uploadBinary(
         path,
-        bytes,
+        compressedBytes,
         fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
       );
 
@@ -61,6 +67,24 @@ class StorageService {
     } catch (e) {
       debugPrint('Error uploading prescription image: $e');
       return null;
+    }
+  }
+
+  Future<Uint8List> _compressImage(Uint8List list) async {
+    try {
+      // Simple validation for small files (skip if < 200KB)
+      if (list.lengthInBytes < 200 * 1024) return list;
+
+      final result = await FlutterImageCompress.compressWithList(
+        list,
+        minHeight: 1920,
+        minWidth: 1920,
+        quality: 80,
+      );
+      return result;
+    } catch (e) {
+      debugPrint('Compression failed, using original: $e');
+      return list;
     }
   }
   Future<void> deleteLabReportFile(String? path) async {

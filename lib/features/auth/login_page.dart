@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
 import '../../core/navigation.dart';
 import '../../core/providers.dart';
@@ -43,28 +44,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       if (_emailController.text.trim().isEmpty || !_emailController.text.contains('@')) {
         throw 'Please enter a valid email address.';
       }
-      if (_passwordController.text.length < 6) {
-        throw 'Password must be at least 6 characters.';
+      
+      final password = _passwordController.text;
+      if (password.length < 8) {
+        throw 'Password must be at least 8 characters.';
       }
-      if (_isSignUp && _passwordController.text != _confirmPasswordController.text) {
+      if (_isSignUp && password != _confirmPasswordController.text) {
         throw 'Passwords do not match.';
       }
 
       final authService = ref.read(authServiceProvider);
       if (_isSignUp) {
-        await authService.signUp(_emailController.text, _passwordController.text);
+        await authService.signUp(_emailController.text, password);
         if (mounted) {
            ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Registration successful! Please check your email.')),
+            const SnackBar(content: Text('Registration successful! Please check your email to verify.')),
           );
-          // Optional: Navigate to dashboard if auto-signin works, or stay here.
-          // For now, let's assume they need to verify email, so we stay? 
-          // Or maybe Supabase is set to auto-confirm. 
-          // Let's try navigating to dashboard to feel "logged in".
-          ref.read(navigationProvider.notifier).state = NavItem.dashboard;
+          // Stay on login page after signup to encourage verification
         }
       } else {
-        final response = await authService.signIn(_emailController.text, _passwordController.text);
+        final response = await authService.signIn(_emailController.text, password);
         
         // Check if MFA is required
         if (response.user != null) {
@@ -87,8 +86,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       }
     } catch (e) {
       if (mounted) {
+        // SECURITY FIX: Don't show raw exception messages
+        String message = 'Authentication failed. Please check your credentials.';
+        if (e is String) message = e; // Allow our custom validation messages
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.danger),
+          SnackBar(content: Text(message), backgroundColor: AppColors.danger),
         );
       }
     } finally {
@@ -143,6 +146,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    print('🏗️ LoginPage: Building...');
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       body: SingleChildScrollView(
@@ -153,6 +157,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             children: [
               const Text(
                 'LabSense',
+                textDirection: TextDirection.ltr, // Explicit text direction
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w500,
@@ -407,40 +412,45 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     bool obscureText = false,
     TextInputType? keyboardType,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF374151),
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          obscureText: obscureText,
-          keyboardType: keyboardType,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
-            prefixIcon: Icon(icon, size: 20, color: Colors.grey[400]),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF111827), width: 1.5),
+    return Semantics(
+      label: '$label input field',
+      hint: hint,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF374151),
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          TextField(
+            controller: controller,
+            obscureText: obscureText,
+            keyboardType: keyboardType,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+              prefixIcon: Icon(icon, size: 20, color: Colors.grey[400]),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF111827), width: 1.5),
+              ),
+              errorMaxLines: 3,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

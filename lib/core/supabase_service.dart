@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'notification_service.dart';
 import 'services/log_service.dart';
@@ -12,11 +11,11 @@ class SupabaseService {
 
 
   // MFA Operations
-  Future<MFAEnrollResponse> enrollMFA() async {
+  Future<AuthMFAEnrollResponse> enrollMFA() async {
     return await client.auth.mfa.enroll(factorType: FactorType.totp);
   }
 
-  Future<AuthResponse> verifyMFA({
+  Future<AuthMFAVerifyResponse> verifyMFA({
     required String factorId,
     required String code,
   }) async {
@@ -28,11 +27,11 @@ class SupabaseService {
     );
   }
 
-  Future<void> unenrollMFA(String factorId) async {
-    await client.auth.mfa.unenroll(factorId: factorId);
+  Future<void> removeMfaFactor(String factorId) async {
+    await client.auth.mfa.unenroll(factorId);
   }
 
-  Future<AuthState> getMFAFactors() async {
+  Future<AuthMFAListFactorsResponse> getMFAFactors() async {
     return await client.auth.mfa.listFactors();
   }
 
@@ -231,9 +230,12 @@ class SupabaseService {
     if (client.auth.currentUser == null) return;
     try {
       final List<dynamic> testResults = data['test_results'] ?? [];
-      final status = testResults.any((t) => (t['status']?.toString().toLowerCase() ?? '') == 'high' || (t['status']?.toString().toLowerCase() ?? '') == 'low') 
-          ? 'Abnormal' 
-          : 'Normal';
+      final abnormalCount = testResults.where((t) {
+        final s = t['status']?.toString().toLowerCase() ?? '';
+        return s == 'abnormal' || s == 'high' || s == 'low';
+      }).length;
+      
+      final status = abnormalCount > 0 ? 'Abnormal' : 'Normal';
 
       await client.from('lab_results').insert({
         'user_id': client.auth.currentUser!.id,
@@ -241,6 +243,7 @@ class SupabaseService {
         'date': data['date'] ?? DateTime.now().toIso8601String().split('T')[0],
         'status': status,
         'test_count': testResults.length,
+        'abnormal_count': abnormalCount,
         'test_results': testResults,
         'storage_path': data['storage_path'],
       });

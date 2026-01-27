@@ -1,0 +1,69 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lab_sense_app/features/home/dashboard_page.dart';
+import 'package:lab_sense_app/core/providers.dart';
+import 'package:lab_sense_app/core/models.dart';
+
+void main() {
+  testWidgets('DashboardPage renders loading state correctly', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: DashboardPage(),
+        ),
+      ),
+    );
+
+    // Initial state is loading for async providers
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets('DashboardPage renders summary stats when data loads', (WidgetTester tester) async {
+    final mockResults = [
+      LabReport(
+          id: '1',
+          userId: 'u1',
+          date: DateTime.now(),
+          labName: 'Lab A',
+          testCount: 5,
+          abnormalCount: 1,
+          testResults: [], 
+          summary: 'Summary',
+          status: 'Abnormal'
+      )
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          userProfileProvider.overrideWith((ref) => Stream.value({'first_name': 'TestUser'})),
+          recentLabResultsProvider.overrideWith((ref) => Future.value(mockResults)),
+          activePrescriptionsCountProvider.overrideWith((ref) => Future.value(2)),
+          labResultsProvider.overrideWith(() => LabResultsNotifierMock(mockResults)),
+          dashboardAiInsightProvider.overrideWith((ref) => Future.value('AI Insight text')),
+        ],
+        child: const MaterialApp(
+          home: DashboardPage(),
+        ),
+      ),
+    );
+    
+    // We need to wait for futures
+    await tester.pumpAndSettle();
+
+    expect(find.text('Welcome back, TestUser'), findsOneWidget);
+    expect(find.text('Total Lab Reports'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget); // abnormal count logic might sum it up as 1
+  });
+}
+
+class LabResultsNotifierMock extends LabResultsNotifier {
+  final List<LabReport> _initialData;
+  LabResultsNotifierMock(this._initialData);
+
+  @override
+  Future<List<LabReport>> build() async {
+    return _initialData;
+  }
+}

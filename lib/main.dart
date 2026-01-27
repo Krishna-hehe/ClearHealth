@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -20,6 +21,34 @@ void main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     AppLogger.info('🚀 App Starting...');
+
+    // Error Boundary
+    ErrorWidget.builder = (FlutterErrorDetails details) {
+      return Material(
+        color: const Color(0xFFF9FAFB),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+               const Icon(Icons.error_outline, size: 60, color: Colors.red),
+               const SizedBox(height: 16),
+               const Text('Ouch! Something went wrong.', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1F2937))),
+               const SizedBox(height: 8),
+               const Text('We are working on fixing this.', style: TextStyle(color: Color(0xFF6B7280))),
+               if (kDebugMode)
+                 Padding(
+                   padding: const EdgeInsets.all(16), 
+                   child: Container(
+                     padding: const EdgeInsets.all(8),
+                     color: Colors.grey[200],
+                     child: Text(details.exception.toString(), style: const TextStyle(fontFamily: 'monospace')),
+                   )
+                 )
+            ],
+          ),
+        ),
+      );
+    };
 
     try {
       await dotenv.load(fileName: ".env");
@@ -53,12 +82,30 @@ void main() async {
       debugPrint('⚠️ Cache init failed: $e');
     }
 
-    runApp(
-      const ProviderScope(
-        child: LabSenseApp(),
-      ),
-    );
-  }, (error, stack) {
+    final sentryDsn = dotenv.env['SENTRY_DSN'];
+    if (sentryDsn != null && sentryDsn.isNotEmpty) {
+      await SentryFlutter.init(
+        (options) {
+          options.dsn = sentryDsn;
+          options.tracesSampleRate = 1.0;
+          options.profilesSampleRate = 1.0;
+        },
+        appRunner: () => runApp(
+          const ProviderScope(
+            child: LabSenseApp(),
+          ),
+        ),
+      );
+    } else {
+      // Fallback if no Sentry DSN
+      runApp(
+        const ProviderScope(
+          child: LabSenseApp(),
+        ),
+      );
+    }
+  }, (error, stack) async {
+    await Sentry.captureException(error, stackTrace: stack);
     AppLogger.error('🔴 Uncaught error in main zone: $error', stackTrace: stack);
   });
 }
@@ -68,7 +115,9 @@ class LabSenseApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    print('🏗️ LabSenseApp: Building...');
     final currentUser = ref.watch(currentUserProvider);
+    print('👤 LabSenseApp: Current User: ${currentUser?.email}');
     final themeMode = ref.watch(themeProvider);
  
     return MaterialApp(

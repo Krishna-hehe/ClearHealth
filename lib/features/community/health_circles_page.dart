@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../core/providers/user_providers.dart';
 import '../../core/repositories/user_repository.dart';
+import '../../features/chat/circle_chat_page.dart';
 
 class HealthCirclesPage extends ConsumerStatefulWidget {
   const HealthCirclesPage({super.key});
@@ -42,7 +43,6 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
            if (id.contains('/join/')) {
                id = id.split('/join/').last;
            }
-           // Basic UUID validation could be added here
            
            await ref.read(userRepositoryProvider).joinCircle(id);
            ref.invalidate(healthCirclesProvider);
@@ -190,92 +190,99 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
   Widget _buildCircleCard(Map<String, dynamic> circle) {
     final members = (circle['members'] as List?) ?? [];
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.group_outlined, color: AppColors.primary, size: 20),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      circle['name'] ?? 'Unnamed Circle',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                    ),
-                  ],
-                ),
-                TextButton(
-                  onPressed: () => _showInviteDialog(circle['id'], circle['name']),
-                  child: const Text('Invite Member'),
-                ),
-              ],
-            ),
-          ),
-          if (members.isNotEmpty) ...[
-            const Divider(height: 1),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: members.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final member = members[index];
-                final isPending = member['status'] == 'Pending';
-                final name = member['name'] ?? 'Unknown';
-
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  leading: CircleAvatar(
-                    backgroundColor: Theme.of(context).dividerColor.withValues(alpha: 0.1),
-                    child: Text(name.isNotEmpty ? name[0] : '?', style: const TextStyle(color: AppColors.primary)),
-                  ),
-                  title: Text(
-                    name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  subtitle: Text(
-                    '${member['role'] ?? ''} • ${member['permissions'] ?? ''}',
-                    style: const TextStyle(fontSize: 12, color: AppColors.secondary),
-                  ),
-                  trailing: isPending
-                      ? Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'Pending',
-                            style: TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.bold),
-                          ),
-                        )
-                      : IconButton(
-                          icon: const Icon(Icons.settings_outlined, size: 20, color: AppColors.secondary),
-                          onPressed: () => _showPermissionDialog(circle['id'], member),
+    return InkWell(
+      onTap: () {
+         Navigator.push(
+           context, 
+           MaterialPageRoute(builder: (_) => CircleChatPage(circleId: circle['id'], circleName: circle['name'] ?? 'Circle'))
+         );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                );
-              },
+                        child: const Icon(Icons.group_outlined, color: AppColors.primary, size: 20),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        circle['name'] ?? 'Unnamed Circle',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                    ],
+                  ),
+                  TextButton(
+                    onPressed: () => _showInviteDialog(circle['id'], circle['name']),
+                    child: const Text('Invite Member'),
+                  ),
+                ],
+              ),
             ),
+            if (members.isNotEmpty) const Divider(height: 1),
+            if (members.isNotEmpty)
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: members.length,
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final member = members[index];
+                  final isPending = member['status'] == 'Pending';
+                  final name = member['name'] ?? 'Unknown';
+
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    leading: CircleAvatar(
+                      backgroundColor: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+                      child: Text(name.isNotEmpty ? name[0] : '?', style: const TextStyle(color: AppColors.primary)),
+                    ),
+                    title: Text(
+                      name,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    subtitle: Text(
+                      '${member['role'] ?? ''} • ${member['permissions'] ?? ''}',
+                      style: const TextStyle(fontSize: 12, color: AppColors.secondary),
+                    ),
+                    trailing: isPending
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              'Pending',
+                              style: TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.settings_outlined, size: 20, color: AppColors.secondary),
+                            onPressed: () => _showPermissionDialog(circle['id'], member),
+                          ),
+                  );
+                },
+              ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -408,7 +415,7 @@ class _InviteDialogState extends State<_InviteDialog> with SingleTickerProviderS
   }
 
   void _handleTabSelection() {
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   @override

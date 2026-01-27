@@ -4,12 +4,15 @@ import '../repositories/lab_repository.dart';
 import 'core_providers.dart';
 import '../cache_service.dart';
 import '../models.dart';
+import '../services/audit_service.dart';
 
 final labRepositoryProvider = Provider<LabRepository>((ref) {
   return LabRepository(
     ref.watch(supabaseServiceProvider), 
     CacheService(),
+    ref.watch(syncServiceProvider),
     ref.watch(storageServiceProvider),
+    ref.watch(auditServiceProvider),
   );
 });
 
@@ -114,4 +117,14 @@ final distinctTestsProvider = FutureProvider<List<String>>((ref) async {
 final trendDataProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, testName) async {
   final repository = ref.watch(labRepositoryProvider);
   return repository.getTrendData(testName);
+});
+
+final healthPredictionsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final results = await ref.watch(labResultsProvider.future);
+  if (results.isEmpty) return [];
+  
+  final aiService = ref.watch(aiServiceProvider);
+  // Pass raw JSON data to AI service
+  final history = results.map((r) => r.toJson()).toList();
+  return aiService.getHealthPredictions(history);
 });

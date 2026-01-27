@@ -6,6 +6,8 @@ import '../../core/theme.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/navigation.dart';
+import '../../widgets/smart_insight_card.dart';
+import 'widgets/streak_flame.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -26,8 +28,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
       duration: const Duration(milliseconds: 1200),
     );
 
-    // Create 5 staggered animations
-    _animations = List.generate(5, (index) {
+    // Create 10 staggered animations (with extra buffer for safety)
+    _animations = List.generate(10, (index) {
       double start = index * 0.1;
       double end = (start + 0.4).clamp(0.0, 1.0);
       return CurvedAnimation(
@@ -51,6 +53,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
     final profileAsync = ref.watch(userProfileProvider);
     final recentResultsAsync = ref.watch(recentLabResultsProvider);
     final prescriptionsCountAsync = ref.watch(activePrescriptionsCountProvider);
+    final labResultsAsync = ref.watch(labResultsProvider);
 
     return profileAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -62,45 +65,67 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, s) => Center(child: Text('Error: $e')),
           data: (pCount) {
-             final firstName = profile?['first_name'] ?? 'User';
-             final conditions = profile?['conditions'] as List? ?? [];
-             
-             return SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildAnimatedItem(0, _buildWelcomeHeader(firstName)),
-                    const SizedBox(height: 32),
-                    _buildAnimatedItem(1, _buildQuickStats(recentResults, conditions.length, pCount)),
-                    const SizedBox(height: 32),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: Column(
+              return labResultsAsync.when(
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, s) => Center(child: Text('Error: $e')),
+                  data: (allResults) {
+                    final firstName = profile?['first_name'] ?? 'User';
+                    
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildAnimatedItem(0, _buildWelcomeHeader(firstName)),
+                          const SizedBox(height: 32),
+                          // New Lab Stats Row
+                          _buildAnimatedItem(1, _buildLabStats(allResults)),
+                           const SizedBox(height: 16),
+                          // Existing Stats (Conditions/Meds) - Optional, but sticking to user request primarily
+                          // _buildAnimatedItem(1, _buildQuickStats(recentResults, conditions.length, pCount)), // Keeping if needed or merging
+                          
+                          // Let's create a combined stats section or just add the new ones.
+                          // User said: "in dashboard also add total number of lab reports,no of need attention and Percenatge of normal results"
+                          // I will add a row for these.
+                          
+                          const SizedBox(height: 24),
+                          // Need Attention Box
+                          if (allResults.any((r) => r.abnormalCount > 0))
+                             _buildAnimatedItem(2, _buildNeedAttentionBox(allResults)),
+                          
+                          const SizedBox(height: 32),
+                           // Smart AI Forecast
+                          _buildAnimatedItem(3, const SmartInsightCard()),
+                          const SizedBox(height: 32),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildAnimatedItem(2, _buildAiInsightsCard(recentResults)),
-                              const SizedBox(height: 24),
-                              _buildAnimatedItem(3, _buildRecentResults(recentResults)),
+                              Expanded(
+                                flex: 2,
+                                child: Column(
+                                  children: [
+                                    _buildAnimatedItem(3, _buildAiInsightsCard(recentResults)),
+                                    const SizedBox(height: 24),
+                                    _buildAnimatedItem(4, _buildRecentResults(recentResults)),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 24),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    _buildAnimatedItem(5, _buildHealthTipsCard(recentResults)),
+                                    // Upcoming Tasks removed
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-                        const SizedBox(width: 24),
-                      Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _buildAnimatedItem(4, _buildHealthTipsCard(recentResults)),
-                              // Upcoming Tasks removed
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                        ],
+                      ),
+                    );
+                  }
               );
           },
         ),
@@ -125,13 +150,19 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Welcome back, $firstName',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Welcome back, $firstName',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const StreakFlame(),
+          ],
         ),
         const SizedBox(height: 8),
         const Text(
@@ -370,6 +401,156 @@ class _DashboardPageState extends ConsumerState<DashboardPage> with SingleTicker
             tipText,
             style: const TextStyle(color: Color(0xFF92400E), fontSize: 14, height: 1.5),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLabStats(List<LabReport> results) {
+    int totalReports = results.length;
+    // Calculate total abnormal tests across all reports
+    int totalAbnormalTests = results.fold(0, (sum, r) => sum + r.abnormalCount);
+    // Count reports that have at least one abnormal result
+    int reportsNeedingAttention = results.where((r) => r.abnormalCount > 0).length;
+    
+    int totalTests = results.fold(0, (sum, r) => sum + r.testCount);
+    // Calculate percentage based on tests, not reports
+    double normalPct = totalTests > 0 ? ((totalTests - totalAbnormalTests) / totalTests * 100) : 100;
+    
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        bool isMobile = constraints.maxWidth < 600;
+        
+        List<Widget> cards = [
+          _buildStatCard('Total Lab Reports', '$totalReports', 'Reports', Icons.folder_open_outlined, const Color(0xFFEFF6FF), const Color(0xFF3B82F6)),
+          SizedBox(width: isMobile ? 0 : 16, height: isMobile ? 16 : 0),
+          _buildStatCard('Need Attention', '$totalAbnormalTests', 'Abnormal Results', Icons.warning_amber_rounded, const Color(0xFFFEF2F2), AppColors.danger),
+          SizedBox(width: isMobile ? 0 : 16, height: isMobile ? 16 : 0),
+          _buildStatCard('Normal Results', '${normalPct.toStringAsFixed(1)}%', 'Percentage', Icons.check_circle_outline, const Color(0xFFF0FDF4), AppColors.success),
+        ];
+
+        if (isMobile) {
+          return Column(children: cards);
+        } else {
+          return Row(children: cards);
+        }
+      }
+    );
+  }
+
+  Widget _buildNeedAttentionBox(List<LabReport> results) {
+    // Flatten all test results that are abnormal
+    List<Map<String, dynamic>> abnormalTests = [];
+    
+    for (var report in results) {
+      if (report.testResults != null) {
+        for (var test in report.testResults!) {
+          if (test.status != 'Normal') {
+            abnormalTests.add({
+              'test': test,
+              'date': report.date,
+              'lab': report.labName,
+            });
+          }
+        }
+      }
+    }
+    
+    // Sort by date (most recent first)
+    abnormalTests.sort((a, b) => (b['date'] as DateTime).compareTo(a['date'] as DateTime));
+    
+    // Take top 5
+    final displayTests = abnormalTests.take(5).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.danger.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+           Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.notifications_active_outlined, color: AppColors.danger, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Need Attention',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.danger),
+              ),
+              const Spacer(),
+              Text(
+                '${abnormalTests.length} Abnormal Results',
+                style: const TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (displayTests.isEmpty)
+            const Text('No detailed abnormal results found in loaded reports.', style: TextStyle(color: AppColors.secondary))
+          else
+            ...displayTests.map((item) {
+              final test = item['test'] as TestResult;
+              final date = item['date'] as DateTime;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    const Icon(Icons.circle, size: 8, color: AppColors.danger),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(test.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          Text(DateFormat('MMM d, yyyy').format(date), style: const TextStyle(color: AppColors.secondary, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${test.result} ${test.unit}', 
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.danger),
+                        ),
+                        Text(test.reference, style: const TextStyle(fontSize: 11, color: AppColors.secondary)),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }),
+            
+            if (abnormalTests.length > 5)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Center(
+                  child: TextButton(
+                    onPressed: () {
+                       ref.read(searchQueryProvider.notifier).state = "Abnormal";
+                       ref.read(navigationProvider.notifier).state = NavItem.labResults;
+                    },
+                    child: const Text('View All Abnormal Results'),
+                  ),
+                ),
+              ),
         ],
       ),
     );

@@ -4,18 +4,28 @@ import 'package:lab_sense_app/core/repositories/lab_repository.dart';
 import 'package:lab_sense_app/core/supabase_service.dart';
 import 'package:lab_sense_app/core/cache_service.dart';
 
+import 'package:lab_sense_app/core/services/sync_service.dart';
+
 class MockSupabaseService extends Mock implements SupabaseService {}
 class MockCacheService extends Mock implements CacheService {}
+class MockSyncService extends Mock implements SyncService {}
 
 void main() {
   late LabRepository labRepository;
   late MockSupabaseService mockSupabaseService;
   late MockCacheService mockCacheService;
+  late MockSyncService mockSyncService;
 
   setUp(() {
     mockSupabaseService = MockSupabaseService();
     mockCacheService = MockCacheService();
-    labRepository = LabRepository(mockSupabaseService, mockCacheService);
+    mockSyncService = MockSyncService();
+    
+    // Stub setActionHandler and isOnline
+    when(() => mockSyncService.setActionHandler(any())).thenReturn(null);
+    when(() => mockSyncService.isOnline).thenReturn(true);
+
+    labRepository = LabRepository(mockSupabaseService, mockCacheService, mockSyncService);
   });
 
   group('LabRepository', () {

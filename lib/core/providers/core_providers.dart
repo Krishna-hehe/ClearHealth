@@ -4,9 +4,21 @@ import '../supabase_service.dart';
 import '../ai_service.dart';
 import '../storage_service.dart';
 import '../vector_service.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../services/sync_service.dart';
 import '../app_config.dart';
+import '../cache_service.dart';
 
 // --- Core Infrastructure Providers ---
+
+final syncBoxProvider = Provider<Box>((ref) {
+  return Hive.box('sync_queue'); // Init handled in main or CacheService
+});
+
+final syncServiceProvider = ChangeNotifierProvider<SyncService>((ref) {
+  final box = ref.watch(syncBoxProvider);
+  return SyncService(box);
+});
 
 final supabaseClientProvider = Provider<SupabaseClient>((ref) {
   return Supabase.instance.client;
@@ -27,9 +39,12 @@ final vectorServiceProvider = Provider<VectorService>((ref) {
 
 final aiServiceProvider = Provider<AiService>((ref) {
   final vectorService = ref.read(vectorServiceProvider);
+  // CacheService is singleton, can instantiate directly or via provider if we had one
+  // Assuming singleton usage as seen in other files
   return AiService(
     apiKey: AppConfig.geminiApiKey,
     chatApiKey: AppConfig.labSenseChatApiKey,
-    vectorService: vectorService
+    vectorService: vectorService,
+    cacheService: CacheService(),
   );
 });

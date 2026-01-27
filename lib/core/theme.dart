@@ -46,16 +46,16 @@ class AppTheme {
         seedColor: Colors.white,
         brightness: Brightness.dark,
         primary: Colors.white,
-        surface: const Color(0xFF111827),
+        surface: const Color(0xFF111827).withValues(alpha: 0.6), // Transparent surface
       ),
-      scaffoldBackgroundColor: const Color(0xFF030712),
+      scaffoldBackgroundColor: Colors.transparent, // Allow gradient to show through
       textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
       cardTheme: CardThemeData(
-        color: const Color(0xFF111827),
+        color: const Color(0xFF1F2937).withValues(alpha: 0.5), // Glassmorphic
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: Color(0xFF1F2937)),
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
         ),
       ),
     );

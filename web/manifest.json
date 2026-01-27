@@ -1,11 +1,11 @@
 {
-    "name": "lab_sense_app",
-    "short_name": "lab_sense_app",
+    "name": "LabSense",
+    "short_name": "LabSense",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Intelligent Lab Report Analysis & Health Insights",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
