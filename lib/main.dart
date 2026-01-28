@@ -16,99 +16,168 @@ import 'core/services/session_timeout_manager.dart';
 import 'core/services/log_service.dart';
 import 'package:flutter_windowmanager/flutter_windowmanager.dart';
 import 'package:flutter/foundation.dart';
+import 'features/splash/splash_page.dart';
 
-void main() async {
-  runZonedGuarded(() async {
+void main() {
+  runZonedGuarded(() {
     WidgetsFlutterBinding.ensureInitialized();
-    AppLogger.info('🚀 App Starting...');
+    // Start the app immediately with a loading state
+    runApp(const ProviderScope(child: AppEntryPoint()));
+  }, (error, stack) {
+    Sentry.captureException(error, stackTrace: stack);
+    AppLogger.error('🔴 Uncaught error in main zone: $error', stackTrace: stack);
+  });
+}
 
-    // Error Boundary
-    ErrorWidget.builder = (FlutterErrorDetails details) {
-      return Material(
-        color: const Color(0xFFF9FAFB),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-               const Icon(Icons.error_outline, size: 60, color: Colors.red),
-               const SizedBox(height: 16),
-               const Text('Ouch! Something went wrong.', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1F2937))),
-               const SizedBox(height: 8),
-               const Text('We are working on fixing this.', style: TextStyle(color: Color(0xFF6B7280))),
-               if (kDebugMode)
-                 Padding(
-                   padding: const EdgeInsets.all(16), 
-                   child: Container(
-                     padding: const EdgeInsets.all(8),
-                     color: Colors.grey[200],
-                     child: Text(details.exception.toString(), style: const TextStyle(fontFamily: 'monospace')),
-                   )
-                 )
-            ],
-          ),
-        ),
-      );
-    };
+class AppEntryPoint extends StatefulWidget {
+  const AppEntryPoint({super.key});
 
+  @override
+  State<AppEntryPoint> createState() => _AppEntryPointState();
+}
+
+class _AppEntryPointState extends State<AppEntryPoint> {
+  bool _isInitialized = false;
+  String _status = 'Initializing...';
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _initApp();
+  }
+
+  Future<void> _initApp() async {
     try {
-      await dotenv.load(fileName: ".env");
-      AppLogger.info('✅ Environment loaded');
-    } catch (e) {
-      AppLogger.error('❌ Failed to load .env: $e', containsPII: false);
-    }
+      // 1. Load Env
+      if (mounted) setState(() => _status = 'Loading configuration...');
+      try {
+        await dotenv.load(fileName: ".env");
+        AppLogger.info('✅ Environment loaded');
+      } catch (e) {
+        AppLogger.error('❌ Failed to load .env: $e', containsPII: false);
+        // Continue anyway as secrets might be optional or handled elsewhere in some builds
+      }
 
-    try {
-      AppLogger.info('🔌 Initializing Supabase...');
-      await Supabase.initialize(
-        url: SupabaseConfig.url,
-        anonKey: SupabaseConfig.anonKey,
-      );
-      AppLogger.info('✅ Supabase initialized');
-    } catch (e) {
-      AppLogger.error('❌ Supabase initialization failed: $e', containsPII: false);
-    }
+      // 2. Initialize Sentry
+      final sentryDsn = dotenv.env['SENTRY_DSN'];
+      if (sentryDsn != null && sentryDsn.isNotEmpty) {
+        await SentryFlutter.init((options) {
+          options.dsn = sentryDsn;
+          options.tracesSampleRate = 1.0;
+          options.profilesSampleRate = 1.0;
+        });
+      }
 
+      // 3. Initialize Supabase
+      if (mounted) setState(() => _status = 'Connecting to services...');
+      try {
+        AppLogger.info('🔌 Initializing Supabase...');
+        await Supabase.initialize(
+          url: SupabaseConfig.url,
+          anonKey: SupabaseConfig.anonKey,
+        );
+        AppLogger.info('✅ Supabase initialized');
+      } catch (e) {
+        throw Exception('Failed to connect to backend: $e');
+      }
+
+      // 4. Initialize Local Services
+      if (mounted) setState(() => _status = 'Starting local services...');
+      
+      // Run these in parallel to speed up
+      await Future.wait([
+        _initNotifications(),
+        _initCache(),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    } catch (e, stack) {
+      AppLogger.error('Failed to initialize app', error: e, stackTrace: stack);
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+        });
+      }
+    }
+  }
+
+  Future<void> _initNotifications() async {
     try {
       await NotificationService().init();
       debugPrint('✅ Notifications initialized');
     } catch (e) {
       debugPrint('⚠️ Notification init failed: $e');
+      // Don't block app start for this
     }
+  }
 
+  Future<void> _initCache() async {
     try {
       await CacheService().init();
       debugPrint('✅ Cache initialized');
     } catch (e) {
       debugPrint('⚠️ Cache init failed: $e');
+      // Don't block app start for this
     }
+  }
 
-    final sentryDsn = dotenv.env['SENTRY_DSN'];
-    if (sentryDsn != null && sentryDsn.isNotEmpty) {
-      await SentryFlutter.init(
-        (options) {
-          options.dsn = sentryDsn;
-          options.tracesSampleRate = 1.0;
-          options.profilesSampleRate = 1.0;
-        },
-        appRunner: () => runApp(
-          const ProviderScope(
-            child: LabSenseApp(),
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 60, color: Colors.red),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Initialization Failed',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _error = null;
+                        _initApp();
+                      });
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       );
-    } else {
-      // Fallback if no Sentry DSN
-      runApp(
-        const ProviderScope(
-          child: LabSenseApp(),
-        ),
+    }
+
+    if (!_isInitialized) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: SplashPage(statusMessage: _status),
       );
     }
-  }, (error, stack) async {
-    await Sentry.captureException(error, stackTrace: stack);
-    AppLogger.error('🔴 Uncaught error in main zone: $error', stackTrace: stack);
-  });
+
+    return const LabSenseApp();
+  }
 }
+
 
 class LabSenseApp extends ConsumerWidget {
   const LabSenseApp({super.key});
