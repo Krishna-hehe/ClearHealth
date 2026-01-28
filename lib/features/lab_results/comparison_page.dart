@@ -25,12 +25,18 @@ class ComparisonPage extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => ref.read(navigationProvider.notifier).state = NavItem.labResults,
+              onPressed: () => ref.read(navigationProvider.notifier).state =
+                  NavItem.labResults,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: const Text('Go to Lab Results'),
             ),
@@ -40,7 +46,8 @@ class ComparisonPage extends ConsumerWidget {
     }
 
     // Sort reports by date
-    final sortedReports = List<LabReport>.from(selectedReports)..sort((a, b) => a.date.compareTo(b.date));
+    final sortedReports = List<LabReport>.from(selectedReports)
+      ..sort((a, b) => a.date.compareTo(b.date));
 
     // Get all unique test names across all reports
     final allTestNames = <String>{};
@@ -60,7 +67,8 @@ class ComparisonPage extends ConsumerWidget {
           children: [
             IconButton(
               icon: const Icon(Icons.arrow_back),
-              onPressed: () => ref.read(navigationProvider.notifier).state = NavItem.labResults,
+              onPressed: () => ref.read(navigationProvider.notifier).state =
+                  NavItem.labResults,
             ),
             const Text(
               'Lab Result Comparison',
@@ -69,89 +77,149 @@ class ComparisonPage extends ConsumerWidget {
             const Spacer(),
             Text(
               '${sortedReports.length} Reports Selected',
-              style: const TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                color: AppColors.secondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
         const SizedBox(height: 24),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              headingRowColor: WidgetStateProperty.all(const Color(0xFFF9FAFB)),
-              columnSpacing: 40,
-              columns: [
-                const DataColumn(
-                  label: Text('Test Name', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+        Expanded(
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-                ...sortedReports.map((report) => DataColumn(
-                  label: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        report.date.toString().split(' ')[0],
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                      Text(
-                        report.labName,
-                        style: const TextStyle(color: AppColors.secondary, fontSize: 10, fontWeight: FontWeight.normal),
-                      ),
-                    ],
-                  ),
-                )),
               ],
-              rows: sortedTestNames.map((testName) {
-                return DataRow(
-                  cells: [
-                    DataCell(Text(testName, style: const TextStyle(fontWeight: FontWeight.w500))),
-                    ...sortedReports.map((report) {
-                      final test = report.testResults?.firstWhere(
-                        (t) => t.name == testName,
-                        orElse: () => TestResult(name: '', loinc: '', result: '', unit: '', reference: '', status: ''),
-                      );
-                      
-                      final value = test?.result.isEmpty == true ? '-' : test?.result ?? '-';
-                      final unit = test?.unit ?? '';
-                      final isAbnormal = test?.status.toLowerCase().contains('high') == true || 
-                                       test?.status.toLowerCase().contains('low') == true;
-
-                      return DataCell(
-                        Row(
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  headingRowColor: WidgetStateProperty.all(
+                    const Color(0xFFF9FAFB),
+                  ),
+                  columnSpacing: 40,
+                  columns: [
+                    const DataColumn(
+                      label: Text(
+                        'Test Name',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                    ...sortedReports.map(
+                      (report) => DataColumn(
+                        label: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              value,
-                              style: TextStyle(
-                                fontWeight: isAbnormal ? FontWeight.bold : FontWeight.normal,
-                                color: isAbnormal ? AppColors.danger : Colors.black,
+                              report.date.toString().split(' ')[0],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
                               ),
                             ),
-                            if (unit.isNotEmpty) ...[
-                              const SizedBox(width: 4),
-                              Text(unit, style: const TextStyle(color: AppColors.secondary, fontSize: 11)),
-                            ],
-                            // Show trend arrow if not the first column
-                            if (sortedReports.indexOf(report) > 0)
-                              _buildTrendIndicator(testName, report, sortedReports[sortedReports.indexOf(report)-1]),
+                            Text(
+                              report.labName,
+                              style: const TextStyle(
+                                color: AppColors.secondary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
                           ],
                         ),
-                      );
-                    }),
+                      ),
+                    ),
                   ],
-                );
-              }).toList(),
+                  rows: sortedTestNames.map((testName) {
+                    return DataRow(
+                      cells: [
+                        DataCell(
+                          Text(
+                            testName,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        ...sortedReports.map((report) {
+                          final test = report.testResults?.firstWhere(
+                            (t) => t.name == testName,
+                            orElse: () => TestResult(
+                              name: '',
+                              loinc: '',
+                              result: '',
+                              unit: '',
+                              reference: '',
+                              status: '',
+                            ),
+                          );
+
+                          final value = test?.result.isEmpty == true
+                              ? '-'
+                              : test?.result ?? '-';
+                          final unit = test?.unit ?? '';
+                          final isAbnormal =
+                              test?.status.toLowerCase().contains('high') ==
+                                  true ||
+                              test?.status.toLowerCase().contains('low') ==
+                                  true;
+
+                          return DataCell(
+                            Row(
+                              children: [
+                                Text(
+                                  value,
+                                  style: TextStyle(
+                                    fontWeight: isAbnormal
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: isAbnormal
+                                        ? AppColors.danger
+                                        : Colors.black,
+                                  ),
+                                ),
+                                if (unit.isNotEmpty) ...[
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    unit,
+                                    style: const TextStyle(
+                                      color: AppColors.secondary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                                // Show trend arrow if not the first column
+                                if (sortedReports.indexOf(report) > 0)
+                                  _buildTrendIndicator(
+                                    testName,
+                                    report,
+                                    sortedReports[sortedReports.indexOf(
+                                          report,
+                                        ) -
+                                        1],
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
           ),
         ),
@@ -159,17 +227,38 @@ class ComparisonPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildTrendIndicator(String testName, LabReport current, LabReport previous) {
+  Widget _buildTrendIndicator(
+    String testName,
+    LabReport current,
+    LabReport previous,
+  ) {
     final currentTest = current.testResults?.firstWhere(
       (t) => t.name == testName,
-      orElse: () => TestResult(name: '', loinc: '', result: '', unit: '', reference: '', status: ''),
+      orElse: () => TestResult(
+        name: '',
+        loinc: '',
+        result: '',
+        unit: '',
+        reference: '',
+        status: '',
+      ),
     );
     final prevTest = previous.testResults?.firstWhere(
       (t) => t.name == testName,
-      orElse: () => TestResult(name: '', loinc: '', result: '', unit: '', reference: '', status: ''),
+      orElse: () => TestResult(
+        name: '',
+        loinc: '',
+        result: '',
+        unit: '',
+        reference: '',
+        status: '',
+      ),
     );
 
-    if (currentTest == null || prevTest == null || currentTest.name.isEmpty || prevTest.name.isEmpty) {
+    if (currentTest == null ||
+        prevTest == null ||
+        currentTest.name.isEmpty ||
+        prevTest.name.isEmpty) {
       return const SizedBox.shrink();
     }
 

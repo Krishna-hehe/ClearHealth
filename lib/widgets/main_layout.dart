@@ -47,13 +47,13 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     super.initState();
     // We can use ref.read here as it's safe in initState or after
     // But since SupabaseService is provided, we should probably read it via ref
-    // However, ref.read in initState is restricted for providers. 
-    // Actually, ref.read(provider) is valid in initState if we don't watch. 
+    // However, ref.read in initState is restricted for providers.
+    // Actually, ref.read(provider) is valid in initState if we don't watch.
     // A better approach for initState dependencies is to use `ref.read` in a post-frame callback OR just use `ref` in build or use `ConsumerState` lifecycle.
     // Let's use ref.read inside the methods or setup a local variable if needed.
     // For initState, we can just defer to _checkOnboarding which is async.
-    
-    // _email = ref.read(supabaseServiceProvider).currentUser?.email ?? ''; // This is risky in initState if provider depends on something dynamic, but here it's likely fine. 
+
+    // _email = ref.read(supabaseServiceProvider).currentUser?.email ?? ''; // This is risky in initState if provider depends on something dynamic, but here it's likely fine.
     // Safe way:
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = ref.read(authServiceProvider).currentUser;
@@ -90,7 +90,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     final currentUser = ref.watch(currentUserProvider);
 
     // Auth Guard
-    if (currentUser == null && currentNav != NavItem.landing && currentNav != NavItem.auth) {
+    if (currentUser == null &&
+        currentNav != NavItem.landing &&
+        currentNav != NavItem.auth) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(navigationProvider.notifier).state = NavItem.landing;
       });
@@ -108,62 +110,69 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         // Premium Background (Mesh Gradient effect)
         Container(
           decoration: BoxDecoration(
-            gradient: isDark 
-              ? const RadialGradient(
-                  center: Alignment(-0.6, -0.6),
-                  radius: 2.0,
-                  colors: [
-                    Color(0xFF1F2937), // Dark Blue-Grey hint
-                    Color(0xFF111827), // Cooler Dark
-                    Color(0xFF030712), // Deepest Black
-                  ],
-                  stops: [0.0, 0.4, 1.0],
-                )
-              : const LinearGradient(
-                  colors: [Color(0xFFFFFFFF), Color(0xFFF9FAFB)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
+            gradient: isDark
+                ? const RadialGradient(
+                    center: Alignment(-0.6, -0.6),
+                    radius: 2.0,
+                    colors: [
+                      Color(0xFF1F2937), // Dark Blue-Grey hint
+                      Color(0xFF111827), // Cooler Dark
+                      Color(0xFF030712), // Deepest Black
+                    ],
+                    stops: [0.0, 0.4, 1.0],
+                  )
+                : const LinearGradient(
+                    colors: [Color(0xFFFFFFFF), Color(0xFFF9FAFB)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
           ),
         ),
         Scaffold(
           backgroundColor: Colors.transparent,
           body: Column(
             children: [
-               const OfflineBanner(),
-               if (currentNav == NavItem.auth) 
+              const OfflineBanner(),
+              if (currentNav == NavItem.auth)
                 const Expanded(child: LoginPage())
               else ...[
-              if (currentNav == NavItem.landing)
-                _buildLandingNavbar()
-              else if (isDesktop)
-                // Sidebar logic for non-landing pages handled below in Row
-                SizedBox.shrink(),
-              Expanded(
-                child: Row(
-                  children: [
-                    if (isDesktop && currentNav != NavItem.landing) _buildSidebar(currentNav),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          if (_isUploading)
-                            LinearProgressIndicator(
-                              backgroundColor: AppColors.primary.withAlpha(51),
-                              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                if (currentNav == NavItem.landing)
+                  _buildLandingNavbar()
+                else if (isDesktop)
+                  // Sidebar logic for non-landing pages handled below in Row
+                  SizedBox.shrink(),
+                Expanded(
+                  child: Row(
+                    children: [
+                      if (isDesktop && currentNav != NavItem.landing)
+                        _buildSidebar(currentNav),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            if (_isUploading)
+                              LinearProgressIndicator(
+                                backgroundColor: AppColors.primary.withAlpha(
+                                  51,
+                                ),
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  AppColors.primary,
+                                ),
+                              ),
+                            if (currentNav != NavItem.landing) _buildNavbar(),
+                            Expanded(
+                              child: Padding(
+                                padding: currentNav == NavItem.landing
+                                    ? EdgeInsets.zero
+                                    : const EdgeInsets.all(24.0),
+                                child: _getPageContent(currentNav),
+                              ),
                             ),
-                          if (currentNav != NavItem.landing) _buildNavbar(),
-                          Expanded(
-                            child: Padding(
-                              padding: currentNav == NavItem.landing ? EdgeInsets.zero : const EdgeInsets.all(24.0),
-                              child: _getPageContent(currentNav),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
               ],
             ],
           ),
@@ -178,40 +187,60 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     return Container(
       height: 70,
       padding: const EdgeInsets.symmetric(horizontal: 48),
-      decoration: const BoxDecoration(
-        color: Color(0xFFFCFBF7),
-        border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
+          Text(
             'LabSense',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           Row(
             children: [
               TextButton(
                 onPressed: () {
-                   ref.read(isSignUpModeProvider.notifier).state = false;
-                   ref.read(navigationProvider.notifier).state = NavItem.auth;
+                  ref.read(isSignUpModeProvider.notifier).state = false;
+                  ref.read(navigationProvider.notifier).state = NavItem.auth;
                 },
-                child: const Text('Log in', style: TextStyle(color: Color(0xFF4B5563), fontWeight: FontWeight.w500)),
+                child: Text(
+                  'Log in',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
               const SizedBox(width: 20),
               ElevatedButton(
                 onPressed: () {
-                   ref.read(isSignUpModeProvider.notifier).state = true;
-                   ref.read(navigationProvider.notifier).state = NavItem.auth;
+                  ref.read(isSignUpModeProvider.notifier).state = true;
+                  ref.read(navigationProvider.notifier).state = NavItem.auth;
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2D2D2D),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   elevation: 0,
                 ),
-                child: const Text('Get Started', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Get Started',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -262,9 +291,11 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   Widget _buildSidebar(NavItem currentNav) {
     return Container(
       width: 260,
-      decoration: const BoxDecoration(
-        color: AppColors.sidebarBackground,
-        border: Border(right: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        border: Border(
+          right: BorderSide(color: Theme.of(context).dividerColor),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,17 +315,67 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
           const SizedBox(height: 24),
           _buildUploadButton(),
           const SizedBox(height: 24),
-          _buildSidebarItem(NavItem.dashboard, FontAwesomeIcons.house, 'Dashboard', currentNav),
-          _buildSidebarItem(NavItem.labResults, FontAwesomeIcons.vial, 'Lab Results', currentNav),
-          _buildSidebarItem(NavItem.trends, FontAwesomeIcons.chartLine, 'Trends', currentNav),
-          _buildSidebarItem(NavItem.conditions, FontAwesomeIcons.heartPulse, 'Conditions', currentNav),
-          _buildSidebarItem(NavItem.prescriptions, FontAwesomeIcons.pills, 'Prescriptions', currentNav),
-          _buildSidebarItem(NavItem.healthChat, FontAwesomeIcons.robot, 'Ask LabSense', currentNav),
-          _buildSidebarItem(NavItem.shareResults, FontAwesomeIcons.shareFromSquare, 'Share Results', currentNav),
-          _buildSidebarItem(NavItem.healthOptimization, FontAwesomeIcons.leaf, 'Optimization', currentNav),
-          _buildSidebarItem(NavItem.healthCircles, FontAwesomeIcons.users, 'Health Circles', currentNav),
+          _buildSidebarItem(
+            NavItem.dashboard,
+            FontAwesomeIcons.house,
+            'Dashboard',
+            currentNav,
+          ),
+          _buildSidebarItem(
+            NavItem.labResults,
+            FontAwesomeIcons.vial,
+            'Lab Results',
+            currentNav,
+          ),
+          _buildSidebarItem(
+            NavItem.trends,
+            FontAwesomeIcons.chartLine,
+            'Trends',
+            currentNav,
+          ),
+          _buildSidebarItem(
+            NavItem.conditions,
+            FontAwesomeIcons.heartPulse,
+            'Conditions',
+            currentNav,
+          ),
+          _buildSidebarItem(
+            NavItem.prescriptions,
+            FontAwesomeIcons.pills,
+            'Prescriptions',
+            currentNav,
+          ),
+          _buildSidebarItem(
+            NavItem.healthChat,
+            FontAwesomeIcons.robot,
+            'Ask LabSense',
+            currentNav,
+          ),
+          _buildSidebarItem(
+            NavItem.shareResults,
+            FontAwesomeIcons.shareFromSquare,
+            'Share Results',
+            currentNav,
+          ),
+          _buildSidebarItem(
+            NavItem.healthOptimization,
+            FontAwesomeIcons.leaf,
+            'Optimization',
+            currentNav,
+          ),
+          _buildSidebarItem(
+            NavItem.healthCircles,
+            FontAwesomeIcons.users,
+            'Health Circles',
+            currentNav,
+          ),
           const Spacer(),
-          _buildSidebarItem(NavItem.settings, FontAwesomeIcons.gear, 'Settings', currentNav),
+          _buildSidebarItem(
+            NavItem.settings,
+            FontAwesomeIcons.gear,
+            'Settings',
+            currentNav,
+          ),
           const SizedBox(height: 24),
         ],
       ),
@@ -303,11 +384,12 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
   Widget _buildUserCard(WidgetRef ref) {
     final profileAsync = ref.watch(userProfileStreamProvider);
-    
+
     return profileAsync.when(
       data: (profile) {
-        final name = profile != null 
-            ? '${profile['first_name'] ?? ''} ${profile['last_name'] ?? ''}'.trim()
+        final name = profile != null
+            ? '${profile['first_name'] ?? ''} ${profile['last_name'] ?? ''}'
+                  .trim()
             : 'LabSense User';
         final avatarUrl = profile?['avatar_url'];
 
@@ -315,9 +397,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
           margin: const EdgeInsets.symmetric(horizontal: 16),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9FAFB),
+            color: Theme.of(context).cardTheme.color,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: Theme.of(context).dividerColor),
           ),
           child: Row(
             children: [
@@ -335,17 +417,27 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                   children: [
                     Text(
                       name.isEmpty ? 'LabSense User' : name,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       'Personal',
-                      style: TextStyle(color: AppColors.secondary, fontSize: 11),
+                      style: TextStyle(
+                        color: AppColors.secondary,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.keyboard_arrow_down, size: 16, color: AppColors.secondary),
+              const Icon(
+                Icons.keyboard_arrow_down,
+                size: 16,
+                color: AppColors.secondary,
+              ),
             ],
           ),
         );
@@ -354,11 +446,17 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         margin: const EdgeInsets.symmetric(horizontal: 16),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF9FAFB),
+          color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
-        child: const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))),
+        child: const Center(
+          child: SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
       ),
       error: (e, s) => const SizedBox.shrink(),
     );
@@ -375,7 +473,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         onPressed: _isUploading ? null : _handleUpload,
       ),
@@ -407,7 +507,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       */
       return; // Return early
       // The rest is already commented or follows
-      
+
       /*
       // Compress if image
       Uint8List? finalBytes = bytes;
@@ -487,16 +587,26 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     } catch (e) {}
   }
 
-  Widget _buildSidebarItem(NavItem item, IconData icon, String title, NavItem currentNav) {
-    bool isSelected = item == currentNav || 
-                     (item == NavItem.labResults && (currentNav == NavItem.resultDetail || currentNav == NavItem.resultExpanded));
-    
+  Widget _buildSidebarItem(
+    NavItem item,
+    IconData icon,
+    String title,
+    NavItem currentNav,
+  ) {
+    bool isSelected =
+        item == currentNav ||
+        (item == NavItem.labResults &&
+            (currentNav == NavItem.resultDetail ||
+                currentNav == NavItem.resultExpanded));
+
     return InkWell(
       onTap: () => ref.read(navigationProvider.notifier).state = item,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF3F4F6) : Colors.transparent,
+          color: isSelected
+              ? Theme.of(context).colorScheme.surface
+              : Colors.transparent,
         ),
         child: Row(
           children: [
@@ -509,7 +619,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
             Text(
               title,
               style: TextStyle(
-                color: isSelected ? AppColors.primary : AppColors.secondary,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 fontSize: 14,
               ),
@@ -524,9 +636,11 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     return Container(
       height: 70,
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
       ),
       child: Row(
         children: [
@@ -534,9 +648,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: Theme.of(context).dividerColor),
               ),
               child: TextField(
                 onChanged: (text) {
@@ -552,19 +666,27 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
             ),
           ),
           const SizedBox(width: 24),
-          // _buildUpgradeBadge() removed
 
+          // _buildUpgradeBadge() removed
           IconButton(
-            icon: const Icon(Icons.notifications_none_outlined, color: AppColors.secondary),
-            onPressed: () => ref.read(navigationProvider.notifier).state = NavItem.notifications,
+            icon: const Icon(
+              Icons.notifications_none_outlined,
+              color: AppColors.secondary,
+            ),
+            onPressed: () => ref.read(navigationProvider.notifier).state =
+                NavItem.notifications,
           ),
           IconButton(
             icon: Icon(
-              ref.watch(themeProvider) == ThemeMode.dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+              ref.watch(themeProvider) == ThemeMode.dark
+                  ? Icons.light_mode_outlined
+                  : Icons.dark_mode_outlined,
               color: AppColors.secondary,
             ),
             onPressed: () {
-              final newMode = ref.read(themeProvider) == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+              final newMode = ref.read(themeProvider) == ThemeMode.dark
+                  ? ThemeMode.light
+                  : ThemeMode.dark;
               ref.read(themeProvider.notifier).state = newMode;
             },
           ),
@@ -592,71 +714,86 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
             backgroundColor: const Color(0xFFF3F4F6),
           ),
           const SizedBox(width: 8),
-          const Icon(Icons.keyboard_arrow_down, size: 16, color: AppColors.secondary),
+          const Icon(
+            Icons.keyboard_arrow_down,
+            size: 16,
+            color: AppColors.secondary,
+          ),
         ],
       ),
-            onSelected: (value) async {
-              if (value == 'settings') {
-                ref.read(navigationProvider.notifier).state = NavItem.settings;
-              } else if (value == 'signout') {
-                await ref.read(authServiceProvider).signOut();
-                // Navigate to landing page after sign out
-                ref.read(navigationProvider.notifier).state = NavItem.landing;
-                // Invalidate user-related providers
-                ref.invalidate(currentUserProvider);
-                ref.invalidate(userProfileStreamProvider);
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                enabled: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(_email.isEmpty ? 'user@example.com' : _email, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                    const Text('Free Plan', style: TextStyle(fontSize: 11, color: AppColors.secondary)),
-                  ],
+      onSelected: (value) async {
+        if (value == 'settings') {
+          ref.read(navigationProvider.notifier).state = NavItem.settings;
+        } else if (value == 'signout') {
+          await ref.read(authServiceProvider).signOut();
+          // Navigate to landing page after sign out
+          ref.read(navigationProvider.notifier).state = NavItem.landing;
+          // Invalidate user-related providers
+          ref.invalidate(currentUserProvider);
+          ref.invalidate(userProfileStreamProvider);
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          enabled: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _email.isEmpty ? 'user@example.com' : _email,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
                 ),
               ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                value: 'settings',
-                child: Row(
-                  children: const [
-                    Icon(Icons.settings_outlined, size: 16),
-                    SizedBox(width: 12),
-                    Text('Settings', style: TextStyle(fontSize: 14)),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'subscription',
-                child: Row(
-                  children: const [
-                    Icon(Icons.credit_card_outlined, size: 16),
-                    SizedBox(width: 12),
-                    Text('Subscription', style: TextStyle(fontSize: 14)),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                value: 'signout',
-                child: Row(
-                  children: const [
-                    Icon(Icons.logout_outlined, size: 16, color: Colors.red),
-                    SizedBox(width: 12),
-                    Text('Sign out', style: TextStyle(fontSize: 14, color: Colors.red)),
-                  ],
-                ),
+              const Text(
+                'Free Plan',
+                style: TextStyle(fontSize: 11, color: AppColors.secondary),
               ),
             ],
-          );
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'settings',
+          child: Row(
+            children: const [
+              Icon(Icons.settings_outlined, size: 16),
+              SizedBox(width: 12),
+              Text('Settings', style: TextStyle(fontSize: 14)),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'subscription',
+          child: Row(
+            children: const [
+              Icon(Icons.credit_card_outlined, size: 16),
+              SizedBox(width: 12),
+              Text('Subscription', style: TextStyle(fontSize: 14)),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'signout',
+          child: Row(
+            children: const [
+              Icon(Icons.logout_outlined, size: 16, color: Colors.red),
+              SizedBox(width: 12),
+              Text(
+                'Sign out',
+                style: TextStyle(fontSize: 14, color: Colors.red),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   // Badge removed as per user request
-
-
 }
 
 class _OcrReviewDialog extends StatefulWidget {
@@ -676,10 +813,14 @@ class _OcrReviewDialogState extends State<_OcrReviewDialog> {
   @override
   void initState() {
     super.initState();
-    _labNameController = TextEditingController(text: widget.initialData['lab_name']);
+    _labNameController = TextEditingController(
+      text: widget.initialData['lab_name'],
+    );
     _dateController = TextEditingController(text: widget.initialData['date']);
     _testResults = List<Map<String, dynamic>>.from(
-      (widget.initialData['test_results'] as List).map((t) => Map<String, dynamic>.from(t)),
+      (widget.initialData['test_results'] as List).map(
+        (t) => Map<String, dynamic>.from(t),
+      ),
     );
   }
 
@@ -694,13 +835,14 @@ class _OcrReviewDialogState extends State<_OcrReviewDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('The AI has extracted the following information. Please verify and correct any errors.', style: TextStyle(fontSize: 13, color: AppColors.secondary)),
+              const Text(
+                'The AI has extracted the following information. Please verify and correct any errors.',
+                style: TextStyle(fontSize: 13, color: AppColors.secondary),
+              ),
               const SizedBox(height: 24),
               Row(
                 children: [
-                  Expanded(
-                    child: _buildField('Lab Name', _labNameController),
-                  ),
+                  Expanded(child: _buildField('Lab Name', _labNameController)),
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildField('Date (YYYY-MM-DD)', _dateController),
@@ -708,7 +850,10 @@ class _OcrReviewDialogState extends State<_OcrReviewDialog> {
                 ],
               ),
               const SizedBox(height: 24),
-              const Text('Test Results', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const Text(
+                'Test Results',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
               const SizedBox(height: 12),
               ..._testResults.asMap().entries.map((entry) {
                 final idx = entry.key;
@@ -719,22 +864,40 @@ class _OcrReviewDialogState extends State<_OcrReviewDialog> {
                     children: [
                       Expanded(
                         flex: 3,
-                        child: _buildTestField('Name', test['name'] ?? test['test_name'], (v) => _testResults[idx]['name'] = v),
+                        child: _buildTestField(
+                          'Name',
+                          test['name'] ?? test['test_name'],
+                          (v) => _testResults[idx]['name'] = v,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         flex: 2,
-                        child: _buildTestField('Result', test['result']?.toString() ?? test['result_value']?.toString(), (v) => _testResults[idx]['result'] = v),
+                        child: _buildTestField(
+                          'Result',
+                          test['result']?.toString() ??
+                              test['result_value']?.toString(),
+                          (v) => _testResults[idx]['result'] = v,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         flex: 1,
-                        child: _buildTestField('Unit', test['unit'], (v) => _testResults[idx]['unit'] = v),
+                        child: _buildTestField(
+                          'Unit',
+                          test['unit'],
+                          (v) => _testResults[idx]['unit'] = v,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       IconButton(
-                        icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                        onPressed: () => setState(() => _testResults.removeAt(idx)),
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          size: 20,
+                          color: Colors.red,
+                        ),
+                        onPressed: () =>
+                            setState(() => _testResults.removeAt(idx)),
                       ),
                     ],
                   ),
@@ -771,7 +934,10 @@ class _OcrReviewDialogState extends State<_OcrReviewDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -784,7 +950,11 @@ class _OcrReviewDialogState extends State<_OcrReviewDialog> {
     );
   }
 
-  Widget _buildTestField(String hint, dynamic initialValue, ValueChanged<String> onChanged) {
+  Widget _buildTestField(
+    String hint,
+    dynamic initialValue,
+    ValueChanged<String> onChanged,
+  ) {
     return TextField(
       controller: TextEditingController(text: initialValue?.toString()),
       onChanged: onChanged,
@@ -798,4 +968,3 @@ class _OcrReviewDialogState extends State<_OcrReviewDialog> {
     );
   }
 }
-

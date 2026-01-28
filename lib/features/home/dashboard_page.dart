@@ -487,26 +487,44 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
       }
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tipBg = isDark
+        ? const Color(0xFF451A03).withOpacity(0.3)
+        : const Color(0xFFFFFBEB);
+    final tipBorder = isDark
+        ? const Color(0xFF78350F).withOpacity(0.5)
+        : const Color(0xFFFEF3C7);
+    final tipTitleColor = isDark
+        ? const Color(0xFFFCD34D)
+        : const Color(0xFF92400E); // Amber-300 vs Amber-900
+    final tipTextColor = isDark
+        ? const Color(0xFFFDE68A)
+        : const Color(0xFF92400E); // Amber-200 vs Amber-900
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB),
+        color: tipBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFEF3C7)),
+        border: Border.all(color: tipBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.lightbulb_outline, color: Color(0xFFD97706), size: 20),
-              SizedBox(width: 12),
+              const Icon(
+                Icons.lightbulb_outline,
+                color: Color(0xFFD97706),
+                size: 20,
+              ),
+              const SizedBox(width: 12),
               Text(
                 'Health Tip',
                 style: TextStyle(
-                  color: Color(0xFF92400E),
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
+                  color: tipTitleColor,
                 ),
               ),
             ],
@@ -514,11 +532,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
           const SizedBox(height: 12),
           Text(
             tipText,
-            style: const TextStyle(
-              color: Color(0xFF92400E),
-              fontSize: 14,
-              height: 1.5,
-            ),
+            style: TextStyle(color: tipTextColor, fontSize: 14, height: 1.5),
           ),
         ],
       ),
@@ -611,12 +625,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.error.withOpacity(0.3),
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.danger.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.error.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -680,9 +696,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
                         children: [
                           Text(
                             test.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           Text(
@@ -752,7 +769,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Theme.of(context).colorScheme.surface
+                  : const Color(0xFFF3F4F6),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
@@ -768,9 +787,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
               children: [
                 Text(
                   date,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 Text(

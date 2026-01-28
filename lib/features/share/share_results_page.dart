@@ -33,7 +33,8 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextButton.icon(
-          onPressed: () => ref.read(navigationProvider.notifier).state = NavItem.dashboard,
+          onPressed: () =>
+              ref.read(navigationProvider.notifier).state = NavItem.dashboard,
           icon: const Icon(Icons.arrow_back, size: 16),
           label: const Text('Back to Dashboard'),
           style: TextButton.styleFrom(foregroundColor: AppColors.secondary),
@@ -71,7 +72,10 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Create Secure Link', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text(
+                'Create Secure Link',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
               Icon(Icons.shield_outlined, size: 20, color: AppColors.primary),
             ],
           ),
@@ -81,7 +85,7 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
             style: TextStyle(color: AppColors.secondary, fontSize: 13),
           ),
           const SizedBox(height: 24),
-          
+
           // --- Controls ---
           Row(
             children: [
@@ -90,7 +94,14 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Expires In', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.secondary)),
+                    const Text(
+                      'Expires In',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.secondary,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -104,10 +115,14 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
                           value: _selectedDuration,
                           isExpanded: true,
                           items: _durationLabels.entries.map((e) {
-                            return DropdownMenuItem(value: e.key, child: Text(e.value));
+                            return DropdownMenuItem(
+                              value: e.key,
+                              child: Text(e.value),
+                            );
                           }).toList(),
                           onChanged: (val) {
-                            if (val != null) setState(() => _selectedDuration = val);
+                            if (val != null)
+                              setState(() => _selectedDuration = val);
                           },
                         ),
                       ),
@@ -121,30 +136,53 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Permissions', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.secondary)),
+                    const Text(
+                      'Permissions',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.secondary,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     InkWell(
-                      onTap: () => setState(() => _allowDownload = !_allowDownload),
+                      onTap: () =>
+                          setState(() => _allowDownload = !_allowDownload),
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
-                          color: _allowDownload ? AppColors.primary.withOpacity(0.1) : Colors.grey[50],
+                          color: _allowDownload
+                              ? AppColors.primary.withOpacity(0.1)
+                              : Colors.grey[50],
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _allowDownload ? AppColors.primary : Colors.grey[300]!),
+                          border: Border.all(
+                            color: _allowDownload
+                                ? AppColors.primary
+                                : Colors.grey[300]!,
+                          ),
                         ),
                         child: Row(
                           children: [
                             Icon(
-                              _allowDownload ? Icons.download_done : Icons.remove_red_eye_outlined,
+                              _allowDownload
+                                  ? Icons.download_done
+                                  : Icons.remove_red_eye_outlined,
                               size: 18,
-                              color: _allowDownload ? AppColors.primary : Colors.grey[600],
+                              color: _allowDownload
+                                  ? AppColors.primary
+                                  : Colors.grey[600],
                             ),
                             const SizedBox(width: 8),
                             Text(
                               _allowDownload ? 'Download' : 'View Only',
                               style: TextStyle(
-                                color: _allowDownload ? AppColors.primary : Colors.grey[800],
+                                color: _allowDownload
+                                    ? AppColors.primary
+                                    : Colors.grey[800],
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -159,20 +197,34 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
           ),
 
           const SizedBox(height: 24),
-          
+
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              icon: _isGenerating 
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+              icon: _isGenerating
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Icon(Icons.link, size: 18),
-              label: Text(_isGenerating ? 'Generating...' : 'Generate Share Link'),
+              label: Text(
+                _isGenerating ? 'Generating...' : 'Generate Share Link',
+              ),
               onPressed: _isGenerating ? null : _generateSecureLink,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
@@ -183,10 +235,10 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
 
   Future<void> _generateSecureLink() async {
     setState(() => _isGenerating = true);
-    
+
     // Simulate API delay
     await Future.delayed(const Duration(seconds: 1));
-    
+
     // For development, use the current window location if web, otherwise placeholder
     String baseUrl = 'http://localhost:8080';
     try {
@@ -197,13 +249,16 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
         // Or better, since the user wants to see it 'work', let's point to a route that exists.
         // However, we don't have a /s/ route set up.
         // Let's stick to the requested "labsense.app" but make it clear it is a MOCK link.
-        baseUrl = 'https://labsense.app'; 
+        baseUrl = 'https://labsense.app';
       }
     } catch (_) {}
 
     final String permissionParam = _allowDownload ? 'full' : 'view';
-    final String uniqueId = DateTime.now().millisecondsSinceEpoch.toString().substring(8);
-    final String link = '$baseUrl/share/$uniqueId?e=$_selectedDuration&p=$permissionParam';
+    final String uniqueId = DateTime.now().millisecondsSinceEpoch
+        .toString()
+        .substring(8);
+    final String link =
+        '$baseUrl/share/$uniqueId?e=$_selectedDuration&p=$permissionParam';
 
     if (!mounted) return;
     setState(() => _isGenerating = false);
@@ -243,7 +298,10 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
                 ],
               ),
             ),
-            const Text('Share this secure link:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Share this secure link:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(12),
@@ -262,21 +320,36 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
               children: [
                 const Icon(Icons.timer, size: 14, color: Colors.grey),
                 const SizedBox(width: 4),
-                Text('Expires in ${_durationLabels[_selectedDuration]}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                Text(
+                  'Expires in ${_durationLabels[_selectedDuration]}',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
                 const SizedBox(width: 16),
-                Icon(_allowDownload ? Icons.download : Icons.remove_red_eye, size: 14, color: Colors.grey),
+                Icon(
+                  _allowDownload ? Icons.download : Icons.remove_red_eye,
+                  size: 14,
+                  color: Colors.grey,
+                ),
                 const SizedBox(width: 4),
-                Text(_allowDownload ? 'Download Allowed' : 'View Only', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                Text(
+                  _allowDownload ? 'Download Allowed' : 'View Only',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
               ],
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link copied to clipboard!')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Link copied to clipboard!')),
+              );
             },
             child: const Text('Copy Link'),
           ),
@@ -311,12 +384,20 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
               children: [
                 const Text(
                   'Professional Health Summary',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   'Generate a medical-grade PDF summary of your entire lab history with AI insights to share with your doctor.',
-                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
                 ),
               ],
             ),
@@ -329,13 +410,17 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
               backgroundColor: Colors.white,
               foregroundColor: AppColors.primary,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () async {
               final reports = ref.read(labResultsProvider).value ?? [];
               if (reports.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('No lab reports found to generate summary.')),
+                  const SnackBar(
+                    content: Text('No lab reports found to generate summary.'),
+                  ),
                 );
                 return;
               }
@@ -350,9 +435,20 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
                   flatTests.addAll(r.testResults!.map((t) => t.toJson()));
                 }
               }
-              
-              final aiSummary = await ref.read(aiServiceProvider).getBatchSummary(flatTests);
-              await PdfService.generateSummaryPdf(reports, aiSummary: aiSummary);
+
+              final aiSummary = await ref
+                  .read(aiServiceProvider)
+                  .getBatchSummary(flatTests);
+              final user = ref.read(currentUserProvider);
+              final userName =
+                  '${user?.userMetadata?['first_name'] ?? ''} ${user?.userMetadata?['last_name'] ?? ''}'
+                      .trim();
+
+              await PdfService.generateSummaryPdf(
+                reports,
+                aiSummary: aiSummary,
+                patientName: userName.isEmpty ? 'LabSense User' : userName,
+              );
             },
           ),
         ],
@@ -372,7 +468,10 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Active Shares', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const Text(
+            'Active Shares',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
           const SizedBox(height: 16),
           const Center(
             child: Padding(

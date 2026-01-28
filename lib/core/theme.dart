@@ -2,39 +2,70 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  static const Color primary = Color(0xFF1A1A1A);
-  static const Color secondary = Color(0xFF6B7280);
-  static const Color background = Color(0xFFFCFCFC);
-  static const Color sidebarBackground = Colors.white;
-  static const Color accent = Color(0xFF3B82F6);
-  static const Color success = Color(0xFF10B981);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color danger = Color(0xFFEF4444);
-  static const Color border = Color(0xFFE5E7EB);
-  static const Color cardBg = Colors.white;
-  static const Color greenRange = Color(0xFFE8F5E9);
-  static const Color greenText = Color(0xFF2E7D32);
+  // --- Palette ---
+  static const Color primaryBrand = Color(0xFF1E293B); // Dark Slate
+  static const Color primaryDark = Color(0xFFF8FAFC); // White-ish for Dark Mode
+
+  static const Color accent = Color(0xFF0EA5E9); // Sky Blue
+  static const Color success = Color(0xFF10B981); // Emerald
+  static const Color warning = Color(0xFFF59E0B); // Amber
+  static const Color danger = Color(0xFFEF4444); // Red
+
+  // --- Light Mode ---
+  static const Color lightBg = Color(0xFFF8FAFC);
+  static const Color lightSurface = Colors.white;
+  static const Color lightTextPrimary = Color(0xFF0F172A);
+  static const Color lightTextSecondary = Color(0xFF64748B);
+  static const Color lightBorder = Color(0xFFE2E8F0);
+
+  // --- Dark Mode ---
+  static const Color darkBg = Color(0xFF0F172A); // Slate 900
+  static const Color darkSurface = Color(0xFF1E293B); // Slate 800
+  static const Color darkTextPrimary = Color(0xFFF1F5F9); // Slate 100
+  static const Color darkTextSecondary = Color(0xFF94A3B8); // Slate 400
+  static const Color darkBorder = Color(0xFF334155); // Slate 700
+
+  // Legacy aliases for backward compatibility (will map to Light mode defaults to avoid breakage)
+  // TODO: Refactor usage to use Theme.of(context)
+  static const Color primary = primaryBrand;
+  static const Color secondary = lightTextSecondary;
+  static const Color background = lightBg;
+  static const Color sidebarBackground = lightSurface;
+  static const Color border = lightBorder;
+  static const Color cardBg = lightSurface;
 }
 
 class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primary,
-        primary: AppColors.primary,
-        surface: AppColors.background,
+      brightness: Brightness.light,
+      primaryColor: AppColors.primaryBrand,
+      scaffoldBackgroundColor: AppColors.lightBg,
+      colorScheme: const ColorScheme.light(
+        primary: AppColors.primaryBrand,
+        secondary: AppColors.accent,
+        surface: AppColors.lightSurface,
+        background: AppColors.lightBg,
+        error: AppColors.danger,
+        onPrimary: Colors.white,
+        onSurface: AppColors.lightTextPrimary,
+        outline: AppColors.lightBorder,
       ),
-      scaffoldBackgroundColor: AppColors.background,
-      textTheme: GoogleFonts.interTextTheme(),
+      iconTheme: const IconThemeData(color: AppColors.lightTextSecondary),
+      textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme).apply(
+        bodyColor: AppColors.lightTextPrimary,
+        displayColor: AppColors.lightTextPrimary,
+      ),
       cardTheme: CardThemeData(
-        color: AppColors.cardBg,
+        color: AppColors.lightSurface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.lightBorder),
         ),
       ),
+      dividerColor: AppColors.lightBorder,
     );
   }
 
@@ -42,22 +73,32 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: Colors.white,
-        brightness: Brightness.dark,
+      primaryColor: AppColors.primaryDark,
+      scaffoldBackgroundColor: AppColors.darkBg,
+      colorScheme: const ColorScheme.dark(
         primary: Colors.white,
-        surface: const Color(0xFF111827).withValues(alpha: 0.6), // Transparent surface
+        secondary: AppColors.accent,
+        surface: AppColors.darkSurface,
+        background: AppColors.darkBg,
+        error: AppColors.danger,
+        onPrimary: AppColors.darkBg,
+        onSurface: AppColors.darkTextPrimary,
+        outline: AppColors.darkBorder,
       ),
-      scaffoldBackgroundColor: Colors.transparent, // Allow gradient to show through
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+      iconTheme: const IconThemeData(color: AppColors.darkTextSecondary),
+      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).apply(
+        bodyColor: AppColors.darkTextPrimary,
+        displayColor: AppColors.darkTextPrimary,
+      ),
       cardTheme: CardThemeData(
-        color: const Color(0xFF1F2937).withValues(alpha: 0.5), // Glassmorphic
+        color: AppColors.darkSurface, // Glassmorphic
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          side: const BorderSide(color: AppColors.darkBorder),
         ),
       ),
+      dividerColor: AppColors.darkBorder,
     );
   }
 }

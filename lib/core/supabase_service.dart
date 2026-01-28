@@ -2,13 +2,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'notification_service.dart';
 import 'services/log_service.dart';
 
-
 class SupabaseService {
   final SupabaseClient client;
 
   SupabaseService(this.client);
-
-
 
   // MFA Operations
   Future<AuthMFAEnrollResponse> enrollMFA() async {
@@ -36,7 +33,10 @@ class SupabaseService {
   }
 
   // Database Operations (Examples)
-  Future<List<Map<String, dynamic>>> getLabResults({int limit = 10, int offset = 0}) async {
+  Future<List<Map<String, dynamic>>> getLabResults({
+    int limit = 10,
+    int offset = 0,
+  }) async {
     try {
       return await client
           .from('lab_results')
@@ -55,7 +55,11 @@ class SupabaseService {
 
   Future<void> deleteLabResult(String id) async {
     if (client.auth.currentUser == null) return;
-    await client.from('lab_results').delete().eq('id', id).eq('user_id', client.auth.currentUser!.id);
+    await client
+        .from('lab_results')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', client.auth.currentUser!.id);
   }
 
   // Profile Management
@@ -84,13 +88,19 @@ class SupabaseService {
 
   Future<void> saveConditions(List<String> conditions) async {
     if (client.auth.currentUser == null) return;
-    await client.from('profiles').update({'conditions': conditions}).eq('id', client.auth.currentUser!.id);
+    await client
+        .from('profiles')
+        .update({'conditions': conditions})
+        .eq('id', client.auth.currentUser!.id);
   }
 
   Future<void> updateProfile(Map<String, dynamic> data) async {
     if (client.auth.currentUser == null) return;
     // Use upsert to create the profile if it doesn't exist
-    await client.from('profiles').upsert({'id': client.auth.currentUser!.id, ...data});
+    await client.from('profiles').upsert({
+      'id': client.auth.currentUser!.id,
+      ...data,
+    });
   }
 
   Future<List<Map<String, dynamic>>> getPrescriptions() async {
@@ -108,17 +118,28 @@ class SupabaseService {
 
   Future<void> addPrescription(Map<String, dynamic> data) async {
     if (client.auth.currentUser == null) return;
-    await client.from('prescriptions').insert({...data, 'user_id': client.auth.currentUser!.id});
+    await client.from('prescriptions').insert({
+      ...data,
+      'user_id': client.auth.currentUser!.id,
+    });
   }
 
   Future<void> updatePrescription(String id, Map<String, dynamic> data) async {
     if (client.auth.currentUser == null) return;
-    await client.from('prescriptions').update(data).eq('id', id).eq('user_id', client.auth.currentUser!.id);
+    await client
+        .from('prescriptions')
+        .update(data)
+        .eq('id', id)
+        .eq('user_id', client.auth.currentUser!.id);
   }
 
   Future<void> deletePrescription(String id) async {
     if (client.auth.currentUser == null) return;
-    await client.from('prescriptions').delete().eq('id', id).eq('user_id', client.auth.currentUser!.id);
+    await client
+        .from('prescriptions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', client.auth.currentUser!.id);
   }
 
   Future<int> getActivePrescriptionsCount() async {
@@ -141,7 +162,7 @@ class SupabaseService {
     try {
       final results = await getLabResults(limit: 50); // Fetch more for trends
       List<Map<String, dynamic>> trendPoints = [];
-      
+
       for (var report in results) {
         final date = report['date'];
         final testResults = report['test_results'] as List?;
@@ -153,7 +174,13 @@ class SupabaseService {
           if (match != null) {
             trendPoints.add({
               'date': date,
-              'value': double.tryParse(match['result_value']?.toString() ?? match['result']?.toString() ?? '0') ?? 0.0,
+              'value':
+                  double.tryParse(
+                    match['result_value']?.toString() ??
+                        match['result']?.toString() ??
+                        '0',
+                  ) ??
+                  0.0,
               'unit': match['unit'],
               'reference': match['reference_range'] ?? match['reference'],
             });
@@ -161,7 +188,10 @@ class SupabaseService {
         }
       }
       // Sort by date ascending for charts
-      trendPoints.sort((a, b) => DateTime.parse(a['date']).compareTo(DateTime.parse(b['date'])));
+      trendPoints.sort(
+        (a, b) =>
+            DateTime.parse(a['date']).compareTo(DateTime.parse(b['date'])),
+      );
       return trendPoints;
     } catch (e) {
       AppLogger.debug('Error fetching trend data: $e');
@@ -198,7 +228,9 @@ class SupabaseService {
           .select()
           .eq('user_id', client.auth.currentUser!.id)
           .order('created_at', ascending: false);
-      return response;
+      return (response as List)
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
     } catch (e) {
       AppLogger.debug('Error fetching notifications: $e');
       return [];
@@ -211,16 +243,14 @@ class SupabaseService {
         .from('notifications')
         .stream(primaryKey: ['id'])
         .eq('user_id', client.auth.currentUser!.id)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false)
+        .map((data) => data.map((e) => Map<String, dynamic>.from(e)).toList());
   }
 
   Future<void> markNotificationAsRead(String id) async {
     if (client.auth.currentUser == null) return;
     try {
-      await client
-          .from('notifications')
-          .update({'is_read': true})
-          .eq('id', id);
+      await client.from('notifications').update({'is_read': true}).eq('id', id);
     } catch (e) {
       AppLogger.debug('Error marking notification as read: $e');
     }
@@ -234,7 +264,7 @@ class SupabaseService {
         final s = t['status']?.toString().toLowerCase() ?? '';
         return s == 'abnormal' || s == 'high' || s == 'low';
       }).length;
-      
+
       final status = abnormalCount > 0 ? 'Abnormal' : 'Normal';
 
       await client.from('lab_results').insert({
@@ -247,12 +277,12 @@ class SupabaseService {
         'test_results': testResults,
         'storage_path': data['storage_path'],
       });
-      
+
       // Trigger notification
       await NotificationService().showNotification(
-        DateTime.now().millisecond, 
-        'Upload Complete', 
-        'Your lab report has been successfully processed.'
+        DateTime.now().millisecond,
+        'Upload Complete',
+        'Your lab report has been successfully processed.',
       );
     } catch (e) {
       AppLogger.debug('Error creating lab result: $e');
@@ -267,26 +297,30 @@ class SupabaseService {
           .from('health_circles')
           .select('*, members:health_circle_members(*, profiles(*))')
           .order('created_at', ascending: false);
-      
+
       return (response as List).map((circle) {
         final membersRaw = circle['members'] as List? ?? [];
         final members = membersRaw.map((m) {
           final profile = m['profiles'];
           String name = 'Unknown';
           if (profile != null && profile is Map) {
-             name = '${profile["first_name"] ?? ""} ${profile["last_name"] ?? ""}'.trim();
-             if (name.isEmpty) name = profile['email'] ?? 'Unknown';
+            name =
+                '${profile["first_name"] ?? ""} ${profile["last_name"] ?? ""}'
+                    .trim();
+            if (name.isEmpty) name = profile['email'] ?? 'Unknown';
           } else if (m['email'] != null) {
-             name = m['email'];
+            name = m['email'];
           }
-          
+
           return {
             'name': name,
             'role': m['role'],
             'status': m['status'],
             'permissions': m['permissions'],
-            'email': m['email'] ?? (profile != null && profile is Map ? profile['email'] : ''),
-            'user_id': m['user_id']
+            'email':
+                m['email'] ??
+                (profile != null && profile is Map ? profile['email'] : ''),
+            'user_id': m['user_id'],
           };
         }).toList();
 
@@ -294,7 +328,7 @@ class SupabaseService {
           'id': circle['id'],
           'name': circle['name'],
           'owner_id': circle['owner_id'],
-          'members': members
+          'members': members,
         };
       }).toList();
     } catch (e) {
@@ -304,45 +338,53 @@ class SupabaseService {
   }
 
   Future<void> updateHealthCircles(List<Map<String, dynamic>> circles) async {
-    AppLogger.debug('updateHealthCircles is deprecated in favor of relational operations');
+    AppLogger.debug(
+      'updateHealthCircles is deprecated in favor of relational operations',
+    );
   }
 
   Future<void> createHealthCircle(String name) async {
     if (client.auth.currentUser == null) return;
     try {
       final user = client.auth.currentUser!;
-      final circle = await client.from('health_circles').insert({
-        'name': name,
-        'owner_id': user.id
-      }).select().single();
-      
+      final circle = await client
+          .from('health_circles')
+          .insert({'name': name, 'owner_id': user.id})
+          .select()
+          .single();
+
       await client.from('health_circle_members').insert({
         'circle_id': circle['id'],
         'user_id': user.id,
         'role': 'Admin',
         'permissions': 'Full Access',
-        'status': 'Active'
+        'status': 'Active',
       });
     } catch (e) {
-       AppLogger.debug('Error creating circle: $e');
-       rethrow;
+      AppLogger.debug('Error creating circle: $e');
+      rethrow;
     }
   }
 
   Future<void> inviteMember(String circleId, String email, String role) async {
     if (client.auth.currentUser == null) return;
     await client.from('health_circle_members').insert({
-       'circle_id': circleId,
-       'email': email,
-       'role': role,
-       'status': 'Pending',
-       'permissions': 'Read-Only' // Default
+      'circle_id': circleId,
+      'email': email,
+      'role': role,
+      'status': 'Pending',
+      'permissions': 'Read-Only', // Default
     });
   }
 
-  Future<void> updateMemberPermissions(String circleId, String userId, String permissions) async {
+  Future<void> updateMemberPermissions(
+    String circleId,
+    String userId,
+    String permissions,
+  ) async {
     if (client.auth.currentUser == null) return;
-    await client.from('health_circle_members')
+    await client
+        .from('health_circle_members')
         .update({'permissions': permissions})
         .eq('circle_id', circleId)
         .eq('user_id', userId);
@@ -350,7 +392,10 @@ class SupabaseService {
 
   Future<void> joinCircle(String circleId) async {
     if (client.auth.currentUser == null) return;
-    await client.rpc('join_health_circle', params: {'circle_id_param': circleId});
+    await client.rpc(
+      'join_health_circle',
+      params: {'circle_id_param': circleId},
+    );
   }
 
   Future<void> deleteAccountData() async {
@@ -364,7 +409,11 @@ class SupabaseService {
     return token;
   }
 
-  Future<void> logAccess({required String action, String? resourceId, Map<String, dynamic>? metadata}) async {
+  Future<void> logAccess({
+    required String action,
+    String? resourceId,
+    Map<String, dynamic>? metadata,
+  }) async {
     if (client.auth.currentUser == null) return;
     try {
       await client.from('access_logs').insert({

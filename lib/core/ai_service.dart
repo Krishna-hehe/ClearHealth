@@ -53,16 +53,20 @@ class AiService {
   final CacheService cacheService;
   late final GenerativeModel _textModel;
   late final GenerativeModel _visionModel;
-  late final GenerativeModel _chatModel; 
-  
-  final _rateLimiter = RateLimiter(maxRequests: 10, duration: const Duration(minutes: 1));
+  late final GenerativeModel _chatModel;
+
+  final _rateLimiter = RateLimiter(
+    maxRequests: 10,
+    duration: const Duration(minutes: 1),
+  );
 
   // Test hook
-  final Future<GenerateContentResponse> Function(Iterable<Content> content)? mockTextGenerator;
+  final Future<GenerateContentResponse> Function(Iterable<Content> content)?
+  mockTextGenerator;
 
   AiService({
-    required this.apiKey, 
-    this.chatApiKey, 
+    required this.apiKey,
+    this.chatApiKey,
     required this.vectorService,
     required this.cacheService,
     GenerativeModel? textModel,
@@ -73,23 +77,26 @@ class AiService {
     if (apiKey.isEmpty) {
       AppLogger.debug('❌ AiService: API Key is empty!');
     } else {
-      AppLogger.debug('🚀 AiService: Initializing with key starting with: ${apiKey.substring(0, min(5, apiKey.length))}...');
+      AppLogger.debug(
+        '🚀 AiService: Initializing with key starting with: ${apiKey.substring(0, min(5, apiKey.length))}...',
+      );
     }
-    _textModel = textModel ?? GenerativeModel(
-      model: 'gemini-flash-latest',
-      apiKey: apiKey,
+    _textModel =
+        textModel ??
+        GenerativeModel(model: 'gemini-flash-latest', apiKey: apiKey);
+    _visionModel =
+        visionModel ??
+        GenerativeModel(model: 'gemini-flash-latest', apiKey: apiKey);
+    // Initialize Chat Model - prefer chatApiKey, fallback to main apiKey
+    final effectiveChatKey = (chatApiKey != null && chatApiKey!.isNotEmpty)
+        ? chatApiKey!
+        : apiKey;
+    AppLogger.debug(
+      '💬 AiService: Chat initialized with key starting with: ${effectiveChatKey.substring(0, min(5, effectiveChatKey.length))}...',
     );
-     _visionModel = visionModel ?? GenerativeModel(
-      model: 'gemini-flash-latest',
-      apiKey: apiKey,
-    );
-     // Initialize Chat Model - prefer chatApiKey, fallback to main apiKey
-     final effectiveChatKey = (chatApiKey != null && chatApiKey!.isNotEmpty) ? chatApiKey! : apiKey;
-     AppLogger.debug('💬 AiService: Chat initialized with key starting with: ${effectiveChatKey.substring(0, min(5, effectiveChatKey.length))}...');
-     _chatModel = chatModel ?? GenerativeModel(
-      model: 'gemini-flash-latest',
-      apiKey: effectiveChatKey,
-    );
+    _chatModel =
+        chatModel ??
+        GenerativeModel(model: 'gemini-flash-latest', apiKey: effectiveChatKey);
   }
 
   String _sanitizeInput(String input) {
@@ -108,12 +115,14 @@ class AiService {
   }
 
   /// Minifies lab history to reduce token usage
-  List<Map<String, dynamic>> _minifyHistory(List<Map<String, dynamic>> history) {
+  List<Map<String, dynamic>> _minifyHistory(
+    List<Map<String, dynamic>> history,
+  ) {
     return history.map((report) {
       List<Map<String, dynamic>> meaningfulTests = [];
       if (report['testResults'] != null) {
         for (var test in report['testResults']) {
-           // We only keep essential fields 
+          // We only keep essential fields
           meaningfulTests.add({
             'n': test['name'] ?? test['test_name'],
             'v': test['result'] ?? test['value'],
@@ -122,10 +131,7 @@ class AiService {
           });
         }
       }
-      return {
-        'd': report['date'],
-        't': meaningfulTests,
-      };
+      return {'d': report['date'], 't': meaningfulTests};
     }).toList();
   }
 
@@ -135,14 +141,18 @@ class AiService {
     required String unit,
     required String referenceRange,
   }) async {
-    final cacheKey = _generateCacheKey('single_analysis', {'n': testName, 'v': value, 'u': unit});
+    final cacheKey = _generateCacheKey('single_analysis', {
+      'n': testName,
+      'v': value,
+      'u': unit,
+    });
     final cached = cacheService.getAiCache(cacheKey);
     if (cached != null) {
       return LabTestAnalysis.fromJson(Map<String, dynamic>.from(cached));
     }
 
     if (!_rateLimiter.canRequest()) {
-       return LabTestAnalysis(
+      return LabTestAnalysis(
         description: 'Rate limit exceeded.',
         status: 'Error',
         keyInsight: 'Please wait before requesting another analysis.',
@@ -154,12 +164,13 @@ class AiService {
         recommendation: 'Wait 1 minute and refresh.',
       );
     }
-    
+
     testName = _sanitizeInput(testName);
     unit = _sanitizeInput(unit);
     referenceRange = _sanitizeInput(referenceRange);
-    
-    final prompt = '''
+
+    final prompt =
+        '''
       You are a specialized medical interpreter for patients. Your goal is to translate a specific lab result into a detailed, educational, and reassuring narrative.
       
       LAB TEST CONTEXT:
@@ -185,25 +196,29 @@ class AiService {
       final content = [Content.text(prompt)];
       final response = await _textModel.generateContent(content);
       String rawText = response.text?.trim() ?? '{}';
-      
-      AppLogger.debug('🤖 AI Raw Response ($testName): $rawText', containsPII: true);
+
+      AppLogger.debug(
+        '🤖 AI Raw Response ($testName): $rawText',
+        containsPII: true,
+      );
 
       String jsonStr = _extractJson(rawText);
       final data = jsonDecode(jsonStr);
-      
+
       // Cache the result
       cacheService.cacheAiResponse(cacheKey, data);
-      
+
       return LabTestAnalysis.fromJson(data);
     } catch (e, stackTrace) {
       AppLogger.debug('❌ AI Analysis Error for $testName: $e');
       AppLogger.debug(stackTrace.toString());
-      
-       return LabTestAnalysis(
+
+      return LabTestAnalysis(
         description: 'Analysis unavailable. This measures $testName.',
         status: 'Normal', // Default
         keyInsight: 'Consult your doctor.',
-        clinicalSignificance: 'Individual test results should be viewed as part of your complete clinical picture.',
+        clinicalSignificance:
+            'Individual test results should be viewed as part of your complete clinical picture.',
         resultContext: 'Your level is $value $unit.',
         potentialCauses: [],
         factors: [],
@@ -215,26 +230,34 @@ class AiService {
 
   Future<Map<String, dynamic>> getTrendAnalysis({
     required String testName,
-    required List<Map<String, dynamic>> history, 
+    required List<Map<String, dynamic>> history,
   }) async {
     if (history.length < 2) {
       return {
         'direction': 'Stable',
         'change_percent': '0.0%',
-        'analysis': 'Not enough data to identify a trend.'
+        'analysis': 'Not enough data to identify a trend.',
       };
     }
 
-    history.sort((a, b) => DateTime.parse(a['date']).compareTo(DateTime.parse(b['date'])));
-    
+    history.sort(
+      (a, b) => DateTime.parse(a['date']).compareTo(DateTime.parse(b['date'])),
+    );
+
     // Only use dates and values for cache/prompt to save tokens
-    final minifiedHistory = history.map((h) => {'d': h['date'], 'v': h['value']}).toList();
-    final cacheKey = _generateCacheKey('trend', {'t': testName, 'h': minifiedHistory});
-    
+    final minifiedHistory = history
+        .map((h) => {'d': h['date'], 'v': h['value']})
+        .toList();
+    final cacheKey = _generateCacheKey('trend', {
+      't': testName,
+      'h': minifiedHistory,
+    });
+
     final cached = cacheService.getAiCache(cacheKey);
     if (cached != null) return Map<String, dynamic>.from(cached);
 
-    final prompt = '''
+    final prompt =
+        '''
       Analyze the trend for: $testName
       Data: ${jsonEncode(minifiedHistory)}
       
@@ -252,7 +275,7 @@ class AiService {
       String rawText = response.text?.trim() ?? '{}';
       String jsonStr = _extractJson(rawText);
       final data = jsonDecode(jsonStr);
-      
+
       cacheService.cacheAiResponse(cacheKey, data);
       return data;
     } catch (e) {
@@ -260,25 +283,35 @@ class AiService {
       return {
         'direction': 'Unknown',
         'change_percent': '--',
-        'analysis': 'Unable to calculate trend at this time.'
+        'analysis': 'Unable to calculate trend at this time.',
       };
     }
   }
 
-  Future<List<Map<String, dynamic>>> getOptimizationTips(List<Map<String, dynamic>> abnormalTests) async {
+  Future<List<Map<String, dynamic>>> getOptimizationTips(
+    List<Map<String, dynamic>> abnormalTests,
+  ) async {
     if (abnormalTests.isEmpty) return [];
 
     // Minimize input
-    final minifiedTests = abnormalTests.map((t) => {
-      'n': t['name'] ?? t['test_name'], 
-      'v': t['result'] ?? t['value'], 
-      's': t['status']
-    }).toList();
-    
+    final minifiedTests = abnormalTests
+        .map(
+          (t) => {
+            'n': t['name'] ?? t['test_name'],
+            'v': t['result'] ?? t['value'],
+            's': t['status'],
+          },
+        )
+        .toList();
+
     final cacheKey = _generateCacheKey('opt_tips', minifiedTests);
-    
+
     final cached = cacheService.getAiCache(cacheKey);
-    if (cached != null) return List<Map<String, dynamic>>.from(cached);
+    if (cached != null) {
+      return (cached as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    }
 
     final prompt = '''
       You are a health optimization expert. Provide 4-6 nutritional tips for these abnormal results.
@@ -307,25 +340,31 @@ class AiService {
       String rawText = response.text?.trim() ?? '[]';
       final jsonStr = _extractJson(rawText);
       final List<dynamic> data = jsonDecode(jsonStr);
-      
+
       cacheService.cacheAiResponse(cacheKey, data);
-      
-      return data.cast<Map<String, dynamic>>();
+
+      return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     } catch (e) {
       AppLogger.debug('Error fetching optimization tips: $e');
       return [];
     }
   }
 
-  Future<List<Map<String, dynamic>>> getHealthPredictions(List<Map<String, dynamic>> fullHistory) async {
+  Future<List<Map<String, dynamic>>> getHealthPredictions(
+    List<Map<String, dynamic>> fullHistory,
+  ) async {
     if (fullHistory.length < 2) return [];
 
     final recentHistory = fullHistory.take(5).toList();
     final minifiedHistory = _minifyHistory(recentHistory);
-    
+
     final cacheKey = _generateCacheKey('predictions', minifiedHistory);
     final cached = cacheService.getAiCache(cacheKey);
-    if (cached != null) return List<Map<String, dynamic>>.from(cached);
+    if (cached != null) {
+      return (cached as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    }
 
     final prompt = '''
       Predictive Analyst. Forecast trends (3mo) based on this history (d=date, n=test, v=val, s=status).
@@ -348,18 +387,18 @@ class AiService {
 
     try {
       final content = [Content.text(prompt)];
-      
-      final response = mockTextGenerator != null 
+
+      final response = mockTextGenerator != null
           ? await mockTextGenerator!(content)
           : await _textModel.generateContent(content);
 
       String rawText = response.text?.trim() ?? '[]';
       final jsonStr = _extractJson(rawText);
       final List<dynamic> data = jsonDecode(jsonStr);
-      
+
       cacheService.cacheAiResponse(cacheKey, data);
-      
-      return data.cast<Map<String, dynamic>>();
+
+      return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     } catch (e) {
       AppLogger.error('Error fetching health predictions: $e');
       return [];
@@ -368,10 +407,10 @@ class AiService {
 
   Future<String> getBatchSummary(List<Map<String, dynamic>> tests) async {
     if (tests.isEmpty) return 'No lab results available.';
-    
+
     final minifiedTests = _minifyHistory(tests);
     final cacheKey = _generateCacheKey('batch_summary', minifiedTests);
-    
+
     final cached = cacheService.getAiCache(cacheKey);
     if (cached != null) return cached.toString();
 
@@ -392,7 +431,7 @@ class AiService {
       final content = [Content.text(prompt)];
       final response = await _textModel.generateContent(content);
       final text = response.text?.trim() ?? 'Analysis incomplete.';
-      
+
       cacheService.cacheAiResponse(cacheKey, text);
       return text;
     } catch (e) {
@@ -400,14 +439,18 @@ class AiService {
     }
   }
 
-  Future<String> chat(String query, {Map<String, dynamic>? healthContext}) async {
-    if (!_rateLimiter.canRequest()) return 'Rate limit exceeded. Please wait a moment.';
-    
+  Future<String> chat(
+    String query, {
+    Map<String, dynamic>? healthContext,
+  }) async {
+    if (!_rateLimiter.canRequest())
+      return 'Rate limit exceeded. Please wait a moment.';
+
     query = _sanitizeInput(query);
 
     try {
       final relevantChunks = await vectorService.searchSimilarChunks(query);
-      
+
       final contextChunks = relevantChunks.map((chunk) {
         return 'Content: ${chunk['content']}\nDate: ${chunk['metadata']['date']}';
       }).toList();
@@ -418,7 +461,7 @@ class AiService {
         healthContext: healthContext,
       );
     } catch (e) {
-      return 'I encountered an error analyzing your health data: \$e';
+      return 'I encountered an error analyzing your health data: $e';
     }
   }
 
@@ -428,21 +471,23 @@ class AiService {
     Map<String, dynamic>? healthContext,
   }) async {
     // Chat is dynamic, harder to cache effectively without strict keys, skipping for now
-    
-    final contextText = contextChunks.isEmpty 
+
+    final contextText = contextChunks.isEmpty
         ? "No specific records found."
         : contextChunks.join('\\n\\n---\\n\\n');
-        
+
     String healthContextStr = '';
     if (healthContext != null) {
       // Minify health context too
-      final abnormal = (healthContext['abnormal_labs'] as List?)?.map((t) => {
-        'n': t['name'], 'v': t['result'], 's': t['status']
-      }).toList();
-      healthContextStr = "Context: Abnormal=\${jsonEncode(abnormal)}, Meds=\${jsonEncode(healthContext['active_prescriptions'])}";
+      final abnormal = (healthContext['abnormal_labs'] as List?)
+          ?.map((t) => {'n': t['name'], 'v': t['result'], 's': t['status']})
+          .toList();
+      healthContextStr =
+          "Context: Abnormal=\${jsonEncode(abnormal)}, Meds=\${jsonEncode(healthContext['active_prescriptions'])}";
     }
 
-    final prompt = '''
+    final prompt =
+        '''
       LabSense AI Assistant.
       
       $healthContextStr
@@ -464,7 +509,10 @@ class AiService {
     }
   }
 
-  Future<Map<String, dynamic>?> parseLabReport(Uint8List imageBytes, String mimeType) async {
+  Future<Map<String, dynamic>?> parseLabReport(
+    Uint8List imageBytes,
+    String mimeType,
+  ) async {
     // Vision cannot be cached easily by hash of bytes (too big), and usually one-off operation
     final prompt = '''
       Parse this lab report into JSON:
@@ -485,10 +533,7 @@ class AiService {
 
     try {
       final content = [
-        Content.multi([
-          TextPart(prompt),
-          DataPart(mimeType, imageBytes),
-        ])
+        Content.multi([TextPart(prompt), DataPart(mimeType, imageBytes)]),
       ];
 
       final response = await _visionModel.generateContent(content);
@@ -497,35 +542,41 @@ class AiService {
 
       String jsonStr = _extractJson(text);
       final parsed = jsonDecode(jsonStr);
-      
-      if (parsed is! Map<String, dynamic> || !parsed.containsKey('test_results')) {
+
+      if (parsed is! Map<String, dynamic> ||
+          !parsed.containsKey('test_results')) {
         throw Exception('Invalid JSON format');
       }
 
       // Helper function _calculateStatus was used before, need to re-add it or keep simple
       if (parsed['test_results'] is List) {
         for (var test in parsed['test_results']) {
-           if (test is Map<String, dynamic>) {
-             test['status'] = _calculateStatus(
-               test['result_value']?.toString() ?? '',
-               test['reference_range']?.toString() ?? ''
-             ) ?? test['status'];
-           }
+          if (test is Map<String, dynamic>) {
+            test['status'] =
+                _calculateStatus(
+                  test['result_value']?.toString() ?? '',
+                  test['reference_range']?.toString() ?? '',
+                ) ??
+                test['status'];
+          }
         }
       }
 
       return parsed;
     } catch (e) {
-      AppLogger.error('Error parsing lab report: \$e');
+      AppLogger.error('Error parsing lab report: $e');
       rethrow;
     }
   }
 
-   String? _calculateStatus(String resultValue, String referenceRange) {
+  String? _calculateStatus(String resultValue, String referenceRange) {
     if (resultValue.isEmpty || referenceRange.isEmpty) return null;
     final resultLower = resultValue.toLowerCase();
-    if (resultLower.contains('positive') || resultLower.contains('detected')) return 'High';
-    if (resultLower.contains('negative') || resultLower.contains('not detected')) return 'Normal';
+    if (resultLower.contains('positive') || resultLower.contains('detected'))
+      return 'High';
+    if (resultLower.contains('negative') ||
+        resultLower.contains('not detected'))
+      return 'Normal';
 
     final numericMatch = RegExp(r'([0-9]+\.?[0-9]*)').firstMatch(resultValue);
     if (numericMatch == null) return null;
@@ -533,7 +584,7 @@ class AiService {
     if (value == null) return null;
 
     final rangeLower = referenceRange.toLowerCase();
-    
+
     if (rangeLower.contains('<')) {
       final maxMatch = RegExp(r'<\s*([0-9]+\.?[0-9]*)').firstMatch(rangeLower);
       if (maxMatch != null) {
@@ -541,7 +592,7 @@ class AiService {
         if (max != null) return value >= max ? 'High' : 'Normal';
       }
     }
-    
+
     if (rangeLower.contains('>')) {
       final minMatch = RegExp(r'>\s*([0-9]+\.?[0-9]*)').firstMatch(rangeLower);
       if (minMatch != null) {
@@ -550,7 +601,9 @@ class AiService {
       }
     }
 
-    final rangeMatch = RegExp(r'([0-9]+\.?[0-9]*)\s*-\s*([0-9]+\.?[0-9]*)').firstMatch(rangeLower);
+    final rangeMatch = RegExp(
+      r'([0-9]+\.?[0-9]*)\s*-\s*([0-9]+\.?[0-9]*)',
+    ).firstMatch(rangeLower);
     if (rangeMatch != null) {
       final min = double.tryParse(rangeMatch.group(1)!);
       final max = double.tryParse(rangeMatch.group(2)!);
@@ -570,7 +623,10 @@ class AiService {
       final blocks = text.split('```');
       for (var block in blocks) {
         final trimmed = block.trim();
-        if (trimmed.startsWith('{') || trimmed.startsWith('[') || trimmed.contains('{\\n') || trimmed.startsWith('json')) {
+        if (trimmed.startsWith('{') ||
+            trimmed.startsWith('[') ||
+            trimmed.contains('{\n') ||
+            trimmed.startsWith('json')) {
           text = trimmed.replaceFirst('json', '').trim();
           break;
         }
@@ -585,7 +641,9 @@ class AiService {
 
     if (isArray) {
       final lastBracket = text.lastIndexOf(']');
-      if (firstBracket != -1 && lastBracket != -1 && lastBracket > firstBracket) {
+      if (firstBracket != -1 &&
+          lastBracket != -1 &&
+          lastBracket > firstBracket) {
         return text.substring(firstBracket, lastBracket + 1).trim();
       }
     } else {
