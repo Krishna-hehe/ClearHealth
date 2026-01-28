@@ -105,7 +105,7 @@ class _TrendDashboardPageState extends ConsumerState<TrendDashboardPage> {
                             Switch(
                               value: _normalizeData, 
                               onChanged: (v) => setState(() => _normalizeData = v),
-                              activeColor: AppColors.primary,
+                              activeThumbColor: AppColors.primary,
                             ),
                           ],
                         ),

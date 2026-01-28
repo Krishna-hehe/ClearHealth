@@ -14,19 +14,27 @@ import 'core/notification_service.dart';
 import 'core/cache_service.dart';
 import 'core/services/session_timeout_manager.dart';
 import 'core/services/log_service.dart';
+import 'core/services/rls_verification_service.dart';
 import 'package:flutter_windowmanager/flutter_windowmanager.dart';
 import 'package:flutter/foundation.dart';
 import 'features/splash/splash_page.dart';
+import 'features/share/doctor_view_page.dart';
 
 void main() {
-  runZonedGuarded(() {
-    WidgetsFlutterBinding.ensureInitialized();
-    // Start the app immediately with a loading state
-    runApp(const ProviderScope(child: AppEntryPoint()));
-  }, (error, stack) {
-    Sentry.captureException(error, stackTrace: stack);
-    AppLogger.error('🔴 Uncaught error in main zone: $error', stackTrace: stack);
-  });
+  runZonedGuarded(
+    () {
+      WidgetsFlutterBinding.ensureInitialized();
+      // Start the app immediately with a loading state
+      runApp(const ProviderScope(child: AppEntryPoint()));
+    },
+    (error, stack) {
+      Sentry.captureException(error, stackTrace: stack);
+      AppLogger.error(
+        '🔴 Uncaught error in main zone: $error',
+        stackTrace: stack,
+      );
+    },
+  );
 }
 
 class AppEntryPoint extends StatefulWidget {
@@ -78,18 +86,18 @@ class _AppEntryPointState extends State<AppEntryPoint> {
           anonKey: SupabaseConfig.anonKey,
         );
         AppLogger.info('✅ Supabase initialized');
+
+        // Set up RLS verification on auth state changes
+        _setupRlsVerification();
       } catch (e) {
         throw Exception('Failed to connect to backend: $e');
       }
 
       // 4. Initialize Local Services
       if (mounted) setState(() => _status = 'Starting local services...');
-      
+
       // Run these in parallel to speed up
-      await Future.wait([
-        _initNotifications(),
-        _initCache(),
-      ]);
+      await Future.wait([_initNotifications(), _initCache()]);
 
       if (mounted) {
         setState(() {
@@ -124,6 +132,34 @@ class _AppEntryPointState extends State<AppEntryPoint> {
       debugPrint('⚠️ Cache init failed: $e');
       // Don't block app start for this
     }
+  }
+
+  /// Set up RLS verification to run when user authenticates
+  void _setupRlsVerification() {
+    final rlsService = RlsVerificationService(Supabase.instance.client);
+
+    // Verify RLS when user authenticates
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+      if (data.session != null) {
+        AppLogger.info('🔐 User authenticated - verifying RLS policies...');
+
+        try {
+          final rlsVerified = await rlsService.verifyRlsPolicies();
+
+          if (!rlsVerified) {
+            AppLogger.error(
+              '🚨 CRITICAL: RLS verification failed! Data may be exposed!',
+            );
+            // TODO: Decide on failure handling:
+            // - Show warning dialog to user
+            // - Prevent app usage until fixed
+            // - Send alert to admin
+          }
+        } catch (e) {
+          AppLogger.error('❌ RLS verification error: $e');
+        }
+      }
+    });
   }
 
   @override
@@ -178,42 +214,58 @@ class _AppEntryPointState extends State<AppEntryPoint> {
   }
 }
 
-
 class LabSenseApp extends ConsumerWidget {
   const LabSenseApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     print('🏗️ LabSenseApp: Building...');
-    final currentUser = ref.watch(currentUserProvider);
-    print('👤 LabSenseApp: Current User: ${currentUser?.email}');
+    final isAuthLoading = ref.watch(isAuthLoadingProvider);
     final themeMode = ref.watch(themeProvider);
- 
+    final currentUser = ref.watch(currentUserProvider);
+
+    if (isAuthLoading) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: themeMode == ThemeMode.dark
+            ? AppTheme.darkTheme
+            : AppTheme.lightTheme,
+        home: const SplashPage(statusMessage: 'Authenticating...'),
+      );
+    }
+
     return MaterialApp(
       title: 'LabSense',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      home: currentUser == null 
-          ? const LoginPage() 
+      home: currentUser == null
+          ? const LoginPage()
           : SessionTimeoutManager(
               duration: const Duration(minutes: 5),
               onTimeout: () {
-                // When timeout happens, we force the app into a locked state if biometrics are enabled,
-                // or just log them out.
-                // For better UX, let's prompt the SecurityWrapper to lock.
-                // We'll use a GlobalKey or a Riverpod state to trigger this.
-                // For now, let's just use a simple approach: invalidate auth or show lock screen.
-                // Let's use the lock screen approach by ensuring SecurityWrapper is effectively reset.
-                // However, SecurityWrapper is stateful.
-                // We will use a provider to trigger lock.
                 ref.read(appLockProvider.notifier).state = true;
               },
               child: const SecurityWrapper(
                 child: MainLayout(child: SizedBox()),
               ),
             ),
+      onGenerateRoute: (settings) {
+        // Handle public doctor link
+        if (settings.name != null &&
+            settings.name!.startsWith('/doctor_view')) {
+          final uri = Uri.parse(settings.name!);
+          final token = uri.queryParameters['token'];
+          if (token != null) {
+            // Import DoctorViewPage at top of file needed
+            return MaterialPageRoute(
+              builder: (_) => DoctorViewPage(token: token),
+            );
+          }
+        }
+        return null; // Fallback to home
+      },
     );
   }
 }
@@ -229,7 +281,8 @@ class SecurityWrapper extends ConsumerStatefulWidget {
   ConsumerState<SecurityWrapper> createState() => _SecurityWrapperState();
 }
 
-class _SecurityWrapperState extends ConsumerState<SecurityWrapper> with WidgetsBindingObserver {
+class _SecurityWrapperState extends ConsumerState<SecurityWrapper>
+    with WidgetsBindingObserver {
   bool _isLoading = true;
 
   @override
@@ -258,26 +311,35 @@ class _SecurityWrapperState extends ConsumerState<SecurityWrapper> with WidgetsB
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-       // App went to background - blur or lock could happen here if strict
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      // App went to background - blur or lock could happen here if strict
     }
   }
 
   Future<void> _checkSecurity() async {
     final enabled = await BiometricService().isEnabled();
-    
+
     // If biometrics NOT enabled, we don't force lock, but we obey the manual lock provider
     if (!enabled) {
-      if (mounted) setState(() { _isLoading = false; });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
       return;
     }
 
     // Determine initial lock state
     // For now, assume locked on startup if biometrics enabled
     ref.read(appLockProvider.notifier).state = true;
-    
-    if (mounted) setState(() { _isLoading = false; });
-    _authenticate(); 
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+    _authenticate();
   }
 
   Future<void> _authenticate() async {
@@ -301,11 +363,21 @@ class _SecurityWrapperState extends ConsumerState<SecurityWrapper> with WidgetsB
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.lock_outline, size: 64, color: AppColors.secondary),
+              const Icon(
+                Icons.lock_outline,
+                size: 64,
+                color: AppColors.secondary,
+              ),
               const SizedBox(height: 24),
-              const Text('Session Locked', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text(
+                'Session Locked',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
-              const Text('LabSense secured for your privacy', style: TextStyle(color: AppColors.secondary)),
+              const Text(
+                'LabSense secured for your privacy',
+                style: TextStyle(color: AppColors.secondary),
+              ),
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 icon: const Icon(Icons.fingerprint),
@@ -313,8 +385,13 @@ class _SecurityWrapperState extends ConsumerState<SecurityWrapper> with WidgetsB
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 label: const Text('Unlock'),
               ),
@@ -322,12 +399,12 @@ class _SecurityWrapperState extends ConsumerState<SecurityWrapper> with WidgetsB
               TextButton(
                 onPressed: () {
                   // Logout option in case they can't unlock
-                   Supabase.instance.client.auth.signOut();
-                   // Reset lock state so next login isn't weirdly locked immediately unless desired
-                   ref.read(appLockProvider.notifier).state = false;
+                  Supabase.instance.client.auth.signOut();
+                  // Reset lock state so next login isn't weirdly locked immediately unless desired
+                  ref.read(appLockProvider.notifier).state = false;
                 },
                 child: const Text('Log Out'),
-              )
+              ),
             ],
           ),
         ),

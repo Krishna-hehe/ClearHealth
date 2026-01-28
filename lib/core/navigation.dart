@@ -7,6 +7,7 @@ enum NavItem {
   trends,
   conditions,
   prescriptions,
+  medications,
   settings,
   notifications,
   resultDetail,
@@ -23,4 +24,3 @@ enum NavItem {
 
 final navigationProvider = StateProvider<NavItem>((ref) => NavItem.landing);
 final isSignUpModeProvider = StateProvider<bool>((ref) => false);
-

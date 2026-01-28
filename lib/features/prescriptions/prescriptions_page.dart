@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/theme.dart';
 import '../../core/notification_service.dart';
-import '../../core/providers/user_providers.dart';
 import '../../core/providers.dart';
 
 class PrescriptionsPage extends ConsumerStatefulWidget {
@@ -13,7 +12,8 @@ class PrescriptionsPage extends ConsumerStatefulWidget {
   ConsumerState<PrescriptionsPage> createState() => _PrescriptionsPageState();
 }
 
-class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with SingleTickerProviderStateMixin {
+class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<Map<String, dynamic>> _prescriptions = [];
 
@@ -50,7 +50,7 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
       error: (e, s) => Center(child: Text('Error: $e')),
       data: (prescriptions) {
         _prescriptions = prescriptions;
-        
+
         return Material(
           color: Colors.transparent,
           child: Column(
@@ -82,11 +82,17 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
 
   Future<void> _togglePrescriptionStatus(String id, bool isActive) async {
     try {
-      await ref.read(userRepositoryProvider).updatePrescription(id, {'is_active': !isActive});
+      await ref.read(userRepositoryProvider).updatePrescription(id, {
+        'is_active': !isActive,
+      });
       ref.invalidate(prescriptionsProvider);
       ref.invalidate(activePrescriptionsCountProvider);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
@@ -107,7 +113,9 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Prescription'),
-        content: const Text('Are you sure you want to delete this prescription? This action cannot be undone.'),
+        content: const Text(
+          'Are you sure you want to delete this prescription? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -127,17 +135,31 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
         await ref.read(userRepositoryProvider).deletePrescription(id);
         ref.invalidate(prescriptionsProvider);
         ref.invalidate(activePrescriptionsCountProvider);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Prescription deleted')));
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Prescription deleted')));
+        }
       } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
       }
     }
   }
 
   Widget _buildPrescriptionList(bool active) {
-    final filtered = _prescriptions.where((p) => (p['is_active'] ?? true) == active).toList();
+    final filtered = _prescriptions
+        .where((p) => (p['is_active'] ?? true) == active)
+        .toList();
     if (filtered.isEmpty) {
-      return Center(child: Text(active ? 'No active prescriptions' : 'No past prescriptions'));
+      return Center(
+        child: Text(
+          active ? 'No active prescriptions' : 'No past prescriptions',
+        ),
+      );
     }
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 80),
@@ -147,92 +169,158 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
         return Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: AppColors.border)
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AppColors.border),
           ),
           margin: const EdgeInsets.only(bottom: 12),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                 Container(
-                  height: 48, width: 48,
+                Container(
+                  height: 48,
+                  width: 48,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    image: p['image_url'] != null ? DecorationImage(image: NetworkImage(p['image_url']), fit: BoxFit.cover) : null, 
+                    image: p['image_url'] != null
+                        ? DecorationImage(
+                            image: NetworkImage(p['image_url']),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
                   ),
-                  child: p['image_url'] == null 
-                    ? Icon(Icons.medication_outlined, color: Theme.of(context).primaryColor, size: 24)
-                    : null,
+                  child: p['image_url'] == null
+                      ? Icon(
+                          Icons.medication_outlined,
+                          color: Theme.of(context).primaryColor,
+                          size: 24,
+                        )
+                      : null,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(p['name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text(
+                        p['name'] ?? 'Unknown',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text('${p['dosage'] ?? ''} • ${p['frequency'] ?? ''}', style: const TextStyle(color: AppColors.secondary, fontSize: 14)),
+                      Text(
+                        '${p['dosage'] ?? ''} • ${p['frequency'] ?? ''}',
+                        style: const TextStyle(
+                          color: AppColors.secondary,
+                          fontSize: 14,
+                        ),
+                      ),
                       if (p['start_date'] != null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          '${p['start_date']} ${p['end_date'] != null ? '- ${p['end_date']}' : ''}', 
-                          style: const TextStyle(fontSize: 12, color: AppColors.secondary)
+                          '${p['start_date']} ${p['end_date'] != null ? '- ${p['end_date']}' : ''}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.secondary,
+                          ),
                         ),
                       ],
                       if (p['reminder_time'] != null) ...[
-                         const SizedBox(height: 4),
-                         Row(
-                           children: [
-                             const Icon(Icons.alarm, size: 12, color: AppColors.secondary),
-                             const SizedBox(width: 4),
-                             Text(p['reminder_time'], style: const TextStyle(fontSize: 12, color: AppColors.secondary)),
-                           ],
-                         ),
-                      ]
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.alarm,
+                              size: 12,
+                              color: AppColors.secondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              p['reminder_time'],
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.secondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
-                
-                 Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: active ? AppColors.success.withValues(alpha: 0.1) : Theme.of(context).dividerColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          active ? 'Active' : 'Past',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: active ? AppColors.success : AppColors.secondary),
+
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: active
+                            ? AppColors.success.withValues(alpha: 0.1)
+                            : Theme.of(
+                                context,
+                              ).dividerColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        active ? 'Active' : 'Past',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: active
+                              ? AppColors.success
+                              : AppColors.secondary,
                         ),
                       ),
-                       const SizedBox(height: 8),
-                       Row(
-                         mainAxisSize: MainAxisSize.min,
-                         children: [
-                           IconButton(
-                             icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.secondary),
-                             tooltip: 'Edit',
-                             onPressed: () => _editPrescription(p),
-                           ),
-                           if (active)
-                             IconButton(
-                               icon: const Icon(Icons.archive_outlined, size: 20, color: AppColors.secondary),
-                               tooltip: 'Move to Past',
-                               onPressed: () => _togglePrescriptionStatus(p['id'].toString(), true),
-                             ),
-                           IconButton(
-                             icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.danger),
-                             tooltip: 'Delete',
-                             onPressed: () => _deletePrescription(p['id'].toString()),
-                           ),
-                         ],
-                       )
-                    ],
-                 )
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.edit_outlined,
+                            size: 20,
+                            color: AppColors.secondary,
+                          ),
+                          tooltip: 'Edit',
+                          onPressed: () => _editPrescription(p),
+                        ),
+                        if (active)
+                          IconButton(
+                            icon: const Icon(
+                              Icons.archive_outlined,
+                              size: 20,
+                              color: AppColors.secondary,
+                            ),
+                            tooltip: 'Move to Past',
+                            onPressed: () => _togglePrescriptionStatus(
+                              p['id'].toString(),
+                              true,
+                            ),
+                          ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            size: 20,
+                            color: AppColors.danger,
+                          ),
+                          tooltip: 'Delete',
+                          onPressed: () =>
+                              _deletePrescription(p['id'].toString()),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -250,7 +338,11 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
             color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(Icons.medication_outlined, size: 24, color: AppColors.secondary),
+          child: const Icon(
+            Icons.medication_outlined,
+            size: 24,
+            color: AppColors.secondary,
+          ),
         ),
         const SizedBox(width: 16),
         Column(
@@ -274,7 +366,9 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           onPressed: _addPrescription,
         ),
@@ -295,15 +389,25 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(6),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2)),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         labelColor: Theme.of(context).colorScheme.primary,
         unselectedLabelColor: AppColors.secondary,
         labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
         tabs: [
-          Tab(text: 'Active (${_prescriptions.where((p) => (p['is_active'] ?? true) == true).length})'),
-          Tab(text: 'Past (${_prescriptions.where((p) => (p['is_active'] ?? true) == false).length})'),
+          Tab(
+            text:
+                'Active (${_prescriptions.where((p) => (p['is_active'] ?? true) == true).length})',
+          ),
+          Tab(
+            text:
+                'Past (${_prescriptions.where((p) => (p['is_active'] ?? true) == false).length})',
+          ),
         ],
       ),
     );
@@ -328,12 +432,22 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
                 color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.medical_services_outlined, size: 48, color: AppColors.border),
+              child: const Icon(
+                Icons.medical_services_outlined,
+                size: 48,
+                color: AppColors.border,
+              ),
             ),
             const SizedBox(height: 24),
-            const Text('No active prescriptions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text(
+              'No active prescriptions',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 8),
-            const Text('Add your current medications to keep track of them.', style: TextStyle(color: AppColors.secondary, fontSize: 14)),
+            const Text(
+              'Add your current medications to keep track of them.',
+              style: TextStyle(color: AppColors.secondary, fontSize: 14),
+            ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               icon: const Icon(Icons.add, size: 16),
@@ -341,8 +455,13 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage> with Sing
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               onPressed: _addPrescription,
             ),
@@ -358,10 +477,12 @@ class _AddPrescriptionDialog extends ConsumerStatefulWidget {
   const _AddPrescriptionDialog({this.prescription});
 
   @override
-  ConsumerState<_AddPrescriptionDialog> createState() => _AddPrescriptionDialogState();
+  ConsumerState<_AddPrescriptionDialog> createState() =>
+      _AddPrescriptionDialogState();
 }
 
-class _AddPrescriptionDialogState extends ConsumerState<_AddPrescriptionDialog> {
+class _AddPrescriptionDialogState
+    extends ConsumerState<_AddPrescriptionDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _dosageController = TextEditingController();
@@ -384,11 +505,14 @@ class _AddPrescriptionDialogState extends ConsumerState<_AddPrescriptionDialog> 
       _frequencyController.text = p['frequency'] ?? '';
       if (p['start_date'] != null) _startDate = DateTime.parse(p['start_date']);
       if (p['end_date'] != null) _endDate = DateTime.parse(p['end_date']);
-      
+
       if (p['reminder_time'] != null) {
         _remindMe = true;
         final parts = p['reminder_time'].split(':');
-        _reminderTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+        _reminderTime = TimeOfDay(
+          hour: int.parse(parts[0]),
+          minute: int.parse(parts[1]),
+        );
       } else {
         _remindMe = false;
       }
@@ -406,18 +530,27 @@ class _AddPrescriptionDialogState extends ConsumerState<_AddPrescriptionDialog> 
 
   Future<void> _uploadPhoto() async {
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+    );
     if (image == null) return;
 
     setState(() => _isUploadingPhoto = true);
     try {
       final bytes = await image.readAsBytes();
-      final url = await ref.read(storageServiceProvider).uploadPrescriptionImage(bytes);
+      final url = await ref
+          .read(storageServiceProvider)
+          .uploadPrescriptionImage(bytes);
       if (url != null) {
         setState(() => _prescriptionImageUrl = url);
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isUploadingPhoto = false);
     }
@@ -434,35 +567,51 @@ class _AddPrescriptionDialogState extends ConsumerState<_AddPrescriptionDialog> 
           'frequency': _frequencyController.text,
           'start_date': _startDate.toIso8601String().split('T')[0],
           'end_date': _endDate?.toIso8601String().split('T')[0],
-          'reminder_time': _remindMe ? '${_reminderTime.hour}:${_reminderTime.minute}' : null,
+          'reminder_time': _remindMe
+              ? '${_reminderTime.hour}:${_reminderTime.minute}'
+              : null,
           'image_url': _prescriptionImageUrl,
-           // Keep existing status if editing, enable if new
-          'is_active': widget.prescription != null ? (widget.prescription!['is_active'] ?? true) : true, 
+          // Keep existing status if editing, enable if new
+          'is_active': widget.prescription != null
+              ? (widget.prescription!['is_active'] ?? true)
+              : true,
         };
 
         if (widget.prescription != null) {
-          await userRepo.updatePrescription(widget.prescription!['id'].toString(), data);
+          await userRepo.updatePrescription(
+            widget.prescription!['id'].toString(),
+            data,
+          );
         } else {
           await userRepo.addPrescription(data);
         }
 
         if (_remindMe) {
-          // Re-schedule reminder (simple logic: cancel old by id? Implementation details vary, 
+          // Re-schedule reminder (simple logic: cancel old by id? Implementation details vary,
           // but scheduling overwrites if ID matches in many plug-ins. Here we just schedule new/update)
-          final id = _nameController.text.hashCode;
-          await NotificationService().scheduleMedicationReminder(
-            id: id,
-            name: _nameController.text,
-            dosage: _dosageController.text,
+          // Re-schedule reminder
+          final id = _nameController.text.hashCode
+              .toString(); // Use string ID for scheduleReminders
+          await NotificationService().scheduleReminders(
+            scheduleId: id,
+            title: 'Medication Reminder: ${_nameController.text}',
+            body:
+                'It\'s time to take your ${_dosageController.text} of ${_nameController.text}.',
+            hour: _reminderTime.hour,
+            minute: _reminderTime.minute,
+            // Prescription dialog doesn't select days yet (assuming daily for now as per old logic)
+            daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
           );
         }
 
         if (mounted) {
-           Navigator.pop(context, true);
+          Navigator.pop(context, true);
         }
       } catch (e) {
-        if(mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
         }
       } finally {
         if (mounted) setState(() => _isLoading = false);
@@ -473,7 +622,9 @@ class _AddPrescriptionDialogState extends ConsumerState<_AddPrescriptionDialog> 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.prescription != null ? 'Edit Prescription' : 'Add Prescription'),
+      title: Text(
+        widget.prescription != null ? 'Edit Prescription' : 'Add Prescription',
+      ),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -490,29 +641,42 @@ class _AddPrescriptionDialogState extends ConsumerState<_AddPrescriptionDialog> 
                     color: Colors.grey[100],
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.border),
-                    image: _prescriptionImageUrl != null 
-                        ? DecorationImage(image: NetworkImage(_prescriptionImageUrl!), fit: BoxFit.cover)
+                    image: _prescriptionImageUrl != null
+                        ? DecorationImage(
+                            image: NetworkImage(_prescriptionImageUrl!),
+                            fit: BoxFit.cover,
+                          )
                         : null,
                   ),
-                  child: _isUploadingPhoto 
+                  child: _isUploadingPhoto
                       ? const Center(child: CircularProgressIndicator())
                       : _prescriptionImageUrl == null
-                          ? Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(Icons.camera_alt_outlined, size: 32, color: AppColors.secondary),
-                                SizedBox(height: 8),
-                                Text('Add Photo', style: TextStyle(color: AppColors.secondary)),
-                              ],
-                            )
-                          : null,
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(
+                              Icons.camera_alt_outlined,
+                              size: 32,
+                              color: AppColors.secondary,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Add Photo',
+                              style: TextStyle(color: AppColors.secondary),
+                            ),
+                          ],
+                        )
+                      : null,
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Medication Name', hintText: 'e.g. Lisinopril'),
+                decoration: const InputDecoration(
+                  labelText: 'Medication Name',
+                  hintText: 'e.g. Lisinopril',
+                ),
                 validator: (v) => v == null || v.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
@@ -521,60 +685,78 @@ class _AddPrescriptionDialogState extends ConsumerState<_AddPrescriptionDialog> 
                   Expanded(
                     child: TextFormField(
                       controller: _dosageController,
-                      decoration: const InputDecoration(labelText: 'Dosage', hintText: 'e.g. 10mg'),
-                      validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      decoration: const InputDecoration(
+                        labelText: 'Dosage',
+                        hintText: 'e.g. 10mg',
+                      ),
+                      validator: (v) =>
+                          v == null || v.isEmpty ? 'Required' : null,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: TextFormField(
                       controller: _frequencyController,
-                      decoration: const InputDecoration(labelText: 'Frequency', hintText: 'e.g. Daily'),
-                      validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      decoration: const InputDecoration(
+                        labelText: 'Frequency',
+                        hintText: 'e.g. Daily',
+                      ),
+                      validator: (v) =>
+                          v == null || v.isEmpty ? 'Required' : null,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               // Dates
               Row(
                 children: [
-                   Expanded(
+                  Expanded(
                     child: InkWell(
                       onTap: () async {
-                         final picked = await showDatePicker(
-                          context: context, 
-                          initialDate: _startDate, 
-                          firstDate: DateTime(2000), 
-                          lastDate: DateTime(2100)
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _startDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
                         );
                         if (picked != null) setState(() => _startDate = picked);
                       },
                       child: InputDecorator(
-                        decoration: const InputDecoration(labelText: 'Start Date'),
+                        decoration: const InputDecoration(
+                          labelText: 'Start Date',
+                        ),
                         child: Text(_startDate.toIso8601String().split('T')[0]),
                       ),
                     ),
-                   ),
-                   const SizedBox(width: 16),
-                   Expanded(
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
                     child: InkWell(
                       onTap: () async {
-                         final picked = await showDatePicker(
-                          context: context, 
-                          initialDate: _endDate ?? _startDate.add(const Duration(days: 30)), 
-                          firstDate: _startDate, 
-                          lastDate: DateTime(2100)
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate:
+                              _endDate ??
+                              _startDate.add(const Duration(days: 30)),
+                          firstDate: _startDate,
+                          lastDate: DateTime(2100),
                         );
                         if (picked != null) setState(() => _endDate = picked);
                       },
                       child: InputDecorator(
-                        decoration: const InputDecoration(labelText: 'End Date (Optional)'),
-                        child: Text(_endDate != null ? _endDate!.toIso8601String().split('T')[0] : 'None'),
+                        decoration: const InputDecoration(
+                          labelText: 'End Date (Optional)',
+                        ),
+                        child: Text(
+                          _endDate != null
+                              ? _endDate!.toIso8601String().split('T')[0]
+                              : 'None',
+                        ),
                       ),
                     ),
-                   ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -582,18 +764,31 @@ class _AddPrescriptionDialogState extends ConsumerState<_AddPrescriptionDialog> 
               // Reminders
               SwitchListTile(
                 title: const Text('Remind Me', style: TextStyle(fontSize: 14)),
-                subtitle: Text(_remindMe ? 'Daily at ${_reminderTime.format(context)}' : 'No reminders'),
+                subtitle: Text(
+                  _remindMe
+                      ? 'Daily at ${_reminderTime.format(context)}'
+                      : 'No reminders',
+                ),
                 value: _remindMe,
                 activeThumbColor: AppColors.primary,
                 onChanged: (v) => setState(() => _remindMe = v),
               ),
               if (_remindMe)
                 Padding(
-                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+                  padding: const EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    bottom: 8,
+                  ),
                   child: OutlinedButton(
                     onPressed: () async {
-                      final picked = await showTimePicker(context: context, initialTime: _reminderTime);
-                      if (picked != null) setState(() => _reminderTime = picked);
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: _reminderTime,
+                      );
+                      if (picked != null) {
+                        setState(() => _reminderTime = picked);
+                      }
                     },
                     child: const Text('Set Reminder Time'),
                   ),
@@ -609,8 +804,20 @@ class _AddPrescriptionDialogState extends ConsumerState<_AddPrescriptionDialog> 
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : _save,
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-          child: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Save'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+          ),
+          child: _isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text('Save'),
         ),
       ],
     );

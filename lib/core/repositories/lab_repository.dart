@@ -15,16 +15,33 @@ class LabRepository {
   final StorageService? _storageService;
   final AuditService? _auditService;
 
-  LabRepository(this._supabaseService, this._cacheService, this._syncService, [this._storageService, this._auditService]) {
+  LabRepository(
+    this._supabaseService,
+    this._cacheService,
+    this._syncService, [
+    this._storageService,
+    this._auditService,
+  ]) {
     _syncService.setActionHandler(_handleSyncAction);
   }
 
-  Future<List<LabReport>> getLabResults({int limit = 10, int offset = 0}) async {
+  Future<List<LabReport>> getLabResults({
+    int limit = 10,
+    int offset = 0,
+    String? profileId,
+  }) async {
     try {
-      final data = await _supabaseService.getLabResults(limit: limit, offset: offset);
+      final data = await _supabaseService.getLabResults(
+        limit: limit,
+        offset: offset,
+        profileId: profileId,
+      );
       if (offset == 0) {
         await _cacheService.cacheLabResults(data);
-        _auditService?.log(AuditAction.viewLabResult, details: 'Fetched lab results list');
+        _auditService?.log(
+          AuditAction.viewLabResult,
+          details: 'Fetched lab results list',
+        );
       }
       return data.map((json) => LabReport.fromJson(json)).toList();
     } catch (e) {
@@ -43,15 +60,11 @@ class LabRepository {
     } else {
       AppLogger.debug('offline: queuing createLabResult');
       await _syncService.addToQueue('createLabResult', data);
-      
+
       // Optimistic update - add to cache immediately
       // Note: We need a temporary ID for the UI
-      final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
-      final optimisticData = {
-        'id': tempId,
-        ...data,
-        'status': 'Pending Sync',
-      };
+      // Optimistic update - add to cache immediately
+      // Note: We need a temporary ID for the UI
       // For now we just queue. Full optimistic UI requires cache list manipulation which happens on fetch.
     }
   }
@@ -75,7 +88,40 @@ class LabRepository {
     }
   }
 
-  Future<bool> _handleSyncAction(String action, Map<String, dynamic> data) async {
+  Future<Map<String, List<LabReport>>> getMultiMarkerHistory(
+    List<String> markers,
+  ) async {
+    final Map<String, List<LabReport>> result = {};
+    for (final marker in markers) {
+      final trendData = await getTrendData(marker);
+      // Map trend data points back to LabReport objects for the service to process
+      result[marker] = trendData.map((d) {
+        return LabReport(
+          id: d['id'] ?? '',
+          labName: d['lab_name'] ?? 'Unknown',
+          date: DateTime.parse(d['date']),
+          testCount: 1,
+          status: d['status'] ?? 'Normal',
+          testResults: [
+            TestResult(
+              name: marker,
+              result: d['result'] ?? '',
+              unit: d['unit'] ?? '',
+              status: d['status'] ?? 'Normal',
+              loinc: '',
+              reference: '',
+            ),
+          ],
+        );
+      }).toList();
+    }
+    return result;
+  }
+
+  Future<bool> _handleSyncAction(
+    String action,
+    Map<String, dynamic> data,
+  ) async {
     try {
       switch (action) {
         case 'createLabResult':

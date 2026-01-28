@@ -64,6 +64,8 @@ dependencies:
   qr_flutter: ^4.1.0
   connectivity_plus: ^7.0.0
   sentry_flutter: ^9.10.0
+  uuid: ^4.5.2
+  flutter_markdown: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -80,6 +82,8 @@ dev_dependencies:
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
+  integration_test:
+    sdk: flutter
 flutter:
 
   # The following line ensures that the Material Icons font is

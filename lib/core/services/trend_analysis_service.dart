@@ -1,6 +1,4 @@
-import 'dart:math';
 import '../models.dart';
-import 'log_service.dart';
 
 class TrendAnalysisService {
   /// Normalizes data series to a 0-100 scale based on the global max of all series

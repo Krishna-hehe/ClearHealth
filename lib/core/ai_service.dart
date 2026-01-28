@@ -7,6 +7,8 @@ import 'vector_service.dart';
 import 'utils/rate_limiter.dart';
 import 'services/log_service.dart';
 import 'cache_service.dart';
+import 'utils/medical_terms.dart';
+import 'models.dart';
 
 class LabTestAnalysis {
   final String description;
@@ -140,6 +142,7 @@ class AiService {
     required double value,
     required String unit,
     required String referenceRange,
+    UserProfile? profile,
   }) async {
     final cacheKey = _generateCacheKey('single_analysis', {
       'n': testName,
@@ -177,6 +180,12 @@ class AiService {
       - Test Name: $testName
       - Patient Result: $value $unit
       - Reference Range: $referenceRange
+      ${profile != null ? '- Patient Context: ${_getPatientContext(profile)}' : ''}
+      
+      CRITICAL INSTRUCTIONS:
+      1. If the patient is pediatric (under 18), MUST use pediatric-specific reference ranges and insights.
+      2. If gender-specific tests are present, consider the patient's biological sex.
+      3. Reference range comparison should be the primary guide, but age/gender context should influence the narrative.
       
       OUTPUT FORMAT (JSON ONLY):
       {
@@ -288,6 +297,63 @@ class AiService {
     }
   }
 
+  Future<String> getTrendCorrelationAnalysis({
+    required Map<String, List<Map<String, dynamic>>> data,
+    required List<String> markers,
+  }) async {
+    if (markers.isEmpty) return 'No markers selected for correlation analysis.';
+
+    final minifiedData = <String, List<Map<String, dynamic>>>{};
+    data.forEach((key, value) {
+      if (markers.contains(key)) {
+        minifiedData[key] = value
+            .take(5)
+            .map(
+              (v) => {
+                'd': v['date'],
+                'v': v['value'] ?? v['result_value'],
+                's': v['status'],
+              },
+            )
+            .toList();
+      }
+    });
+
+    final cacheKey = _generateCacheKey('correlation', {
+      'm': markers,
+      'd': minifiedData,
+    });
+
+    final cached = cacheService.getAiCache(cacheKey);
+    if (cached != null) return cached.toString();
+
+    final prompt =
+        '''
+      You are a specialized Medical Analyst. Analyze the correlation and relationships between these lab markers.
+      
+      Markers: ${markers.join(', ')}
+      Historical Data: \${jsonEncode(minifiedData)}
+      
+      Provide a concise (3-5 sentences) insight explaining:
+      1. If the trends are moving together or inversely.
+      2. Clinical significance of these correlations.
+      3. Potential lifestyle or medical factors that explain these patterns.
+      
+      Patient-friendly but scientifically grounded.
+    ''';
+
+    try {
+      final content = [Content.text(prompt)];
+      final response = await _textModel.generateContent(content);
+      final text = response.text?.trim() ?? 'Correlation analysis incomplete.';
+      cacheService.cacheAiResponse(cacheKey, text);
+      return text;
+    } catch (e) {
+      AppLogger.error('Correlation analysis error: \$e');
+      return 'Unable to analyze marker correlations at this time.';
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getOptimizationTips(
     List<Map<String, dynamic>> abnormalTests,
   ) async {
@@ -345,7 +411,77 @@ class AiService {
 
       return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     } catch (e) {
-      AppLogger.debug('Error fetching optimization tips: $e');
+      AppLogger.debug('Error fetching optimization tips: \$e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getWellnessTips(
+    List<Map<String, dynamic>> recentNormalTests,
+  ) async {
+    if (recentNormalTests.isEmpty) {
+      // If no data at all, return generic healthy living tips
+      return [
+        {
+          "title": "Stay Hydrated",
+          "description": "Water is essential for all bodily functions.",
+          "type": "General",
+        },
+        {
+          "title": "Regular Movement",
+          "description": "Aim for 30 minutes of moderate activity daily.",
+          "type": "General",
+        },
+      ];
+    }
+
+    // Take a sample of recent normal tests to contextualize (max 5)
+    final sampleTests = recentNormalTests
+        .take(5)
+        .map(
+          (t) => {
+            'n': t['name'] ?? t['test_name'],
+            'v': t['result'] ?? t['value'],
+          },
+        )
+        .toList();
+
+    final cacheKey = _generateCacheKey('wellness_tips', sampleTests);
+
+    final cached = cacheService.getAiCache(cacheKey);
+    if (cached != null) {
+      return (cached as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    }
+
+    final prompt =
+        '''
+      You are a high-performance wellness and longevity coach. The user has NORMAL lab results for: ${jsonEncode(sampleTests)}.
+      Your goal is to provide 3 "Optimization Tips" that go beyond basic maintenance.
+      Focus on how to take these already healthy metrics to "optimal" levels or ensure long-term stability using nutrition, lifestyle, and biohacking principles.
+      
+      JSON Format:
+      [
+        {
+          "title": "Short Impactful Title",
+          "description": "One sentence optimization tip (max 20 words).",
+          "type": "Optimization"
+        }
+      ]
+    ''';
+
+    try {
+      final content = [Content.text(prompt)];
+      final response = await _textModel.generateContent(content);
+      String rawText = response.text?.trim() ?? '[]';
+      final jsonStr = _extractJson(rawText);
+      final List<dynamic> data = jsonDecode(jsonStr);
+
+      cacheService.cacheAiResponse(cacheKey, data);
+      return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      AppLogger.debug('Error fetching wellness tips: \$e');
       return [];
     }
   }
@@ -405,8 +541,13 @@ class AiService {
     }
   }
 
-  Future<String> getBatchSummary(List<Map<String, dynamic>> tests) async {
-    if (tests.isEmpty) return 'No lab results available.';
+  Future<String> getBatchSummary(
+    List<Map<String, dynamic>> tests, {
+    UserProfile? profile,
+  }) async {
+    if (tests.isEmpty) {
+      return 'No lab results available.';
+    }
 
     final minifiedTests = _minifyHistory(tests);
     final cacheKey = _generateCacheKey('batch_summary', minifiedTests);
@@ -414,15 +555,19 @@ class AiService {
     final cached = cacheService.getAiCache(cacheKey);
     if (cached != null) return cached.toString();
 
-    final prompt = '''
+    final prompt =
+        '''
       Medical AI. Summarize these lab results (JSON).
+      ${profile != null ? 'Patient Context: ${_getPatientContext(profile)}' : ''}
       
       Data: \${jsonEncode(minifiedTests)}
       
       Summary (5-7 sentences):
-      1. Overall assessment.
+      1. Overall assessment (considering age and gender).
       2. Abnormal findings.
-      3. Recommendations.
+      3. Recommendations for optimization.
+      
+      CRITICAL: For pediatric patients (under 18), apply pediatric guidelines.
       
       Patient-friendly language.
     ''';
@@ -443,8 +588,9 @@ class AiService {
     String query, {
     Map<String, dynamic>? healthContext,
   }) async {
-    if (!_rateLimiter.canRequest())
+    if (!_rateLimiter.canRequest()) {
       return 'Rate limit exceeded. Please wait a moment.';
+    }
 
     query = _sanitizeInput(query);
 
@@ -515,17 +661,29 @@ class AiService {
   ) async {
     // Vision cannot be cached easily by hash of bytes (too big), and usually one-off operation
     final prompt = '''
-      Parse this lab report into JSON:
+      You are an expert Medical Data Extractor. Your task is to extract structured lab results from the provided image.
+      
+      CRITICAL INSTRUCTIONS:
+      1.  **Extract Specific Fields:** For each test, extract `test_name`, `result_value`, `unit`, `reference_range`, and `status` (High/Low/Normal).
+      2.  **Normalize Test Names:** If a test name is common (e.g., "A1C", "HbA1c"), map it to its standard LOINC-compatible name (e.g., "Hemoglobin A1c").
+      3.  **Handle Tables:** The image likely contains a table. process each row carefully.
+      4.  **Infer Status:** If the status is not explicitly stated, infer it by comparing the `result_value` to the `reference_range`.
+      5.  **Identify Meta-Data:** Extract `lab_name` and `date` (YYYY-MM-DD format).
+      
+      OUTPUT FORMAT (Strict JSON):
       {
-        "lab_name": "String",
+        "lab_provider": "Quest, Labcorp, or Other",
+        "lab_name": "Full Lab Name found in image",
         "date": "YYYY-MM-DD",
         "test_results": [
           {
-            "test_name": "String",
-            "result_value": "String",
-            "unit": "String",
-            "reference_range": "String",
-            "status": "High/Low/Normal"
+            "test_name": "Standardized Name",
+            "original_name": "Raw Name on Report",
+            "loinc_code": "LOINC Code (e.g., 4548-4)",
+            "result_value": "Numeric or String Value",
+            "unit": "Unit (e.g., mg/dL, %)",
+            "reference_range": "Range String",
+            "status": "High, Low, or Normal"
           }
         ]
       }
@@ -538,33 +696,48 @@ class AiService {
 
       final response = await _visionModel.generateContent(content);
       final text = response.text;
-      if (text == null || text.isEmpty) throw Exception('Empty response');
+      if (text == null || text.isEmpty) {
+        throw Exception('Empty response from AI');
+      }
 
       String jsonStr = _extractJson(text);
       final parsed = jsonDecode(jsonStr);
 
       if (parsed is! Map<String, dynamic> ||
           !parsed.containsKey('test_results')) {
-        throw Exception('Invalid JSON format');
+        throw Exception('Invalid JSON structure returned by AI');
       }
 
-      // Helper function _calculateStatus was used before, need to re-add it or keep simple
+      // final validation / cleaning / normalisation
       if (parsed['test_results'] is List) {
         for (var test in parsed['test_results']) {
-          if (test is Map<String, dynamic>) {
+          // Normalise using our utility
+          final normalized = MedicalTermsNormalizer.normalize(
+            test['original_name']?.toString() ??
+                test['test_name']?.toString() ??
+                '',
+          );
+
+          test['test_name'] = normalized.standardizedName;
+          if (test['loinc_code'] == null || test['loinc_code'] == '') {
+            test['loinc_code'] = normalized.loincCode;
+          }
+
+          // Fallback status calculation if AI missed it
+          if (test['status'] == null || test['status'] == '') {
             test['status'] =
                 _calculateStatus(
                   test['result_value']?.toString() ?? '',
                   test['reference_range']?.toString() ?? '',
                 ) ??
-                test['status'];
+                'Normal';
           }
         }
       }
 
       return parsed;
     } catch (e) {
-      AppLogger.error('Error parsing lab report: $e');
+      AppLogger.error('Error parsing lab report: \$e');
       rethrow;
     }
   }
@@ -572,11 +745,13 @@ class AiService {
   String? _calculateStatus(String resultValue, String referenceRange) {
     if (resultValue.isEmpty || referenceRange.isEmpty) return null;
     final resultLower = resultValue.toLowerCase();
-    if (resultLower.contains('positive') || resultLower.contains('detected'))
+    if (resultLower.contains('positive') || resultLower.contains('detected')) {
       return 'High';
+    }
     if (resultLower.contains('negative') ||
-        resultLower.contains('not detected'))
+        resultLower.contains('not detected')) {
       return 'Normal';
+    }
 
     final numericMatch = RegExp(r'([0-9]+\.?[0-9]*)').firstMatch(resultValue);
     if (numericMatch == null) return null;
@@ -653,5 +828,12 @@ class AiService {
       }
     }
     return text.trim();
+  }
+
+  String _getPatientContext(UserProfile profile) {
+    if (profile.dateOfBirth == null) return 'Gender: ${profile.gender}';
+    final age = DateTime.now().difference(profile.dateOfBirth!).inDays ~/ 365;
+    final isPediatric = age < 18;
+    return 'Age: $age (${isPediatric ? "Pediatric" : "Adult"}), Gender: ${profile.gender}';
   }
 }

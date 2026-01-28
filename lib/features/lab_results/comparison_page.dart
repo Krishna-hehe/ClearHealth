@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/navigation.dart';
 
-class ComparisonPage extends ConsumerWidget {
+class ComparisonPage extends ConsumerStatefulWidget {
   const ComparisonPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ComparisonPage> createState() => _ComparisonPageState();
+}
+
+class _ComparisonPageState extends ConsumerState<ComparisonPage> {
+  @override
+  Widget build(BuildContext context) {
     final selectedReports = ref.watch(selectedComparisonReportsProvider);
 
     if (selectedReports.isEmpty) {
@@ -86,144 +92,326 @@ class ComparisonPage extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 800) {
+                return _buildMobileList(sortedReports, sortedTestNames);
+              }
+              return _buildDesktopTable(sortedReports, sortedTestNames);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopTable(
+    List<LabReport> sortedReports,
+    List<String> sortedTestNames,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.vertical,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            headingRowColor: WidgetStateProperty.all(
+              isDark ? Colors.grey[900] : const Color(0xFFF9FAFB),
             ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  headingRowColor: WidgetStateProperty.all(
-                    const Color(0xFFF9FAFB),
+            columnSpacing: 40,
+            columns: [
+              const DataColumn(
+                label: Text(
+                  'Test Name',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
                   ),
-                  columnSpacing: 40,
-                  columns: [
-                    const DataColumn(
-                      label: Text(
-                        'Test Name',
-                        style: TextStyle(
+                ),
+              ),
+              ...sortedReports.map(
+                (report) => DataColumn(
+                  label: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        report.date.toString().split(' ')[0],
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          fontSize: 13,
                         ),
                       ),
+                      Text(
+                        report.labName,
+                        style: const TextStyle(
+                          color: AppColors.secondary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            rows: sortedTestNames.map((testName) {
+              return DataRow(
+                cells: [
+                  DataCell(
+                    Text(
+                      testName,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
-                    ...sortedReports.map(
-                      (report) => DataColumn(
-                        label: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              report.date.toString().split(' ')[0],
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
+                  ),
+                  ...sortedReports.map((report) {
+                    final test = report.testResults?.firstWhere(
+                      (t) => t.name == testName,
+                      orElse: () => TestResult(
+                        name: '',
+                        loinc: '',
+                        result: '',
+                        unit: '',
+                        reference: '',
+                        status: '',
+                      ),
+                    );
+
+                    final value = test?.result.isEmpty == true
+                        ? '-'
+                        : test?.result ?? '-';
+                    final unit = test?.unit ?? '';
+                    final isAbnormal =
+                        test?.status.toLowerCase().contains('high') == true ||
+                        test?.status.toLowerCase().contains('low') == true;
+
+                    return DataCell(
+                      Row(
+                        children: [
+                          Text(
+                            value,
+                            style: TextStyle(
+                              fontWeight: isAbnormal
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isAbnormal
+                                  ? AppColors.danger
+                                  : (isDark ? Colors.white : Colors.black),
                             ),
+                          ),
+                          if (unit.isNotEmpty) ...[
+                            const SizedBox(width: 4),
                             Text(
-                              report.labName,
+                              unit,
                               style: const TextStyle(
                                 color: AppColors.secondary,
-                                fontSize: 10,
-                                fontWeight: FontWeight.normal,
+                                fontSize: 11,
                               ),
                             ),
                           ],
+                          // Show trend arrow if not the first column
+                          if (sortedReports.indexOf(report) > 0)
+                            _buildTrendIndicator(
+                              testName,
+                              report,
+                              sortedReports[sortedReports.indexOf(report) - 1],
+                            ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileList(
+    List<LabReport> sortedReports,
+    List<String> sortedTestNames,
+  ) {
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 24),
+      itemCount: sortedTestNames.length,
+      itemBuilder: (context, index) {
+        final testName = sortedTestNames[index];
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardTheme.color,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : const Color(0xFFF9FAFB),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.analytics_outlined,
+                        color: AppColors.primary,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        testName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
                     ),
                   ],
-                  rows: sortedTestNames.map((testName) {
-                    return DataRow(
-                      cells: [
-                        DataCell(
-                          Text(
-                            testName,
-                            style: const TextStyle(fontWeight: FontWeight.w500),
-                          ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: sortedReports.map((report) {
+                    final test = report.testResults?.firstWhere(
+                      (t) => t.name == testName,
+                      orElse: () => TestResult(
+                        name: '',
+                        loinc: '',
+                        result: '',
+                        unit: '',
+                        reference: '',
+                        status: '',
+                      ),
+                    );
+                    final hasValue = test?.result.isNotEmpty == true;
+                    final value = hasValue ? test!.result : '-';
+                    final unit = test?.unit ?? '';
+                    final isAbnormal =
+                        hasValue &&
+                        (test?.status.toLowerCase().contains('high') == true ||
+                            test?.status.toLowerCase().contains('low') == true);
+
+                    final reportIndex = sortedReports.indexOf(report);
+                    final hasPrevious = reportIndex > 0;
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.black.withOpacity(0.2)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isAbnormal
+                              ? AppColors.danger.withOpacity(0.3)
+                              : AppColors.border,
                         ),
-                        ...sortedReports.map((report) {
-                          final test = report.testResults?.firstWhere(
-                            (t) => t.name == testName,
-                            orElse: () => TestResult(
-                              name: '',
-                              loinc: '',
-                              result: '',
-                              unit: '',
-                              reference: '',
-                              status: '',
+                      ),
+                      child: Row(
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                DateFormat('MMM d, yyyy').format(report.date),
+                                style: const TextStyle(
+                                  color: AppColors.secondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                report.labName,
+                                style: TextStyle(
+                                  color: AppColors.secondary.withOpacity(0.7),
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          if (hasPrevious)
+                            _buildTrendIndicator(
+                              testName,
+                              report,
+                              sortedReports[reportIndex - 1],
                             ),
-                          );
-
-                          final value = test?.result.isEmpty == true
-                              ? '-'
-                              : test?.result ?? '-';
-                          final unit = test?.unit ?? '';
-                          final isAbnormal =
-                              test?.status.toLowerCase().contains('high') ==
-                                  true ||
-                              test?.status.toLowerCase().contains('low') ==
-                                  true;
-
-                          return DataCell(
-                            Row(
-                              children: [
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                value,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: isAbnormal ? AppColors.danger : null,
+                                ),
+                              ),
+                              if (unit.isNotEmpty)
                                 Text(
-                                  value,
-                                  style: TextStyle(
-                                    fontWeight: isAbnormal
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    color: isAbnormal
-                                        ? AppColors.danger
-                                        : Colors.black,
+                                  unit,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.secondary,
                                   ),
                                 ),
-                                if (unit.isNotEmpty) ...[
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    unit,
-                                    style: const TextStyle(
-                                      color: AppColors.secondary,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                                // Show trend arrow if not the first column
-                                if (sortedReports.indexOf(report) > 0)
-                                  _buildTrendIndicator(
-                                    testName,
-                                    report,
-                                    sortedReports[sortedReports.indexOf(
-                                          report,
-                                        ) -
-                                        1],
-                                  ),
-                              ],
-                            ),
-                          );
-                        }),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     );
                   }).toList(),
                 ),
               ),
-            ),
+            ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 

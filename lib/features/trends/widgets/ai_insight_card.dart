@@ -10,11 +10,7 @@ class AiInsightCard extends ConsumerStatefulWidget {
   final Map<String, List<LabReport>> data;
   final List<String> markers;
 
-  const AiInsightCard({
-    super.key,
-    required this.data,
-    required this.markers,
-  });
+  const AiInsightCard({super.key, required this.data, required this.markers});
 
   @override
   ConsumerState<AiInsightCard> createState() => _AiInsightCardState();
@@ -39,22 +35,47 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard> {
       // Convert map to simple history for AI
       // Just take last 5 points for each marker to save tokens/context
       final simplifiedData = <String, dynamic>{};
-      
+
       widget.data.forEach((key, list) {
         // Take last 5 sorted by date
-        final sorted = List<LabReport>.from(list)..sort((a, b) => b.date.compareTo(a.date));
-        final recent = sorted.take(5).map((r) {
-          final test = r.testResults?.firstWhere((t) => t.name == key, orElse: () => TestResult(name: '', loinc: '', result: '', unit: '', reference: '', status: ''));
-          return test != null && test.result.isNotEmpty ? '${DateFormat('yyyy-MM-dd').format(r.date)}: ${test.result} ${test.unit}' : null;
-        }).where((e) => e != null).cast<String>().toList();
+        final sorted = List<LabReport>.from(list)
+          ..sort((a, b) => b.date.compareTo(a.date));
+        final recent = sorted
+            .take(5)
+            .map((r) {
+              final test = r.testResults?.firstWhere(
+                (t) => t.name == key,
+                orElse: () => TestResult(
+                  name: '',
+                  loinc: '',
+                  result: '',
+                  unit: '',
+                  reference: '',
+                  status: '',
+                ),
+              );
+              return test != null && test.result.isNotEmpty
+                  ? '${DateFormat('yyyy-MM-dd').format(r.date)}: ${test.result} ${test.unit}'
+                  : null;
+            })
+            .where((e) => e != null)
+            .cast<String>()
+            .toList();
         simplifiedData[key] = recent;
       });
 
-      final result = await aiService.getTrendCorrelationAnalysis(simplifiedData);
+      final result = await aiService.getTrendCorrelationAnalysis(
+        data: widget.data.map(
+          (key, list) => MapEntry(key, list.map((r) => r.toJson()).toList()),
+        ),
+        markers: widget.markers,
+      );
       if (mounted) setState(() => _analysis = result);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to generate insights')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to generate insights')),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -89,7 +110,11 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard> {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.auto_awesome, color: AppColors.primary, size: 24),
+                child: const Icon(
+                  Icons.auto_awesome,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 16),
               const Column(
@@ -105,10 +130,7 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard> {
                   ),
                   Text(
                     'Correlation & Trajectory Insights',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.secondary,
-                    ),
+                    style: TextStyle(fontSize: 14, color: AppColors.secondary),
                   ),
                 ],
               ),
@@ -124,7 +146,10 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                 ),
               ),
             )
@@ -132,9 +157,12 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard> {
             const Center(
               child: Column(
                 children: [
-                   CircularProgressIndicator(),
-                   SizedBox(height: 16),
-                   Text('Analyzing trends...', style: TextStyle(color: Colors.grey)),
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    'Analyzing trends...',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ],
               ),
             )
@@ -142,8 +170,15 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard> {
             MarkdownBody(
               data: _analysis!,
               styleSheet: MarkdownStyleSheet(
-                p: const TextStyle(fontSize: 15, height: 1.6, color: Color(0xFF374151)),
-                strong: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF111827)),
+                p: const TextStyle(
+                  fontSize: 15,
+                  height: 1.6,
+                  color: Color(0xFF374151),
+                ),
+                strong: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF111827),
+                ),
               ),
             ),
         ],

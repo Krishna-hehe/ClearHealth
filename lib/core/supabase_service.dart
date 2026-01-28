@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'notification_service.dart';
 import 'services/log_service.dart';
+import 'package:uuid/uuid.dart';
 
 class SupabaseService {
   final SupabaseClient client;
@@ -36,11 +37,19 @@ class SupabaseService {
   Future<List<Map<String, dynamic>>> getLabResults({
     int limit = 10,
     int offset = 0,
+    String? profileId,
   }) async {
     try {
-      return await client
-          .from('lab_results')
-          .select()
+      // Start the query chain
+      var queryBuilder = client.from('lab_results').select();
+
+      // Apply filter if needed. Note: eq returns a builder we must capture.
+      if (profileId != null && profileId.isNotEmpty) {
+        queryBuilder = queryBuilder.eq('profile_id', profileId);
+      }
+
+      // Apply modifiers
+      return await queryBuilder
           .order('date', ascending: false)
           .range(offset, offset + limit - 1);
     } catch (e) {
@@ -103,6 +112,44 @@ class SupabaseService {
     });
   }
 
+  // Phase 3: Family Profiles Support
+  Future<List<Map<String, dynamic>>> getProfiles() async {
+    if (client.auth.currentUser == null) return [];
+    try {
+      // Fetch all profiles linked to this user account
+      return await client
+          .from('profiles')
+          .select()
+          .eq('user_id', client.auth.currentUser!.id);
+    } catch (e) {
+      AppLogger.debug('Supabase getProfiles failed: $e');
+      // Fallback for transition period: return single profile if generic fetch fails
+      // This handles case where schema might not fully support multiple rows yet or column name mismatch
+      try {
+        final single = await getProfile();
+        return single != null ? [single] : [];
+      } catch (_) {
+        return [];
+      }
+    }
+  }
+
+  Future<void> createProfile(Map<String, dynamic> data) async {
+    if (client.auth.currentUser == null) return;
+    // Helper to ensure user_id is set
+    final profileData = {...data, 'user_id': client.auth.currentUser!.id};
+    await client.from('profiles').insert(profileData);
+  }
+
+  Future<void> deleteProfile(String profileId) async {
+    if (client.auth.currentUser == null) return;
+    await client
+        .from('profiles')
+        .delete()
+        .eq('id', profileId)
+        .eq('user_id', client.auth.currentUser!.id); // Security check
+  }
+
   Future<List<Map<String, dynamic>>> getPrescriptions() async {
     if (client.auth.currentUser == null) return [];
     try {
@@ -140,6 +187,88 @@ class SupabaseService {
         .delete()
         .eq('id', id)
         .eq('user_id', client.auth.currentUser!.id);
+  }
+
+  // Medication Reminders (Phase 4)
+  Future<List<Map<String, dynamic>>> getMedications({String? profileId}) async {
+    if (client.auth.currentUser == null) return [];
+    try {
+      var query = client.from('medications').select('*, reminder_schedules(*)');
+      if (profileId != null) {
+        query = query.eq('profile_id', profileId);
+      } else {
+        // Default to fetching for the user if no profile specified, OR fetch all for user
+        query = query.eq('user_id', client.auth.currentUser!.id);
+      }
+      final response = await query;
+      return (response as List)
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } catch (e) {
+      AppLogger.debug('Error fetching medications: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> createMedication(Map<String, dynamic> data) async {
+    if (client.auth.currentUser == null) return;
+
+    // transactional insert not easily supported without RPC, so we do two steps or use a single insert with nested data if Supabase supports it (it does for some cases, but safer to do separate for now or RPC).
+    // Actually Supabase supports deep inserts if configured, but let's stick to standard inserts for safety.
+    // Wait, deep insert is cleaner. Let's try deep insert structure: { ..., reminder_schedules: [...] }
+    // functionality depends on Foreign Keys.
+    // For now, I'll assume standard separate inserts for reliability.
+
+    final medication = {...data};
+    final schedules = medication.remove('reminder_schedules') as List?;
+
+    final user = client.auth.currentUser!;
+    medication['user_id'] = user.id;
+
+    final response = await client
+        .from('medications')
+        .insert(medication)
+        .select()
+        .single();
+    final medId = response['id'];
+
+    if (schedules != null && schedules.isNotEmpty) {
+      final List<Map<String, dynamic>> schedulesData = [];
+      for (var s in schedules) {
+        schedulesData.add({...s, 'medication_id': medId});
+      }
+      await client.from('reminder_schedules').insert(schedulesData);
+    }
+  }
+
+  Future<void> updateMedication(String id, Map<String, dynamic> data) async {
+    if (client.auth.currentUser == null) return;
+
+    final modification = {...data};
+    final schedules = modification.remove('reminder_schedules') as List?;
+
+    await client.from('medications').update(modification).eq('id', id);
+
+    if (schedules != null) {
+      // Replace schedules strategy: Delete all for this medication and re-insert
+      // This is simplest for "edit" logic
+      await client.from('reminder_schedules').delete().eq('medication_id', id);
+
+      if (schedules.isNotEmpty) {
+        final List<Map<String, dynamic>> schedulesData = [];
+        for (var s in schedules) {
+          schedulesData.add({...s, 'medication_id': id});
+        }
+        await client.from('reminder_schedules').insert(schedulesData);
+      }
+    }
+  }
+
+  Future<void> deleteMedication(String id) async {
+    if (client.auth.currentUser == null) return;
+    // Cascade delete should handle schedules if DB configured, but we can delete manually to be safe
+    await client.from('reminder_schedules').delete().eq('medication_id', id);
+    await client.from('medications').delete().eq('id', id);
   }
 
   Future<int> getActivePrescriptionsCount() async {
@@ -424,6 +553,43 @@ class SupabaseService {
       });
     } catch (e) {
       AppLogger.debug('Failed to log access: $e');
+    }
+  }
+
+  // Doctor Mode / Share Link
+  Future<String> createShareLink({
+    required String profileId,
+    Duration duration = const Duration(days: 1),
+  }) async {
+    final user = client.auth.currentUser;
+    if (user == null) {
+      throw Exception('User must be logged in to share results');
+    }
+
+    final token = const Uuid().v4(); // Generate a unique token
+    final expiresAt = DateTime.now().toUtc().add(duration);
+
+    await client.from('shared_links').insert({
+      'user_id': user.id,
+      'profile_id': profileId,
+      'token': token,
+      'expires_at': expiresAt.toIso8601String(),
+      'permissions': {'view_labs': true}, // Default permissions
+    });
+
+    return token;
+  }
+
+  Future<Map<String, dynamic>> getSharedData(String token) async {
+    try {
+      final response = await client.rpc(
+        'get_shared_data',
+        params: {'link_token': token},
+      );
+      return response as Map<String, dynamic>;
+    } catch (e) {
+      AppLogger.debug('Failed to fetch shared data: $e');
+      rethrow;
     }
   }
 }

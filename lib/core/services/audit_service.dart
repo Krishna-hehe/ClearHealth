@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../supabase_service.dart';
 import '../services/log_service.dart';
 import '../providers.dart';
 

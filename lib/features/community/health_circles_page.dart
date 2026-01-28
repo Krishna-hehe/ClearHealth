@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../core/providers/user_providers.dart';
-import '../../core/repositories/user_repository.dart';
 import '../../features/chat/circle_chat_page.dart';
 
 class HealthCirclesPage extends ConsumerStatefulWidget {

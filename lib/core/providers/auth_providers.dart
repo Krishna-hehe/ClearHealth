@@ -21,9 +21,11 @@ final authStateProvider = StreamProvider<AuthState>((ref) {
 // Current User Provider
 final currentUserProvider = Provider<User?>((ref) {
   final authState = ref.watch(authStateProvider);
-  return authState.when(
-    data: (state) => state.session?.user,
-    loading: () => null,
-    error: (err, stack) => null,
-  );
+  return authState.value?.session?.user;
+});
+
+// App initialization state
+final isAuthLoadingProvider = Provider<bool>((ref) {
+  final authState = ref.watch(authStateProvider);
+  return authState.isLoading;
 });

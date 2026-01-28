@@ -29,11 +29,13 @@ class SyncService extends ChangeNotifier {
       (r) => r != ConnectivityResult.none,
       orElse: () => ConnectivityResult.none,
     );
-    
+
     _isOnline = status != ConnectivityResult.none;
     notifyListeners();
-    AppLogger.debug('🌐 Network Status: ${_isOnline ? "Online" : "Offline"} ($status)');
-    
+    AppLogger.debug(
+      '🌐 Network Status: ${_isOnline ? "Online" : "Offline"} ($status)',
+    );
+
     if (_isOnline) {
       _processQueue();
     }
@@ -53,11 +55,11 @@ class SyncService extends ChangeNotifier {
     if (_syncBox.isEmpty) return;
 
     AppLogger.debug('🔄 Processing Sync Queue (${_syncBox.length} items)...');
-    
+
     // Process items one by one (FIFO)
     // Note: In a real app, you'd probably want more robust retry logic
     // For MVP, we just try to process and remove if successful
-    
+
     final keys = _syncBox.keys.toList();
     for (var key in keys) {
       if (!_isOnline) break;
@@ -65,7 +67,7 @@ class SyncService extends ChangeNotifier {
       try {
         final item = Map<String, dynamic>.from(_syncBox.get(key));
         final success = await _executeAction(item['action'], item['data']);
-        
+
         if (success) {
           await _syncBox.delete(key);
           AppLogger.debug('✅ Synced: ${item['action']}');
@@ -78,9 +80,12 @@ class SyncService extends ChangeNotifier {
   }
 
   // This will be injected or set by the repository to avoid circular dependencies
-  Future<bool> Function(String action, Map<String, dynamic> data)? _actionHandler;
+  Future<bool> Function(String action, Map<String, dynamic> data)?
+  _actionHandler;
 
-  void setActionHandler(Future<bool> Function(String action, Map<String, dynamic> data) handler) {
+  void setActionHandler(
+    Future<bool> Function(String action, Map<String, dynamic> data) handler,
+  ) {
     _actionHandler = handler;
   }
 
@@ -91,7 +96,9 @@ class SyncService extends ChangeNotifier {
     return false;
   }
 
+  @override
   void dispose() {
     _subscription?.cancel();
+    super.dispose();
   }
 }

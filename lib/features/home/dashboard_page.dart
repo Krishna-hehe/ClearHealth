@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../core/models.dart';
+import '../../core/providers/dashboard_providers.dart';
 import '../../core/providers.dart';
 import '../../core/navigation.dart';
 import '../../widgets/smart_insight_card.dart';
@@ -50,97 +51,72 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
 
   @override
   Widget build(BuildContext context) {
-    final profileAsync = ref.watch(userProfileProvider);
+    final welcomeName = ref.watch(dashboardWelcomeNameProvider);
+    final stats = ref.watch(dashboardStatsProvider);
     final recentResultsAsync = ref.watch(recentLabResultsProvider);
-    final prescriptionsCountAsync = ref.watch(activePrescriptionsCountProvider);
-    final labResultsAsync = ref.watch(labResultsProvider);
 
-    return profileAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, s) => Center(child: Text('Error: $e')),
-      data: (profile) => recentResultsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, s) => Center(child: Text('Error: $e')),
-        data: (recentResults) => prescriptionsCountAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, s) => Center(child: Text('Error: $e')),
-          data: (pCount) {
-            return labResultsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, s) => Center(child: Text('Error: $e')),
-              data: (allResults) {
-                final firstName = profile?['first_name'] ?? 'User';
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildAnimatedItem(0, _buildWelcomeHeader(welcomeName)),
+          const SizedBox(height: 32),
+          _buildAnimatedItem(1, _buildLabStats(stats)),
+          const SizedBox(height: 16),
 
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildAnimatedItem(0, _buildWelcomeHeader(firstName)),
-                      const SizedBox(height: 32),
-                      // New Lab Stats Row
-                      _buildAnimatedItem(1, _buildLabStats(allResults)),
-                      const SizedBox(height: 16),
+          if (stats.reportsNeedingAttention > 0)
+            _buildAnimatedItem(2, _buildNeedAttentionBox(stats.abnormalTests)),
 
-                      // Existing Stats (Conditions/Meds) - Optional, but sticking to user request primarily
-                      // _buildAnimatedItem(1, _buildQuickStats(recentResults, conditions.length, pCount)), // Keeping if needed or merging
+          const SizedBox(height: 32),
+          _buildAnimatedItem(3, const SmartInsightCard()),
+          const SizedBox(height: 32),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = constraints.maxWidth < 850;
 
-                      // Let's create a combined stats section or just add the new ones.
-                      // User said: "in dashboard also add total number of lab reports,no of need attention and Percenatge of normal results"
-                      // I will add a row for these.
-                      const SizedBox(height: 24),
-                      // Need Attention Box
-                      if (allResults.any((r) => r.abnormalCount > 0))
-                        _buildAnimatedItem(
-                          2,
-                          _buildNeedAttentionBox(allResults),
-                        ),
-
-                      const SizedBox(height: 32),
-                      // Smart AI Forecast
-                      _buildAnimatedItem(3, const SmartInsightCard()),
-                      const SizedBox(height: 32),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: Column(
-                              children: [
-                                _buildAnimatedItem(
-                                  3,
-                                  _buildAiInsightsCard(recentResults),
-                                ),
-                                const SizedBox(height: 24),
-                                _buildAnimatedItem(
-                                  4,
-                                  _buildRecentResults(recentResults),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 24),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _buildAnimatedItem(
-                                  5,
-                                  _buildHealthTipsCard(recentResults),
-                                ),
-                                // Upcoming Tasks removed
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+              final leftColumn = Column(
+                children: [
+                  recentResultsAsync.maybeWhen(
+                    data: (recent) =>
+                        _buildAnimatedItem(3, _buildAiInsightsCard(recent)),
+                    orElse: () => const SizedBox.shrink(),
                   ),
+                  const SizedBox(height: 24),
+                  recentResultsAsync.maybeWhen(
+                    data: (recent) =>
+                        _buildAnimatedItem(4, _buildRecentResults(recent)),
+                    orElse: () => const SizedBox.shrink(),
+                  ),
+                ],
+              );
+
+              final rightColumn = Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [_buildAnimatedItem(5, _buildHealthTipsCard())],
+              );
+
+              if (isMobile) {
+                return Column(
+                  children: [
+                    leftColumn,
+                    const SizedBox(height: 24),
+                    rightColumn,
+                  ],
                 );
-              },
-            );
-          },
-        ),
+              } else {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 2, child: leftColumn),
+                    const SizedBox(width: 24),
+                    Expanded(child: rightColumn),
+                  ],
+                );
+              }
+            },
+          ),
+        ],
       ),
     );
   }
@@ -180,62 +156,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
         const Text(
           'Here is what is happening with your health today.',
           style: TextStyle(fontSize: 16, color: AppColors.secondary),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickStats(
-    List<LabReport> recentResults,
-    int conditionsCount,
-    int prescriptionsCount,
-  ) {
-    String lastResultDate = 'No Data';
-    String lastResultStatus = '-';
-    Color lastResultColor = AppColors.secondary;
-    Color lastResultBg = const Color(0xFFF3F4F6);
-
-    if (recentResults.isNotEmpty) {
-      final last = recentResults.first;
-      lastResultDate = DateFormat('MMM d').format(last.date);
-      lastResultStatus = last.status;
-
-      if (lastResultStatus == 'Abnormal') {
-        lastResultColor = AppColors.danger;
-        lastResultBg = const Color(0xFFFEF2F2);
-      } else if (lastResultStatus == 'Normal') {
-        lastResultColor = AppColors.success;
-        lastResultBg = const Color(0xFFF0FDF4);
-      }
-    }
-
-    return Row(
-      children: [
-        _buildStatCard(
-          'Last Lab Result',
-          lastResultDate,
-          lastResultStatus,
-          Icons.description_outlined,
-          lastResultBg,
-          lastResultColor,
-        ),
-        const SizedBox(width: 16),
-        _buildStatCard(
-          'Known Conditions',
-          '$conditionsCount Active',
-          conditionsCount > 0 ? 'Managed' : '-',
-          Icons.favorite_border,
-          const Color(0xFFF0FDF4),
-          AppColors.success,
-        ),
-        const SizedBox(width: 16),
-        _buildStatCard(
-          'Active Medications',
-          '$prescriptionsCount Prescriptions',
-          prescriptionsCount > 0 ? 'Active' : '-',
-          Icons.medication_outlined,
-          const Color(0xFFEFF6FF),
-          const Color(0xFF3B82F6),
         ),
       ],
     );
@@ -468,92 +388,89 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
     );
   }
 
-  Widget _buildHealthTipsCard(List<LabReport> recentResults) {
-    String tipText =
-        'Upload your lab reports to receive personalized health tips.';
-    if (recentResults.isNotEmpty) {
-      final latest = recentResults.first;
-      final abnormal =
-          latest.testResults
-              ?.where((t) => t.status.toLowerCase() != 'normal')
-              .toList() ??
-          [];
-      if (abnormal.isNotEmpty) {
-        tipText =
-            'Focus on optimizing your ${abnormal.first.name} levels. Consult the Optimization tab for personalized recipes.';
-      } else {
-        tipText =
-            'Your recent results look great! Continue maintaining your current lifestyle and hydration.';
-      }
-    }
+  Widget _buildHealthTipsCard() {
+    final tipsAsync = ref.watch(optimizationTipsProvider);
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final tipBg = isDark
-        ? const Color(0xFF451A03).withOpacity(0.3)
-        : const Color(0xFFFFFBEB);
-    final tipBorder = isDark
-        ? const Color(0xFF78350F).withOpacity(0.5)
-        : const Color(0xFFFEF3C7);
-    final tipTitleColor = isDark
-        ? const Color(0xFFFCD34D)
-        : const Color(0xFF92400E); // Amber-300 vs Amber-900
-    final tipTextColor = isDark
-        ? const Color(0xFFFDE68A)
-        : const Color(0xFF92400E); // Amber-200 vs Amber-900
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: tipBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: tipBorder),
+    return tipsAsync.when(
+      loading: () => Container(
+        height: 150,
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardTheme.color,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(child: CircularProgressIndicator()),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      error: (e, s) => const SizedBox.shrink(),
+      data: (tips) {
+        String tipTitle = 'Health Tip';
+        String tipText =
+            'Upload your lab reports to receive personalized health tips.';
+        Color themeColor = const Color(0xFFD97706); // Amber default
+
+        if (tips.isNotEmpty) {
+          final firstTip = tips.first;
+          final type = firstTip['type']?.toString() ?? 'General';
+
+          if (type == 'Maintenance' || type == 'General') {
+            themeColor = AppColors.success;
+            tipTitle = 'Wellness Tip';
+            tipText = '${firstTip['title']}: ${firstTip['description']}';
+          } else {
+            // Optimization / Veg / Non-Veg
+            themeColor = AppColors.warning;
+            tipTitle = 'Optimization Tip';
+            tipText = '${firstTip['title']}: ${firstTip['description']}';
+          }
+        }
+
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final tipBg = themeColor.withOpacity(isDark ? 0.2 : 0.1);
+        final tipBorder = themeColor.withOpacity(isDark ? 0.5 : 0.3);
+        final tipTextColor = isDark
+            ? themeColor.withRed(255).withGreen(255).withBlue(255)
+            : themeColor;
+
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: tipBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: tipBorder),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.lightbulb_outline,
-                color: Color(0xFFD97706),
-                size: 20,
+              Row(
+                children: [
+                  Icon(Icons.lightbulb_outline, color: themeColor, size: 20),
+                  const SizedBox(width: 12),
+                  Text(
+                    tipTitle,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: themeColor,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
+              const SizedBox(height: 12),
               Text(
-                'Health Tip',
+                tipText,
                 style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: tipTitleColor,
+                  color: tipTextColor,
+                  fontSize: 14,
+                  height: 1.5,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            tipText,
-            style: TextStyle(color: tipTextColor, fontSize: 14, height: 1.5),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildLabStats(List<LabReport> results) {
-    int totalReports = results.length;
-    // Calculate total abnormal tests across all reports
-    int totalAbnormalTests = results.fold(0, (sum, r) => sum + r.abnormalCount);
-    // Count reports that have at least one abnormal result
-    int reportsNeedingAttention = results
-        .where((r) => r.abnormalCount > 0)
-        .length;
-
-    int totalTests = results.fold(0, (sum, r) => sum + r.testCount);
-    // Calculate percentage based on tests, not reports
-    double normalPct = totalTests > 0
-        ? ((totalTests - totalAbnormalTests) / totalTests * 100)
-        : 100;
-
+  Widget _buildLabStats(DashboardStats stats) {
     return LayoutBuilder(
       builder: (context, constraints) {
         bool isMobile = constraints.maxWidth < 600;
@@ -561,7 +478,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
         List<Widget> cards = [
           _buildStatCard(
             'Total Lab Reports',
-            '$totalReports',
+            '${stats.totalReports}',
             'Reports',
             Icons.folder_open_outlined,
             const Color(0xFFEFF6FF),
@@ -570,7 +487,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
           SizedBox(width: isMobile ? 0 : 16, height: isMobile ? 16 : 0),
           _buildStatCard(
             'Need Attention',
-            '$totalAbnormalTests',
+            '${stats.totalAbnormalTests}',
             'Abnormal Results',
             Icons.warning_amber_rounded,
             const Color(0xFFFEF2F2),
@@ -579,7 +496,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
           SizedBox(width: isMobile ? 0 : 16, height: isMobile ? 16 : 0),
           _buildStatCard(
             'Normal Results',
-            '${normalPct.toStringAsFixed(1)}%',
+            '${stats.normalPct.toStringAsFixed(1)}%',
             'Percentage',
             Icons.check_circle_outline,
             const Color(0xFFF0FDF4),
@@ -596,29 +513,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
     );
   }
 
-  Widget _buildNeedAttentionBox(List<LabReport> results) {
-    // Flatten all test results that are abnormal
-    List<Map<String, dynamic>> abnormalTests = [];
-
-    for (var report in results) {
-      if (report.testResults != null) {
-        for (var test in report.testResults!) {
-          if (test.status != 'Normal') {
-            abnormalTests.add({
-              'test': test,
-              'date': report.date,
-              'lab': report.labName,
-            });
-          }
-        }
-      }
-    }
-
-    // Sort by date (most recent first)
-    abnormalTests.sort(
-      (a, b) => (b['date'] as DateTime).compareTo(a['date'] as DateTime),
-    );
-
+  Widget _buildNeedAttentionBox(List<Map<String, dynamic>> abnormalTests) {
     // Take top 5
     final displayTests = abnormalTests.take(5).toList();
 

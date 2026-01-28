@@ -1,5 +1,6 @@
 class TestResult {
   final String name;
+  final String originalName;
   final String loinc;
   final String result;
   final String unit;
@@ -8,6 +9,7 @@ class TestResult {
 
   TestResult({
     required this.name,
+    this.originalName = '',
     required this.loinc,
     required this.result,
     required this.unit,
@@ -18,8 +20,10 @@ class TestResult {
   factory TestResult.fromJson(Map<String, dynamic> json) {
     return TestResult(
       name: json['test_name'] ?? json['name'] ?? '',
-      loinc: json['loinc'] ?? '',
-      result: json['result_value']?.toString() ?? json['result']?.toString() ?? '',
+      originalName: json['original_name'] ?? '',
+      loinc: json['loinc'] ?? json['loinc_code'] ?? '',
+      result:
+          json['result_value']?.toString() ?? json['result']?.toString() ?? '',
       unit: json['unit'] ?? '',
       reference: json['reference_range'] ?? json['reference'] ?? '',
       status: json['status'] ?? 'Normal',
@@ -29,6 +33,7 @@ class TestResult {
   Map<String, dynamic> toJson() {
     return {
       'test_name': name,
+      'original_name': originalName,
       'loinc': loinc,
       'result_value': result,
       'unit': unit,
@@ -66,15 +71,21 @@ class LabReport {
       id: json['id']?.toString() ?? '',
       date: DateTime.tryParse(json['date'] ?? '') ?? DateTime.now(),
       labName: json['lab_name'] ?? 'Unknown Lab',
-      testCount: json['tests'] is int ? json['tests'] : (json['test_results'] as List?)?.length ?? 0,
-      abnormalCount: json['abnormal_count'] ?? 
+      testCount: json['tests'] is int
+          ? json['tests']
+          : (json['test_results'] as List?)?.length ?? 0,
+      abnormalCount:
+          json['abnormal_count'] ??
           (json['test_results'] as List?)?.where((t) {
             final s = t['status']?.toString().toLowerCase() ?? '';
             return s == 'abnormal' || s == 'high' || s == 'low';
-          }).length ?? 0,
+          }).length ??
+          0,
       status: json['status'] ?? 'Normal',
       storagePath: json['storage_path'],
-      testResults: (json['test_results'] as List?)?.map((t) => TestResult.fromJson(t)).toList(),
+      testResults: (json['test_results'] as List?)
+          ?.map((t) => TestResult.fromJson(t))
+          .toList(),
     );
   }
 
@@ -92,3 +103,138 @@ class LabReport {
   }
 }
 
+class UserProfile {
+  final String id;
+  final String userId;
+  final String firstName;
+  final String lastName; // Optional in UI, but good for model
+  final String relationship; // 'Self', 'Spouse', 'Child', 'Parent', 'Other'
+  final String avatarColor; // Hex string e.g. "0xFF123456"
+  final DateTime? dateOfBirth;
+  final String gender; // 'Male', 'Female', 'Other'
+
+  UserProfile({
+    required this.id,
+    required this.userId,
+    required this.firstName,
+    this.lastName = '',
+    this.relationship = 'Self',
+    this.avatarColor = '0xFF2196F3', // Default Blue
+    this.dateOfBirth,
+    this.gender = 'Other',
+  });
+
+  String get fullName => '$firstName $lastName'.trim();
+
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+    return UserProfile(
+      id: json['id']?.toString() ?? '',
+      userId: json['user_id']?.toString() ?? '',
+      firstName: json['first_name'] ?? '',
+      lastName: json['last_name'] ?? '',
+      relationship: json['relationship'] ?? 'Self',
+      avatarColor: json['avatar_color'] ?? '0xFF2196F3',
+      dateOfBirth: DateTime.tryParse(json['date_of_birth'] ?? ''),
+      gender: json['gender'] ?? 'Other',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'first_name': firstName,
+      'last_name': lastName,
+      'relationship': relationship,
+      'avatar_color': avatarColor,
+      'date_of_birth': dateOfBirth?.toIso8601String(),
+      'gender': gender,
+    };
+  }
+}
+
+class Medication {
+  final String id;
+  final String userId;
+  final String profileId;
+  final String name;
+  final String dosage;
+  final String frequency; // e.g. "Daily", "Weekly", "As Needed"
+  final DateTime startDate;
+  final DateTime? endDate;
+  final List<ReminderSchedule>? schedules;
+
+  Medication({
+    required this.id,
+    required this.userId,
+    required this.profileId,
+    required this.name,
+    required this.dosage,
+    required this.frequency,
+    required this.startDate,
+    this.endDate,
+    this.schedules,
+  });
+
+  factory Medication.fromJson(Map<String, dynamic> json) {
+    return Medication(
+      id: json['id']?.toString() ?? '',
+      userId: json['user_id']?.toString() ?? '',
+      profileId: json['profile_id']?.toString() ?? '',
+      name: json['name'] ?? '',
+      dosage: json['dosage'] ?? '',
+      frequency: json['frequency'] ?? 'Daily',
+      startDate: DateTime.tryParse(json['start_date'] ?? '') ?? DateTime.now(),
+      endDate: DateTime.tryParse(json['end_date'] ?? ''),
+      schedules: (json['reminder_schedules'] as List?)
+          ?.map((s) => ReminderSchedule.fromJson(s))
+          .toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'profile_id': profileId,
+      'name': name,
+      'dosage': dosage,
+      'frequency': frequency,
+      'start_date': startDate.toIso8601String(),
+      'end_date': endDate?.toIso8601String(),
+    };
+  }
+}
+
+class ReminderSchedule {
+  final String id;
+  final String medicationId;
+  final String time; // "HH:mm" 24-hour format
+  final List<int> daysOfWeek; // 1 = Monday, 7 = Sunday
+
+  ReminderSchedule({
+    required this.id,
+    required this.medicationId,
+    required this.time,
+    required this.daysOfWeek,
+  });
+
+  factory ReminderSchedule.fromJson(Map<String, dynamic> json) {
+    return ReminderSchedule(
+      id: json['id']?.toString() ?? '',
+      medicationId: json['medication_id']?.toString() ?? '',
+      time: json['time'] ?? '08:00',
+      daysOfWeek:
+          (json['days_of_week'] as List?)?.cast<int>() ?? [1, 2, 3, 4, 5, 6, 7],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'medication_id': medicationId,
+      'time': time,
+      'days_of_week': daysOfWeek,
+    };
+  }
+}

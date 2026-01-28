@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../supabase_service.dart';
 import '../cache_service.dart';
+import '../models.dart';
 
 class UserRepository {
   final SupabaseService _supabaseService;
@@ -21,6 +22,26 @@ class UserRepository {
     }
   }
 
+  // Phase 3: Family Profiles
+  Future<List<UserProfile>> getProfiles() async {
+    try {
+      final List<Map<String, dynamic>> data = await _supabaseService
+          .getProfiles();
+      return data.map((json) => UserProfile.fromJson(json)).toList();
+    } catch (e) {
+      debugPrint('Error fetching profiles: $e');
+      return [];
+    }
+  }
+
+  Future<void> createProfile(UserProfile profile) async {
+    await _supabaseService.createProfile(profile.toJson());
+  }
+
+  Future<void> deleteProfile(String id) async {
+    await _supabaseService.deleteProfile(id);
+  }
+
   Future<List<Map<String, dynamic>>> getPrescriptions() async {
     try {
       final data = await _supabaseService.getPrescriptions();
@@ -32,38 +53,56 @@ class UserRepository {
     }
   }
 
-  Stream<Map<String, dynamic>?> getProfileStream() => _supabaseService.getProfileStream();
-  
-  Future<void> updateProfile(Map<String, dynamic> data) => _supabaseService.updateProfile(data);
-  
-  Future<void> saveConditions(List<String> conditions) => _supabaseService.saveConditions(conditions);
-  
-  Future<void> addPrescription(Map<String, dynamic> data) => _supabaseService.addPrescription(data);
-  
-  Future<void> updatePrescription(String id, Map<String, dynamic> data) => _supabaseService.updatePrescription(id, data);
-  
-  Future<void> deletePrescription(String id) => _supabaseService.deletePrescription(id);
-  
-  Future<int> getActivePrescriptionsCount() => _supabaseService.getActivePrescriptionsCount();
-  
-  Future<List<Map<String, dynamic>>> getNotifications() => _supabaseService.getNotifications();
-  
-  Stream<List<Map<String, dynamic>>> getNotificationsStream() => _supabaseService.getNotificationsStream();
-  
-  Future<void> markNotificationAsRead(String id) => _supabaseService.markNotificationAsRead(id);
-  
-  Future<List<Map<String, dynamic>>> getHealthCircles() => _supabaseService.getHealthCircles();
-  
-  Future<void> updateHealthCircles(List<Map<String, dynamic>> circles) => _supabaseService.updateHealthCircles(circles);
+  Stream<Map<String, dynamic>?> getProfileStream() =>
+      _supabaseService.getProfileStream();
 
-  Future<void> createHealthCircle(String name) => _supabaseService.createHealthCircle(name);
-  
-  Future<void> inviteMember(String circleId, String email, String role) => _supabaseService.inviteMember(circleId, email, role);
-  
-  Future<void> updateMemberPermissions(String circleId, String userId, String permissions) => 
-      _supabaseService.updateMemberPermissions(circleId, userId, permissions);
-  
-  Future<void> joinCircle(String circleId) => _supabaseService.joinCircle(circleId);
+  Future<void> updateProfile(Map<String, dynamic> data) =>
+      _supabaseService.updateProfile(data);
+
+  Future<void> saveConditions(List<String> conditions) =>
+      _supabaseService.saveConditions(conditions);
+
+  Future<void> addPrescription(Map<String, dynamic> data) =>
+      _supabaseService.addPrescription(data);
+
+  Future<void> updatePrescription(String id, Map<String, dynamic> data) =>
+      _supabaseService.updatePrescription(id, data);
+
+  Future<void> deletePrescription(String id) =>
+      _supabaseService.deletePrescription(id);
+
+  Future<int> getActivePrescriptionsCount() =>
+      _supabaseService.getActivePrescriptionsCount();
+
+  Future<List<Map<String, dynamic>>> getNotifications() =>
+      _supabaseService.getNotifications();
+
+  Stream<List<Map<String, dynamic>>> getNotificationsStream() =>
+      _supabaseService.getNotificationsStream();
+
+  Future<void> markNotificationAsRead(String id) =>
+      _supabaseService.markNotificationAsRead(id);
+
+  Future<List<Map<String, dynamic>>> getHealthCircles() =>
+      _supabaseService.getHealthCircles();
+
+  Future<void> updateHealthCircles(List<Map<String, dynamic>> circles) =>
+      _supabaseService.updateHealthCircles(circles);
+
+  Future<void> createHealthCircle(String name) =>
+      _supabaseService.createHealthCircle(name);
+
+  Future<void> inviteMember(String circleId, String email, String role) =>
+      _supabaseService.inviteMember(circleId, email, role);
+
+  Future<void> updateMemberPermissions(
+    String circleId,
+    String userId,
+    String permissions,
+  ) => _supabaseService.updateMemberPermissions(circleId, userId, permissions);
+
+  Future<void> joinCircle(String circleId) =>
+      _supabaseService.joinCircle(circleId);
 
   Future<void> deleteAccountData() => _supabaseService.deleteAccountData();
 

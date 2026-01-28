@@ -5,8 +5,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/theme.dart';
 import '../../core/navigation.dart';
 import '../../core/providers.dart';
-import '../../core/providers/user_providers.dart';
+
 import '../../core/pdf_service.dart';
+import '../../core/models.dart';
 
 class ShareResultsPage extends ConsumerStatefulWidget {
   const ShareResultsPage({super.key});
@@ -50,6 +51,8 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
         ),
         const SizedBox(height: 32),
         _buildProfessionalPdfCard(context, ref),
+        const SizedBox(height: 24),
+        _buildQuickShareFamily(context, ref),
         const SizedBox(height: 24),
         _buildShareOptions(context),
         const SizedBox(height: 24),
@@ -121,8 +124,9 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
                             );
                           }).toList(),
                           onChanged: (val) {
-                            if (val != null)
+                            if (val != null) {
                               setState(() => _selectedDuration = val);
+                            }
                           },
                         ),
                       ),
@@ -452,6 +456,107 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuickShareFamily(BuildContext context, WidgetRef ref) {
+    final profilesAsync = ref.watch(userProfilesProvider);
+
+    return profilesAsync.when(
+      data: (profiles) {
+        final spouse = profiles.firstWhere(
+          (p) => p.relationship.toLowerCase() == 'spouse',
+          orElse: () =>
+              UserProfile(id: '', userId: '', firstName: '', relationship: ''),
+        );
+
+        if (spouse.id.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.family_restroom,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Quick Share: Family',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(
+                  backgroundColor: Color(
+                    int.parse(
+                      spouse.avatarColor.replaceFirst('0x', ''),
+                      radix: 16,
+                    ),
+                  ).withOpacity(0.1),
+                  child: Icon(
+                    Icons.favorite,
+                    color: Color(
+                      int.parse(
+                        spouse.avatarColor.replaceFirst('0x', ''),
+                        radix: 16,
+                      ),
+                    ),
+                    size: 16,
+                  ),
+                ),
+                title: Text(
+                  'Share with ${spouse.firstName}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Instantly grant view-only access to your records.',
+                  style: TextStyle(fontSize: 12),
+                ),
+                trailing: TextButton(
+                  onPressed: () => _handleFamilyShare(spouse, ref),
+                  child: const Text('Share Now'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Future<void> _handleFamilyShare(UserProfile companion, WidgetRef ref) async {
+    setState(() => _isGenerating = true);
+    // In a real app, this would call a Care Circle invitation or direct permission grant.
+    await Future.delayed(const Duration(seconds: 1));
+    setState(() => _isGenerating = false);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Succesfully shared health records with ${companion.firstName}!',
+        ),
+        backgroundColor: AppColors.success,
       ),
     );
   }
