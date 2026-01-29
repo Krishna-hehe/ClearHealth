@@ -14,7 +14,7 @@ import '../features/trends/trends_page.dart';
 import '../features/conditions/conditions_page.dart';
 import '../features/prescriptions/prescriptions_page.dart';
 import '../features/settings/settings_page.dart';
-import '../features/medications/medications_page.dart';
+
 import '../features/notifications/notifications_page.dart';
 import '../features/chat/health_chat_page.dart';
 import '../features/auth/login_page.dart';
@@ -225,8 +225,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         return const ConditionsPage();
       case NavItem.prescriptions:
         return const PrescriptionsPage();
-      case NavItem.medications:
-        return const MedicationsPage();
+
       case NavItem.settings:
         return const SettingsPage();
       case NavItem.notifications:

@@ -30,8 +30,7 @@
 ```html
 <meta http-equiv="Content-Security-Policy" 
       content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-```
-
+```text
 **Risk:** Allows arbitrary script execution from any source, enabling XSS attacks.
 
 **Impact:**
@@ -50,7 +49,7 @@
                font-src 'self' https://fonts.gstatic.com; 
                img-src 'self' data: https:; 
                connect-src 'self' https://*.supabase.co https://generativelanguage.googleapis.com;">
-```
+```text
 
 ### 2. **Missing Security Headers** - SEVERITY: HIGH
 
@@ -69,7 +68,7 @@
 <meta http-equiv="X-Frame-Options" content="DENY">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-```
+```text
 
 ### 3. **Potential Code Injection via Dynamic Action Handler** - SEVERITY: HIGH
 
@@ -82,8 +81,7 @@ Future<bool> _executeAction(String action, Map<String, dynamic> data) async {
   }
   return false;
 }
-```
-
+```text
 **Risk:** If `action` parameter is user-controlled, could lead to arbitrary code execution.
 
 **Remediation:**
@@ -102,8 +100,7 @@ Future<bool> _executeAction(String action, Map<String, dynamic> data) async {
   }
   return false;
 }
-```
-
+```text
 ---
 
 ## ⚠️ HIGH RISK FINDINGS
@@ -119,8 +116,7 @@ Future<bool> _executeAction(String action, Map<String, dynamic> data) async {
 String _sanitizeInput(String input) {
   return input.replaceAll(RegExp(r'[^\w\s\.\-\(\)%/]'), '');
 }
-```
-
+```text
 **Issues:**
 
 - Only sanitizes AI inputs, not database inputs
@@ -145,7 +141,7 @@ class InputValidator {
     return RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$').hasMatch(email);
   }
 }
-```
+```text
 
 ### 5. **Weak Password Policy** - SEVERITY: MEDIUM-HIGH
 
@@ -155,8 +151,7 @@ class InputValidator {
 if (password.length < 8) {
   throw 'Password must be at least 8 characters.';
 }
-```
-
+```text
 **Issues:**
 
 - Only checks length, no complexity requirements
@@ -179,7 +174,7 @@ String? validatePassword(String password) {
   }
   return null;
 }
-```
+```text
 
 ### 6. **Missing RLS (Row Level Security) Enforcement Checks** - SEVERITY: HIGH
 
@@ -214,8 +209,7 @@ Future<void> verifyRlsEnabled() async {
     AppLogger.info('✅ RLS verification passed');
   }
 }
-```
-
+```text
 ---
 
 ## ⚠️ MEDIUM RISK FINDINGS
@@ -229,8 +223,7 @@ Future<void> verifyRlsEnabled() async {
 ```dart
 static String get geminiApiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
 static String get supabaseAnonKey => dotenv.env['SUPABASE_ANON_KEY'] ?? '';
-```
-
+```text
 **✅ Good Practices:**
 
 - Using environment variables (not hardcoded)
@@ -245,12 +238,16 @@ static String get supabaseAnonKey => dotenv.env['SUPABASE_ANON_KEY'] ?? '';
 **Recommendation:**
 
 ```bash
+
 # Ensure .env is in .gitignore
+
 echo ".env" >> .gitignore
 
 # Use Supabase Edge Functions for sensitive operations
+
 # Move Gemini API calls to backend when possible
-```
+
+```text
 
 ### 8. **Audit Logging Incomplete** - SEVERITY: MEDIUM
 
@@ -260,8 +257,7 @@ echo ".env" >> .gitignore
 
 ```dart
 'ip_address': 'client-side', // ⚠️ Not real IP
-```
-
+```text
 **Issues:**
 
 - IP address not captured (client-side limitation)
@@ -289,7 +285,7 @@ export const handler = async (req: Request) => {
     timestamp: new Date().toISOString()
   });
 };
-```
+```text
 
 ### 9. **No Rate Limiting** - SEVERITY: MEDIUM
 
@@ -331,8 +327,7 @@ class RateLimiter {
 if (!_rateLimiter.isAllowed(email)) {
   throw 'Too many login attempts. Please try again later.';
 }
-```
-
+```text
 ---
 
 ## ✅ GOOD SECURITY PRACTICES FOUND
@@ -386,15 +381,18 @@ if (!_rateLimiter.isAllowed(email)) {
 **Recommendations:**
 
 ```yaml
+
 # Pin all dependencies to specific versions
+
 flutter_markdown: ^0.7.4  # Instead of 'any'
+
 mime: ^2.0.0              # Instead of 'any'
 
 # Add dependency scanning
+
 dev_dependencies:
   dependency_validator: ^4.1.0
-```
-
+```text
 **Supply Chain Checklist:**
 
 - ✅ Using official Flutter packages
@@ -481,6 +479,7 @@ dev_dependencies:
 
    ```bash
    # Add to CI/CD pipeline
+
    flutter analyze --fatal-infos
    dart run dependency_validator
    python .agent/skills/vulnerability-scanner/scripts/security_scan.py .
@@ -541,7 +540,8 @@ Replace line 25 in `web/index.html` with the secure CSP from Finding #1.
 ```bash
 echo ".env" >> .gitignore
 git rm --cached .env  # If already committed
-```
+
+```text
 
 ### 3. Pin Dependencies (10 minutes)
 
@@ -556,8 +556,7 @@ TextField(
   maxLength: 254,  // RFC 5321 limit
   // ...
 )
-```
-
+```text
 ---
 
 ## 📝 CONCLUSION

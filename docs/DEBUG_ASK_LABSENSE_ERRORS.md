@@ -10,18 +10,17 @@
 
 ### Error 1: Ask LabSense
 
-```
+```text
 PostgrestException (message: operator does not exist: extensions.vector <=> extensions.vector, 
 code: 42883, details: hint: No operator matches the given name and argument types. 
 You might need to add explicit type casts.)
-```
+```text
 
 ### Error 2: AI Health Insight
 
-```
+```text
 Unable to generate summary at this time
-```
-
+```text
 ---
 
 ## 2. Information Gathered
@@ -77,8 +76,7 @@ The previous migration fixed the UUID issue, but introduced a new schema path pr
 
 ```sql
 SET search_path TO extensions, public, pg_temp
-```
-
+```text
 **Problem:** The function is looking for operators in `extensions` schema first, but they're in `public`.
 
 ### Testing Hypothesis 2: Extension Configuration
@@ -123,8 +121,7 @@ SET search_path TO extensions, public, pg_temp
 
 -- AFTER (CORRECT)
 SET search_path TO public, pg_temp
-```
-
+```text
 **Additional Fixes:**
 
 - Explicitly use `public.test_embeddings` in queries
@@ -144,8 +141,7 @@ return 'Unable to generate summary at this time.';
 // AFTER
 AppLogger.error('getBatchSummary error: $e');
 return 'Unable to generate summary at this time. Error: $e';
-```
-
+```text
 **Benefit:** Now you'll see the actual error instead of a generic message.
 
 ---

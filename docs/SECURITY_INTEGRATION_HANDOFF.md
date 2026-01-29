@@ -49,8 +49,7 @@ Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
     // Logs success or failure
   }
 });
-```
-
+```text
 **Testing:**
 To verify it's working:
 
@@ -93,8 +92,7 @@ if (emailError != null) {
 
 // Before database insert:
 final sanitized = InputValidator.sanitizeName(userInput);
-```
-
+```text
 ---
 
 ### 2. Rate Limiter Service ✅
@@ -109,8 +107,7 @@ RateLimiters.passwordReset // 3 attempts / 1 hour, 2 hour lockout
 RateLimiters.apiCalls      // 100 / minute
 RateLimiters.fileUpload    // 10 / 5 minutes
 RateLimiters.aiQueries     // 20 / 5 minutes
-```
-
+```text
 **Usage Example:**
 
 ```dart
@@ -132,8 +129,7 @@ if (RateLimiters.login.isLockedOut(email)) {
   final timeLeft = RateLimiters.login.getTimeUntilUnlock(email);
   // Show: "Locked out for ${timeLeft.inMinutes} minutes"
 }
-```
-
+```text
 ---
 
 ## 🚀 When You Resume - Next Steps
@@ -155,8 +151,7 @@ if (data['lab_name'] != null) {
   }
   data['lab_name'] = InputValidator.sanitizeText(data['lab_name']);
 }
-```
-
+```text
 Add to `updateProfile()`:
 
 ```dart
@@ -170,8 +165,7 @@ if (updates['email'] != null) {
 if (updates['first_name'] != null) {
   updates['first_name'] = InputValidator.sanitizeName(updates['first_name']);
 }
-```
-
+```text
 **Task 2.2: User Forms** (20 min)
 Files: Profile edit, prescription forms
 
@@ -184,8 +178,7 @@ TextFormField(
     return InputValidator.validateEmail(value);
   },
 )
-```
-
+```text
 ---
 
 ### Then: Phase 3 - Rate Limiting Integration
@@ -211,8 +204,7 @@ RateLimiters.login.recordSuccess(email);
 
 // After failed login (in catch block):
 RateLimiters.login.recordFailure(email);
-```
-
+```text
 **Task 3.2: File Uploads** (15 min)
 File: `lib/core/services/upload_service.dart`
 
@@ -348,19 +340,24 @@ File: `lib/core/ai_service.dart`
 ## 📞 Quick Start Commands (Next Session)
 
 ```bash
+
 # Verify current state
+
 flutter analyze lib/main.dart
 flutter analyze lib/core/services/rls_verification_service.dart
 
 # Test RLS integration
+
 flutter run -d chrome
+
 # Then log in and check console
 
 # Continue with Phase 2
+
 # Open: lib/core/supabase_service.dart
 # Follow: docs/PLAN-security-integration.md Phase 2
-```
 
+```text
 ---
 
 **Session End Time:** 2026-01-29 01:58 IST  

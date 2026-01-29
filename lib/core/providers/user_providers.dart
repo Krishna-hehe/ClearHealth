@@ -4,6 +4,7 @@ import '../repositories/user_repository.dart';
 import '../cache_service.dart';
 
 import '../models.dart';
+import '../repositories/medication_repository.dart';
 
 final userRepositoryProvider = Provider<UserRepository>((ref) {
   return UserRepository(ref.watch(supabaseServiceProvider), CacheService());
@@ -61,4 +62,13 @@ final healthCirclesProvider = FutureProvider<List<Map<String, dynamic>>>((
   ref,
 ) async {
   return await ref.watch(userRepositoryProvider).getHealthCircles();
+});
+
+final medicationsProvider = FutureProvider<List<Medication>>((ref) async {
+  final profile = ref.watch(selectedProfileProvider).value;
+  // If no profile selected (e.g. still loading), return empty or fetch for user default
+  // Ideally rely on selectedProfileProvider
+  return await ref
+      .read(medicationRepositoryProvider)
+      .getMedications(profileId: profile?.id);
 });

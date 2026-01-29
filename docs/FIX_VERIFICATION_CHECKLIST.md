@@ -28,10 +28,9 @@
 
 ### Expected Result
 
-```
+```text
 Success. No rows returned
-```
-
+```text
 ---
 
 ## Feature Testing
@@ -52,10 +51,9 @@ Success. No rows returned
 
 **Previous Error (Should NOT appear):**
 
-```
+```text
 PostgrestException: operator does not exist: extensions.vector <=> extensions.vector
-```
-
+```text
 ---
 
 ### Test 2: AI Health Insight ✅
@@ -74,10 +72,9 @@ PostgrestException: operator does not exist: extensions.vector <=> extensions.ve
 
 **Previous Error (Should NOT appear):**
 
-```
+```text
 Unable to generate summary at this time
-```
-
+```text
 ---
 
 ### Test 3: Vector Search (Backend) ✅
@@ -91,8 +88,7 @@ SELECT * FROM public.match_test_embeddings(
   0.5,
   5
 );
-```
-
+```text
 **Expected Result:**
 
 - ✅ Query executes without errors
@@ -147,8 +143,7 @@ DROP FUNCTION IF EXISTS public.match_test_embeddings(vector(768), float, int);
 DROP TABLE IF EXISTS public.test_embeddings CASCADE;
 
 -- Then re-run the migration
-```
-
+```text
 ---
 
 ## Post-Fix Actions

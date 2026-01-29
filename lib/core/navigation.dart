@@ -7,7 +7,7 @@ enum NavItem {
   trends,
   conditions,
   prescriptions,
-  medications,
+
   settings,
   notifications,
   resultDetail,

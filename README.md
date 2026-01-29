@@ -73,35 +73,56 @@ See [Security Documentation](docs/SECURITY_INTEGRATION_GUIDE.md) for details.
 
 ## 📦 Project Structure
 
-```
+```text
 lib/
 ├── core/
 │   ├── services/          # Core services (Supabase, AI, Security)
+
 │   │   ├── rls_verification_service.dart  # RLS security verification
+
 │   │   ├── rate_limiter.dart              # Rate limiting service
+
 │   │   └── ...
 │   ├── utils/             # Utilities (Input validation, etc.)
+
 │   ├── providers/         # Riverpod state providers
+
 │   ├── repositories/      # Data access layer
+
 │   └── models.dart        # Data models
+
 ├── features/              # Feature modules
+
 │   ├── auth/             # Authentication
+
 │   ├── home/             # Dashboard
+
 │   ├── lab_results/      # Lab result management
+
 │   ├── trends/           # Health trends
+
 │   ├── medications/      # Medication tracking
+
 │   ├── chat/             # AI health assistant
+
 │   ├── settings/         # User settings & family profiles
+
 │   └── share/            # Secure sharing features
+
 ├── widgets/              # Shared UI components
+
 └── main.dart             # Application entry point
 
 docs/
 ├── SECURITY_INTEGRATION_GUIDE.md      # Security implementation guide
+
 ├── SECURITY_AUDIT_REPORT.md           # Security audit findings
+
 ├── PLAN-security-integration.md       # Security roadmap
+
 └── SECURITY_INTEGRATION_HANDOFF.md    # Development handoff doc
-```
+
+```text
 
 ## ⚡ Getting Started
 
@@ -128,6 +149,7 @@ docs/
    ```
 
 3. **Environment Setup**
+
    Create a `.env` file in the root directory:
 
    ```env
@@ -135,6 +157,7 @@ docs/
    SUPABASE_ANON_KEY=your_supabase_anon_key
    GEMINI_API_KEY=your_gemini_api_key
    SENTRY_DSN=your_sentry_dsn  # Optional
+
    ```
 
 4. **Database Setup**
@@ -146,12 +169,15 @@ docs/
 
    ```bash
    # Web
+
    flutter run -d chrome
    
    # iOS
+
    flutter run -d ios
    
    # Android
+
    flutter run -d android
    ```
 
@@ -198,15 +224,19 @@ See [Security Integration Progress](docs/SECURITY_INTEGRATION_PROGRESS.md) for s
 ## 🧪 Testing
 
 ```bash
+
 # Run all tests
+
 flutter test
 
 # Run specific test
+
 flutter test test/widget/dashboard_page_test.dart
 
 # Run with coverage
+
 flutter test --coverage
-```
+```text
 
 ## 📚 Documentation
 

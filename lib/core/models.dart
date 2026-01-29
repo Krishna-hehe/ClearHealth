@@ -163,6 +163,7 @@ class Medication {
   final DateTime startDate;
   final DateTime? endDate;
   final List<ReminderSchedule>? schedules;
+  final String? imageUrl;
 
   Medication({
     required this.id,
@@ -174,6 +175,7 @@ class Medication {
     required this.startDate,
     this.endDate,
     this.schedules,
+    this.imageUrl,
   });
 
   factory Medication.fromJson(Map<String, dynamic> json) {
@@ -189,6 +191,7 @@ class Medication {
       schedules: (json['reminder_schedules'] as List?)
           ?.map((s) => ReminderSchedule.fromJson(s))
           .toList(),
+      imageUrl: json['image_url'],
     );
   }
 
@@ -202,6 +205,7 @@ class Medication {
       'frequency': frequency,
       'start_date': startDate.toIso8601String(),
       'end_date': endDate?.toIso8601String(),
+      'image_url': imageUrl,
     };
   }
 }

@@ -26,7 +26,7 @@ class AppColors {
   static const Color darkBorder = Color(0xFF334155); // Slate 700
 
   // Legacy aliases for backward compatibility (will map to Light mode defaults to avoid breakage)
-  // TODO: Refactor usage to use Theme.of(context)
+  // Legacy aliases for backward compatibility (Deprecated: Prefer Theme.of(context))
   static const Color primary = primaryBrand;
   static const Color secondary = lightTextSecondary;
   static const Color background = lightBg;

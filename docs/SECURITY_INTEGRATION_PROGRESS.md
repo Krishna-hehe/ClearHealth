@@ -44,13 +44,14 @@
 
 ```dart
 // When user logs in:
+
 1. Auth state changes
 2. Listener detects session != null
 3. RlsVerificationService.verifyRlsPolicies() runs
 4. Tests 3 tables: lab_results, profiles, prescriptions
 5. Logs result to console
-```
 
+```text
 **Logs:**
 
 - Login: "🔐 User authenticated - verifying RLS policies..."

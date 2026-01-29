@@ -5,6 +5,7 @@
 ## 1. Security Hardening (Agent: Security Auditor)
 
 ### Vulnerability 1: Information Leakage
+
 - **Target**: `lib/features/auth/login_page.dart`
 - **Change**: Replace raw `e.toString()` in SnackBars with user-friendly messages (e.g., "Invalid email or password", "Service unavailable").
 
@@ -15,6 +16,7 @@
 ## 2. Data Export (Agent: Backend Specialist)
 
 ### New Feature: "Download My Data"
+
 - **Target**: `lib/features/settings/settings_page.dart` (Add button)
 - **New Service**: `lib/features/settings/data_export_service.dart`
   - **Logic**:
@@ -29,6 +31,7 @@
 ## 3. Accessibility (Agent: Frontend Specialist)
 
 ### Screen Reader Optimization
+
 - **Target**: `LoginPage`, `DashboardPage`, `ResultsListPage`.
 - **Changes**:
   - Wrap interactive elements (Buttons, Cards) in `Semantics`.

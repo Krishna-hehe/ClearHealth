@@ -151,10 +151,9 @@ class _AppEntryPointState extends State<AppEntryPoint> {
             AppLogger.error(
               '🚨 CRITICAL: RLS verification failed! Data may be exposed!',
             );
-            // TODO: Decide on failure handling:
-            // - Show warning dialog to user
-            // - Prevent app usage until fixed
-            // - Send alert to admin
+
+            // Force sign out to protect data
+            Supabase.instance.client.auth.signOut();
           }
         } catch (e) {
           AppLogger.error('❌ RLS verification error: $e');

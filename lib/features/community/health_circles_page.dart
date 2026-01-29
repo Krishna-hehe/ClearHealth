@@ -409,7 +409,7 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
             ElevatedButton(
               onPressed: () async {
                 await _updatePermissions(circleId, userId, currentPermissions);
-                if (mounted) Navigator.pop(context);
+                if (context.mounted) Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,

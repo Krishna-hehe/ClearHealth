@@ -79,13 +79,7 @@ class AppSidebar extends ConsumerWidget {
                   FontAwesomeIcons.pills,
                   'Prescriptions',
                 ),
-                _buildSidebarItem(
-                  context,
-                  ref,
-                  NavItem.medications,
-                  FontAwesomeIcons.clockRotateLeft,
-                  'Medications',
-                ),
+
                 _buildSidebarItem(
                   context,
                   ref,

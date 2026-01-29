@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../supabase_service.dart';
 import '../models.dart';
-import '../providers.dart';
+import '../providers/core_providers.dart';
 
 final medicationRepositoryProvider = Provider<MedicationRepository>((ref) {
   return MedicationRepository(ref.watch(supabaseServiceProvider));

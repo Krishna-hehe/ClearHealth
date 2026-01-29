@@ -78,7 +78,7 @@ Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
     }
   }
 });
-```
+```text
 
 ### Step 2: Add Rate Limiting to Login
 
@@ -90,8 +90,7 @@ Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
 import '../../core/services/rate_limiter.dart';
 import '../../core/utils/input_validator.dart';
 import '../../core/services/log_service.dart';
-```
-
+```text
 **Modify `_handleSubmit()` method:**
 
 ```dart
@@ -184,7 +183,7 @@ Future<void> _handleSubmit() async {
     if (mounted) setState(() => _isLoading = false);
   }
 }
-```
+```text
 
 ### Step 3: Add Input Validation to Database Operations
 
@@ -194,8 +193,7 @@ Future<void> _handleSubmit() async {
 
 ```dart
 import 'utils/input_validator.dart';
-```
-
+```text
 **Modify `insertLabResult()` method:**
 
 ```dart
@@ -240,8 +238,7 @@ Future<Map<String, dynamic>> insertLabResult(Map<String, dynamic> data) async {
     rethrow;
   }
 }
-```
-
+```text
 **Modify `updateProfile()` method:**
 
 ```dart
@@ -285,7 +282,7 @@ Future<void> updateProfile(Map<String, dynamic> updates) async {
     rethrow;
   }
 }
-```
+```text
 
 ### Step 4: Add Rate Limiting to File Uploads
 
@@ -296,8 +293,7 @@ Future<void> updateProfile(Map<String, dynamic> updates) async {
 ```dart
 import 'rate_limiter.dart';
 import 'log_service.dart';
-```
-
+```text
 **Modify `pickFiles()` method:**
 
 ```dart
@@ -321,7 +317,7 @@ Future<void> pickFiles() async {
     rethrow;
   }
 }
-```
+```text
 
 ### Step 5: Add Rate Limiting to AI Queries
 
@@ -331,8 +327,7 @@ Future<void> pickFiles() async {
 
 ```dart
 import 'services/rate_limiter.dart';
-```
-
+```text
 **Modify `getSingleTestAnalysis()` method:**
 
 ```dart
@@ -352,8 +347,7 @@ Future<LabTestAnalysis> getSingleTestAnalysis({
   
   // Existing analysis logic...
 }
-```
-
+```text
 ---
 
 ## ✅ Verification Checklist
@@ -390,7 +384,7 @@ for (int i = 0; i < 6; i++) {
     print('Attempt ${i+1}: $e');
   }
 }
-```
+```text
 
 ### Test Input Validation
 
@@ -404,7 +398,7 @@ assert(isMalicious == true);
 final invalidEmail = 'not-an-email';
 final error = InputValidator.validateEmail(invalidEmail);
 assert(error != null);
-```
+```text
 
 ### Test RLS Verification
 
@@ -413,8 +407,7 @@ assert(error != null);
 final rlsService = RlsVerificationService(Supabase.instance.client);
 final verified = await rlsService.verifyRlsPolicies();
 print('RLS Verified: $verified');
-```
-
+```text
 ---
 
 ## 📊 Monitoring
@@ -426,8 +419,7 @@ Add to your monitoring dashboard:
 final stats = RateLimiters.login.getStats();
 print('Login rate limiter stats: $stats');
 // Output: {total_tracked: 15, locked_out: 2, near_limit: 3}
-```
-
+```text
 ---
 
 ## 🔐 Security Score Impact
