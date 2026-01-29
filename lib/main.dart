@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:sentry_flutter/sentry_flutter.dart';

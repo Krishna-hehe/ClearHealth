@@ -4,8 +4,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/theme.dart';
 import '../../core/providers.dart';
 
-
-
 class Message {
   final String text;
   final bool isUser;
@@ -28,26 +26,57 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
   @override
   void initState() {
     super.initState();
-    _messages.add(Message(
-      text: "Hello! I'm LabSense AI. I can help you understand your lab results and medical history. What would you like to know today?",
-      isUser: false,
-      timestamp: DateTime.now(),
-    ));
+    _messages.add(
+      Message(
+        text:
+            "Hello! I'm LabSense AI. I can help you understand your lab results and medical history. What would you like to know today?",
+        isUser: false,
+        timestamp: DateTime.now(),
+      ),
+    );
   }
 
   Future<void> _sendMessage() async {
-    final query = _controller.text.trim();
+    var query = _controller.text.trim();
     if (query.isEmpty) return;
+
+    // Phase 2: Input Validation & Sanitization
+    final validator = ref.read(inputValidationServiceProvider);
+    query = validator.sanitizeInput(query);
+
+    if (query.isEmpty) return; // If sanitization removed everything
     if (query.length > 500) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Message too long. Please shorten your message (max 500 chars).')),
+        const SnackBar(
+          content: Text(
+            'Message too long. Please shorten your message (max 500 chars).',
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Phase 3: Rate Limiting
+    final rateLimiter = ref.read(rateLimiterProvider);
+    final waitDuration = rateLimiter.checkLimit('ask_labsense');
+    if (waitDuration != null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Rate limit exceeded. Please wait ${waitDuration.inSeconds} seconds.',
+          ),
+          backgroundColor: AppColors.warning,
+        ),
       );
       return;
     }
 
     setState(() {
-      _messages.add(Message(text: query, isUser: true, timestamp: DateTime.now()));
+      _messages.add(
+        Message(text: query, isUser: true, timestamp: DateTime.now()),
+      );
       _isLoading = true;
       _controller.clear();
     });
@@ -61,12 +90,15 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
     for (var report in labResults) {
       if (report.testResults != null) {
         for (var test in report.testResults!) {
-          if (test.status.toLowerCase() == 'high' || test.status.toLowerCase() == 'low') {
+          if (test.status.toLowerCase() == 'high' ||
+              test.status.toLowerCase() == 'low') {
             abnormalLabs.add({
               'test_name': test.name,
               'value': test.result,
               'unit': test.unit,
               'status': test.status,
+              'reference_range': test.reference,
+              'loinc': test.loinc,
               'date': report.date.toIso8601String().split('T')[0],
             });
           }
@@ -77,34 +109,40 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
     // Filter Active Prescriptions
     final activePrescriptions = prescriptions
         .where((p) => p['is_active'] == true)
-        .map((p) => {
-              'medication': p['medication_name'],
-              'dosage': p['dosage'],
-              'frequency': p['frequency'],
-            })
+        .map(
+          (p) => {
+            'medication': p['medication_name'],
+            'dosage': p['dosage'],
+            'frequency': p['frequency'],
+          },
+        )
         .toList();
 
     try {
       final aiService = ref.read(aiServiceProvider);
       final response = await aiService.chat(
-        query, 
+        query,
         healthContext: {
           'abnormal_labs': abnormalLabs,
           'active_prescriptions': activePrescriptions,
-        }
+        },
       );
       if (!mounted) return;
       setState(() {
-        _messages.add(Message(text: response, isUser: false, timestamp: DateTime.now()));
+        _messages.add(
+          Message(text: response, isUser: false, timestamp: DateTime.now()),
+        );
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _messages.add(Message(
-          text: "I'm sorry, I encountered an error: $e",
-          isUser: false,
-          timestamp: DateTime.now(),
-        ));
+        _messages.add(
+          Message(
+            text: "I'm sorry, I encountered an error: $e",
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
       });
     } finally {
       if (mounted) {
@@ -132,7 +170,8 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
                 Expanded(
                   child: ListView.builder(
                     itemCount: _messages.length,
-                    itemBuilder: (context, index) => _buildMessageBubble(_messages[index]),
+                    itemBuilder: (context, index) =>
+                        _buildMessageBubble(_messages[index]),
                   ),
                 ),
                 if (_isLoading)
@@ -155,7 +194,7 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
   Widget _buildSuggestions() {
     final labResults = ref.watch(labResultsProvider).value ?? [];
     final prescriptions = ref.watch(prescriptionsProvider).value ?? [];
-    
+
     final suggestions = <String>{
       "How can I improve my immunity?",
       "Explain my latest lab report",
@@ -178,8 +217,8 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
 
     for (var p in prescriptions) {
       if (p['is_active'] == true) {
-        suggestions.add("Side effects of ${p['medication_name']}");
-        suggestions.add("Interactions with ${p['medication_name']}");
+        suggestions.add("Side effects of ${p['name']}");
+        suggestions.add("Interactions with ${p['name']}");
       }
     }
 
@@ -219,7 +258,11 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
             color: const Color(0xFFEEF2FF),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(FontAwesomeIcons.robot, size: 24, color: AppColors.primary),
+          child: const Icon(
+            FontAwesomeIcons.robot,
+            size: 24,
+            color: AppColors.primary,
+          ),
         ),
         const SizedBox(width: 16),
         Column(
@@ -276,7 +319,10 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: AppColors.border),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 16,
+              ),
             ),
             onSubmitted: (_) => _sendMessage(),
           ),
@@ -288,7 +334,9 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
           child: const Icon(Icons.send),
         ),

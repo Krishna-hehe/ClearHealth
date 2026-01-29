@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
+import '../core/providers.dart';
 
-class OcrReviewDialog extends StatefulWidget {
+class OcrReviewDialog extends ConsumerStatefulWidget {
   final Map<String, dynamic> initialData;
 
   const OcrReviewDialog({super.key, required this.initialData});
 
   @override
-  State<OcrReviewDialog> createState() => _OcrReviewDialogState();
+  ConsumerState<OcrReviewDialog> createState() => _OcrReviewDialogState();
 }
 
-class _OcrReviewDialogState extends State<OcrReviewDialog> {
+class _OcrReviewDialogState extends ConsumerState<OcrReviewDialog> {
   late TextEditingController _labNameController;
   late TextEditingController _dateController;
   late List<Map<String, dynamic>> _testResults;
@@ -126,10 +128,56 @@ class _OcrReviewDialogState extends State<OcrReviewDialog> {
         ),
         ElevatedButton(
           onPressed: () {
+            final validator = ref.read(inputValidationServiceProvider);
+
+            // Validate Top Level
+            if (_labNameController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Lab Name is required')),
+              );
+              return;
+            }
+            // Date validation (basic)
+            if (_dateController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Date is required')));
+              return;
+            }
+
+            // Validate Results
+            for (var test in _testResults) {
+              final resultStr = test['result']?.toString() ?? '';
+              final err = validator.validateLabValue(resultStr);
+              if (err != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error in ${test['name'] ?? 'Test'}: $err'),
+                  ),
+                );
+                return;
+              }
+            }
+
+            // Sanitize & Save
             Navigator.pop(context, {
-              'lab_name': _labNameController.text,
-              'date': _dateController.text,
-              'test_results': _testResults,
+              'lab_name': validator.sanitizeInput(_labNameController.text),
+              'date': validator.sanitizeInput(_dateController.text),
+              'test_results': _testResults
+                  .map(
+                    (t) => {
+                      ...t,
+                      'name': validator.sanitizeInput(
+                        t['name']?.toString() ?? '',
+                      ),
+                      // Result is already validated as number, but keep as string or parse
+                      'result': t['result'],
+                      'unit': validator.sanitizeInput(
+                        t['unit']?.toString() ?? '',
+                      ),
+                    },
+                  )
+                  .toList(),
             });
           },
           style: ElevatedButton.styleFrom(

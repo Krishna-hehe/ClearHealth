@@ -89,7 +89,7 @@ class _MedicationsPageState extends ConsumerState<MedicationsPage> {
           Icon(
             Icons.medication_liquid_outlined,
             size: 80,
-            color: AppColors.lightTextSecondary.withOpacity(0.3),
+            color: AppColors.lightTextSecondary.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -125,7 +125,7 @@ class _MedicationsPageState extends ConsumerState<MedicationsPage> {
 
     if (result == true) {
       ref.invalidate(medicationsProvider(widget.profileId));
-      if (mounted) {
+      if (context.mounted) {
         final messenger = ScaffoldMessenger.of(context);
         messenger.showSnackBar(
           SnackBar(
@@ -200,7 +200,7 @@ class _MedicationCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 0,
-      color: AppColors.primaryBrand.withOpacity(0.05),
+      color: AppColors.primaryBrand.withValues(alpha: 0.05),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -208,7 +208,7 @@ class _MedicationCard extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.accent.withOpacity(0.1),
+                color: AppColors.accent.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.medication, color: AppColors.accent),
@@ -248,7 +248,9 @@ class _MedicationCard extends ConsumerWidget {
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: AppColors.accent.withOpacity(0.2),
+                                  color: AppColors.accent.withValues(
+                                    alpha: 0.2,
+                                  ),
                                 ),
                               ),
                               child: Text(

@@ -18,8 +18,12 @@ class StreakFlame extends ConsumerWidget {
     final streakAsync = ref.watch(streakProvider);
 
     return streakAsync.when(
-      loading: () => const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
-      error: (_, __) => const SizedBox(),
+      loading: () => const SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+      error: (e, s) => const SizedBox(),
       data: (streak) {
         if (streak == 0) return const SizedBox();
 
@@ -34,7 +38,7 @@ class StreakFlame extends ConsumerWidget {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.orange.withOpacity(0.3),
+                color: Colors.orange.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -43,16 +47,16 @@ class StreakFlame extends ConsumerWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-               const Icon(FontAwesomeIcons.fire, color: Colors.white, size: 14),
-               const SizedBox(width: 8),
-               Text(
-                 '$streak Day Streak',
-                 style: const TextStyle(
-                   color: Colors.white, 
-                   fontWeight: FontWeight.bold, 
-                   fontSize: 12,
-                 ),
-               ),
+              const Icon(FontAwesomeIcons.fire, color: Colors.white, size: 14),
+              const SizedBox(width: 8),
+              Text(
+                '$streak Day Streak',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
             ],
           ),
         );

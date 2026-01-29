@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
   <!--
@@ -20,6 +20,7 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Content Security Policy - Relaxed for development, tighten in production -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
@@ -43,6 +44,10 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="lab_sense_app">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
@@ -121,6 +126,15 @@
         }, 500); // Wait for transition
       }
     }
+  };
+</script>
+
+<!-- Force Flutter Web to use HTML renderer (better for development) -->
+<script>
+  // Configure Flutter Web to use HTML renderer instead of CanvasKit
+  // This fixes font rendering issues and works better with CSP
+  window.flutterConfiguration = {
+    renderer: "html"
   };
 </script>
 

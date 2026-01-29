@@ -278,7 +278,7 @@ class _ComparisonPageState extends ConsumerState<ComparisonPage> {
                 ),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? Colors.white.withOpacity(0.05)
+                      ? Colors.white.withValues(alpha: 0.05)
                       : const Color(0xFFF9FAFB),
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(20),
@@ -342,12 +342,12 @@ class _ComparisonPageState extends ConsumerState<ComparisonPage> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: isDark
-                            ? Colors.black.withOpacity(0.2)
+                            ? Colors.black.withValues(alpha: 0.2)
                             : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isAbnormal
-                              ? AppColors.danger.withOpacity(0.3)
+                              ? AppColors.danger.withValues(alpha: 0.3)
                               : AppColors.border,
                         ),
                       ),
@@ -367,7 +367,9 @@ class _ComparisonPageState extends ConsumerState<ComparisonPage> {
                               Text(
                                 report.labName,
                                 style: TextStyle(
-                                  color: AppColors.secondary.withOpacity(0.7),
+                                  color: AppColors.secondary.withValues(
+                                    alpha: 0.7,
+                                  ),
                                   fontSize: 10,
                                 ),
                               ),

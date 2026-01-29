@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 import 'package:lab_sense_app/core/ai_service.dart';
 import 'package:lab_sense_app/core/vector_service.dart';
 

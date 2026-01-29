@@ -202,12 +202,14 @@ class _FamilyProfilesPageState extends ConsumerState<FamilyProfilesPage> {
                 ref.invalidate(userProfilesProvider);
                 if (context.mounted) Navigator.pop(context);
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error: $e'),
-                    backgroundColor: AppColors.danger,
-                  ),
-                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: AppColors.danger,
+                    ),
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(

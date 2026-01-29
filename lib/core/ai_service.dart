@@ -580,7 +580,8 @@ class AiService {
       cacheService.cacheAiResponse(cacheKey, text);
       return text;
     } catch (e) {
-      return 'Unable to generate summary at this time.';
+      AppLogger.error('getBatchSummary error: $e');
+      return 'Unable to generate summary at this time. Error: $e';
     }
   }
 
@@ -619,31 +620,67 @@ class AiService {
     // Chat is dynamic, harder to cache effectively without strict keys, skipping for now
 
     final contextText = contextChunks.isEmpty
-        ? "No specific records found."
-        : contextChunks.join('\\n\\n---\\n\\n');
+        ? "No specific records found in vector database."
+        : contextChunks.join('\n\n---\n\n');
 
     String healthContextStr = '';
     if (healthContext != null) {
-      // Minify health context too
+      // Enhanced context: Include units and refs for better AI analysis
       final abnormal = (healthContext['abnormal_labs'] as List?)
-          ?.map((t) => {'n': t['name'], 'v': t['result'], 's': t['status']})
+          ?.map(
+            (t) => {
+              'Test': t['test_name'],
+              'Result': '${t['value']} ${t['unit']}',
+              'Status': t['status'],
+              'Ref': t['reference_range'],
+            },
+          )
           .toList();
+
+      final meds = (healthContext['active_prescriptions'] as List?)
+          ?.map((m) => '${m['name']} (${m['dosage']})')
+          .toList();
+
       healthContextStr =
-          "Context: Abnormal=\${jsonEncode(abnormal)}, Meds=\${jsonEncode(healthContext['active_prescriptions'])}";
+          '''
+      PATIENT HEALTH CONTEXT:
+      - Abnormal Lab Results: ${jsonEncode(abnormal)}
+      - Active Medications: ${jsonEncode(meds)}
+      ''';
     }
 
     final prompt =
         '''
-      LabSense AI Assistant.
+      SYSTEM DIRECTIVE: ACT AS AN EXPERIENCED MEDICAL PROFESSIONAL.
       
+      ROLE: Explain the lab report below in simple language for a non-medical person.
+
       $healthContextStr
       
-      Files:
+      RETRIEVED HISTORY:
       $contextText
       
-      User: $query
+      USER QUERY: "$query"
+
+      RESPONSE GUIDELINES:
+      - **Overall Health Summary**: Quick understanding (Normal/Concerns).
+      - **Abnormal Results**: List values outside range & explain meaning.
+      - **Possible Causes**: Lifestyle, diet, infections, etc.
+      - **Health Risks**: What could develop if ignored?
+      - **What I Should Do Next**: Diet, lifestyle, hydration, sleep, exercise.
+      - **Urgency Check**: Serious vs Mild?
+      - **Good Signs**: What is working well?
       
-      Answer professionally.
+      FORMATTING RULES:
+      ✔ Avoid heavy medical jargon.
+      ✔ Use bullet points.
+      ✔ Explain numbers with normal ranges.
+      ✔ NO PANIC: Differentiate mild vs serious.
+      ✔ Borderline: Explain prevention.
+      
+      AT THE END: Give a simple **5-line action plan** for improving health.
+      
+      DISCLAIMER: Always end with: "_(Medical Disclaimer: Consult your doctor)_".
     ''';
 
     try {

@@ -160,7 +160,7 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
                         ),
                         decoration: BoxDecoration(
                           color: _allowDownload
-                              ? AppColors.primary.withOpacity(0.1)
+                              ? AppColors.primary.withValues(alpha: 0.1)
                               : Colors.grey[50],
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
@@ -506,7 +506,7 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
                       spouse.avatarColor.replaceFirst('0x', ''),
                       radix: 16,
                     ),
-                  ).withOpacity(0.1),
+                  ).withValues(alpha: 0.1),
                   child: Icon(
                     Icons.favorite,
                     color: Color(
@@ -539,7 +539,7 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, s) => const SizedBox.shrink(),
     );
   }
 

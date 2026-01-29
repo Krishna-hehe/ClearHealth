@@ -424,8 +424,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
         }
 
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final tipBg = themeColor.withOpacity(isDark ? 0.2 : 0.1);
-        final tipBorder = themeColor.withOpacity(isDark ? 0.5 : 0.3);
+        final tipBg = themeColor.withValues(alpha: isDark ? 0.2 : 0.1);
+        final tipBorder = themeColor.withValues(alpha: isDark ? 0.5 : 0.3);
         final tipTextColor = isDark
             ? themeColor.withRed(255).withGreen(255).withBlue(255)
             : themeColor;
@@ -523,11 +523,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.error.withOpacity(0.3),
+          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
         ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.error.withOpacity(0.05),
+            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

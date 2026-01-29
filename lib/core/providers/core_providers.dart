@@ -7,9 +7,19 @@ import '../vector_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../services/sync_service.dart';
 import '../app_config.dart';
+import '../services/input_validation_service.dart';
+import '../services/rate_limiter_service.dart';
 import '../cache_service.dart';
 
 // --- Core Infrastructure Providers ---
+
+final inputValidationServiceProvider = Provider<InputValidationService>((ref) {
+  return InputValidationService();
+});
+
+final rateLimiterProvider = Provider<RateLimiterService>((ref) {
+  return RateLimiterService();
+});
 
 final syncBoxProvider = Provider<Box>((ref) {
   return Hive.box('sync_queue'); // Init handled in main or CacheService

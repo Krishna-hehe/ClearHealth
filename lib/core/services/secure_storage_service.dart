@@ -3,17 +3,20 @@ import 'package:flutter/foundation.dart';
 
 class SecureStorageService {
   // Create storage
-  // On web, we need to set mOptions to use non-encrypted storage if necessary, 
-  // but for HIPAA we ideally want encryption. 
+  // On web, we need to set mOptions to use non-encrypted storage if necessary,
+  // but for HIPAA we ideally want encryption.
   // Note: flutter_secure_storage on web uses localStorage which is NOT secure by default without wrapping.
   // However, for this MVP implementation we will use the standard setup.
   static const _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
+      // encryptedSharedPreferences: true, // Deprecated and ignored in v9+
     ),
   );
 
-  static Future<void> write({required String key, required String value}) async {
+  static Future<void> write({
+    required String key,
+    required String value,
+  }) async {
     try {
       await _storage.write(key: key, value: value);
     } catch (e) {

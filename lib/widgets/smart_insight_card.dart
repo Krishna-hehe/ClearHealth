@@ -27,7 +27,7 @@ class SmartInsightCard extends ConsumerWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0F172A).withOpacity(0.3),
+                color: const Color(0xFF0F172A).withValues(alpha: 0.3),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -43,7 +43,7 @@ class SmartInsightCard extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
@@ -153,10 +153,10 @@ class SmartInsightCard extends ConsumerWidget {
       width: 280,
       margin: const EdgeInsets.only(right: 16),
       child: Material(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: Colors.white.withOpacity(0.1)),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
         ),
         child: InkWell(
           onTap: () => _showInsightDialog(
@@ -194,9 +194,11 @@ class SmartInsightCard extends ConsumerWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: riskColor.withOpacity(0.2),
+                        color: riskColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: riskColor.withOpacity(0.5)),
+                        border: Border.all(
+                          color: riskColor.withValues(alpha: 0.5),
+                        ),
                       ),
                       child: Text(
                         '$risk Risk',
@@ -216,7 +218,7 @@ class SmartInsightCard extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Icon(
                       Icons.arrow_forward,
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                       size: 16,
                     ),
                     const SizedBox(width: 12),
@@ -246,7 +248,7 @@ class SmartInsightCard extends ConsumerWidget {
                 Text(
                   insight,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 12,
                     height: 1.4,
                   ),
@@ -257,7 +259,7 @@ class SmartInsightCard extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF818CF8).withOpacity(0.1),
+                    color: const Color(0xFF818CF8).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -347,9 +349,11 @@ class SmartInsightCard extends ConsumerWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: riskColor.withOpacity(0.2),
+                      color: riskColor.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: riskColor.withOpacity(0.5)),
+                      border: Border.all(
+                        color: riskColor.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: Text(
                       '$risk Risk',
@@ -377,7 +381,7 @@ class SmartInsightCard extends ConsumerWidget {
               Text(
                 'Analysis',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.white.withValues(alpha: 0.5),
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1,
@@ -396,10 +400,10 @@ class SmartInsightCard extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF818CF8).withOpacity(0.1),
+                  color: const Color(0xFF818CF8).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color(0xFF818CF8).withOpacity(0.3),
+                    color: const Color(0xFF818CF8).withValues(alpha: 0.3),
                   ),
                 ),
                 child: Column(
@@ -448,7 +452,10 @@ class SmartInsightCard extends ConsumerWidget {
       children: [
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.5),
+            fontSize: 10,
+          ),
         ),
         const SizedBox(height: 4),
         Text(

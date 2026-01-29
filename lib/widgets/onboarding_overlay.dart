@@ -19,19 +19,22 @@ class _OnboardingOverlayState extends State<OnboardingOverlay> {
   final List<OnboardingStep> _steps = [
     OnboardingStep(
       title: 'Upload Lab Reports',
-      description: 'Simply upload your PDF or photo. Our AI instantly extracts and constructs your digital health profile.',
+      description:
+          'Simply upload your PDF or photo. Our AI instantly extracts and constructs your digital health profile.',
       icon: FontAwesomeIcons.fileArrowUp,
       color: Color(0xFF3B82F6), // Blue
     ),
     OnboardingStep(
       title: 'AI Health Insights',
-      description: 'Ask deep questions about your health. LabSense understands your history and gives personalized, medical-grade answers.',
+      description:
+          'Ask deep questions about your health. LabSense understands your history and gives personalized, medical-grade answers.',
       icon: FontAwesomeIcons.userDoctor,
       color: Color(0xFF10B981), // Emerald
     ),
     OnboardingStep(
       title: 'Track & Optimize',
-      description: 'Visualize trends over time and get science-backed recommendations to optimize your longevity and vitality.',
+      description:
+          'Visualize trends over time and get science-backed recommendations to optimize your longevity and vitality.',
       icon: FontAwesomeIcons.chartLine,
       color: Color(0xFF8B5CF6), // Violet
     ),
@@ -56,12 +59,10 @@ class _OnboardingOverlayState extends State<OnboardingOverlay> {
         Positioned.fill(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              color: Colors.black.withOpacity(0.6),
-            ),
+            child: Container(color: Colors.black.withValues(alpha: 0.6)),
           ),
         ),
-        
+
         // Main Content
         Center(
           child: Container(
@@ -73,7 +74,7 @@ class _OnboardingOverlayState extends State<OnboardingOverlay> {
               borderRadius: BorderRadius.circular(32),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 40,
                   offset: const Offset(0, 20),
                 ),
@@ -94,7 +95,7 @@ class _OnboardingOverlayState extends State<OnboardingOverlay> {
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            _steps[_currentStep].color.withOpacity(0.1),
+                            _steps[_currentStep].color.withValues(alpha: 0.1),
                             Colors.transparent,
                           ],
                         ),
@@ -125,12 +126,15 @@ class _OnboardingOverlayState extends State<OnboardingOverlay> {
                       Expanded(
                         child: PageView.builder(
                           controller: _pageController,
-                          onPageChanged: (index) => setState(() => _currentStep = index),
+                          onPageChanged: (index) =>
+                              setState(() => _currentStep = index),
                           itemCount: _steps.length,
                           itemBuilder: (context, index) {
                             final step = _steps[index];
                             return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 40),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 40,
+                              ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -139,7 +143,7 @@ class _OnboardingOverlayState extends State<OnboardingOverlay> {
                                     width: 120,
                                     height: 120,
                                     decoration: BoxDecoration(
-                                      color: step.color.withOpacity(0.1),
+                                      color: step.color.withValues(alpha: 0.1),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Center(
@@ -151,7 +155,7 @@ class _OnboardingOverlayState extends State<OnboardingOverlay> {
                                     ),
                                   ),
                                   const SizedBox(height: 48),
-                                  
+
                                   // Text Content
                                   Text(
                                     step.title,
@@ -193,10 +197,12 @@ class _OnboardingOverlayState extends State<OnboardingOverlay> {
                                   duration: const Duration(milliseconds: 300),
                                   width: index == _currentStep ? 24 : 8,
                                   height: 8,
-                                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: index == _currentStep 
-                                        ? _steps[_currentStep].color 
+                                    color: index == _currentStep
+                                        ? _steps[_currentStep].color
                                         : Colors.grey[300],
                                     borderRadius: BorderRadius.circular(4),
                                   ),
@@ -204,7 +210,7 @@ class _OnboardingOverlayState extends State<OnboardingOverlay> {
                               }),
                             ),
                             const SizedBox(height: 32),
-                            
+
                             // Continue Button
                             SizedBox(
                               width: double.infinity,
@@ -220,7 +226,9 @@ class _OnboardingOverlayState extends State<OnboardingOverlay> {
                                   ),
                                 ),
                                 child: Text(
-                                  _currentStep == _steps.length - 1 ? 'Get Started' : 'Continue',
+                                  _currentStep == _steps.length - 1
+                                      ? 'Get Started'
+                                      : 'Continue',
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,

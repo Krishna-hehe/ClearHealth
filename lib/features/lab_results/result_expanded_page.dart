@@ -26,14 +26,16 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
   void _logAccess() {
     final report = ref.read(selectedReportProvider);
     if (report != null) {
-      ref.read(supabaseServiceProvider).logAccess(
-        action: 'View Lab Report',
-        resourceId: report.id,
-        metadata: {
-          'lab_name': report.labName,
-          'test_count': report.testCount,
-        },
-      );
+      ref
+          .read(supabaseServiceProvider)
+          .logAccess(
+            action: 'View Lab Report',
+            resourceId: report.id,
+            metadata: {
+              'lab_name': report.labName,
+              'test_count': report.testCount,
+            },
+          );
     }
   }
 
@@ -43,7 +45,9 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
 
     if (report == null) {
       return const Center(
-        child: Text('No lab report selected. Please select one from the results list.'),
+        child: Text(
+          'No lab report selected. Please select one from the results list.',
+        ),
       );
     }
 
@@ -62,19 +66,28 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
           children: [
             _buildHeader(context, ref, report),
             if (tests.isNotEmpty) _buildAiSummary(context, tests, ref),
-            if (tests.isNotEmpty) _buildTable(context, tests, ref)
-            else Padding(
-              padding: const EdgeInsets.all(40.0),
-              child: Center(
-                child: Column(
-                  children: const [
-                    Icon(Icons.info_outline, size: 48, color: AppColors.border),
-                    SizedBox(height: 16),
-                    Text('No detailed test data found for this report.', style: TextStyle(color: AppColors.secondary)),
-                  ],
+            if (tests.isNotEmpty)
+              _buildTable(context, tests, ref)
+            else
+              Padding(
+                padding: const EdgeInsets.all(40.0),
+                child: Center(
+                  child: Column(
+                    children: const [
+                      Icon(
+                        Icons.info_outline,
+                        size: 48,
+                        color: AppColors.border,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'No detailed test data found for this report.',
+                        style: TextStyle(color: AppColors.secondary),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -92,7 +105,11 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
               color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(FontAwesomeIcons.fileLines, size: 20, color: Color(0xFF10B981)),
+            child: const Icon(
+              FontAwesomeIcons.fileLines,
+              size: 20,
+              color: Color(0xFF10B981),
+            ),
           ),
           const SizedBox(width: 20),
           Expanded(
@@ -101,24 +118,37 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
               children: [
                 Text(
                   DateFormat('MMMM d, yyyy').format(report.date),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(FontAwesomeIcons.hospital, size: 12, color: AppColors.secondary),
+                    const Icon(
+                      FontAwesomeIcons.hospital,
+                      size: 12,
+                      color: AppColors.secondary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Lab: ${report.labName}',
-                        style: const TextStyle(color: AppColors.secondary, fontSize: 13),
+                        style: const TextStyle(
+                          color: AppColors.secondary,
+                          fontSize: 13,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 16),
                     Text(
                       '${report.testCount} tests',
-                      style: const TextStyle(color: AppColors.secondary, fontSize: 13),
+                      style: const TextStyle(
+                        color: AppColors.secondary,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -132,7 +162,9 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Delete Report'),
-                  content: const Text('Are you sure you want to delete this lab report? This action cannot be undone.'),
+                  content: const Text(
+                    'Are you sure you want to delete this lab report? This action cannot be undone.',
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context, false),
@@ -140,7 +172,9 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(context, true),
-                      style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.danger,
+                      ),
                       child: const Text('Delete'),
                     ),
                   ],
@@ -149,20 +183,29 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
 
               if (confirm == true) {
                 try {
-                  await ref.read(labRepositoryProvider).deleteLabResult(
-                    report.id,
-                    storagePath: report.storagePath,
-                  );
+                  await ref
+                      .read(labRepositoryProvider)
+                      .deleteLabResult(
+                        report.id,
+                        storagePath: report.storagePath,
+                      );
                   ref.invalidate(labResultsProvider);
                   ref.invalidate(recentLabResultsProvider);
-                  ref.read(navigationProvider.notifier).state = NavItem.labResults;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Report deleted successfully')),
-                  );
+                  ref.read(navigationProvider.notifier).state =
+                      NavItem.labResults;
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Report deleted successfully'),
+                      ),
+                    );
+                  }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error deleting report: $e')),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error deleting report: $e')),
+                    );
+                  }
                 }
               }
             },
@@ -170,19 +213,28 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
           const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.close, color: AppColors.secondary),
-            onPressed: () => ref.read(navigationProvider.notifier).state = NavItem.labResults,
+            onPressed: () => ref.read(navigationProvider.notifier).state =
+                NavItem.labResults,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAiSummary(BuildContext context, List<TestResult> tests, WidgetRef ref) {
-    final testData = tests.map((t) => <String, dynamic>{
-      'name': t.name,
-      'result': t.result,
-      'reference': t.reference,
-    }).toList();
+  Widget _buildAiSummary(
+    BuildContext context,
+    List<TestResult> tests,
+    WidgetRef ref,
+  ) {
+    final testData = tests
+        .map(
+          (t) => <String, dynamic>{
+            'name': t.name,
+            'result': t.result,
+            'reference': t.reference,
+          },
+        )
+        .toList();
 
     return FutureBuilder<String>(
       future: ref.read(aiServiceProvider).getBatchSummary(testData),
@@ -202,9 +254,16 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.info_outline, size: 16, color: AppColors.secondary),
+                  const Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: AppColors.secondary,
+                  ),
                   const SizedBox(width: 8),
-                  const Text('AI Summary', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const Text(
+                    'AI Summary',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
                   if (isLoading) ...[
                     const SizedBox(width: 12),
                     const SizedBox(
@@ -218,7 +277,11 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
               const SizedBox(height: 12),
               Text(
                 summary,
-                style: const TextStyle(fontSize: 14, color: AppColors.secondary, height: 1.5),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.secondary,
+                  height: 1.5,
+                ),
               ),
             ],
           ),
@@ -227,7 +290,11 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
     );
   }
 
-  Widget _buildTable(BuildContext context, List<TestResult> tests, WidgetRef ref) {
+  Widget _buildTable(
+    BuildContext context,
+    List<TestResult> tests,
+    WidgetRef ref,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -245,11 +312,62 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         children: [
-          const Expanded(flex: 3, child: Text('TEST', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.secondary))),
-          const Expanded(flex: 2, child: Text('RESULT', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.secondary))),
-          const Expanded(flex: 2, child: Text('REFERENCE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.secondary))),
-          const Expanded(flex: 2, child: Text('STATUS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.secondary))),
-          Expanded(flex: 1, child: Text('ACTIONS', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.secondary))),
+          const Expanded(
+            flex: 3,
+            child: Text(
+              'TEST',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppColors.secondary,
+              ),
+            ),
+          ),
+          const Expanded(
+            flex: 2,
+            child: Text(
+              'RESULT',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppColors.secondary,
+              ),
+            ),
+          ),
+          const Expanded(
+            flex: 2,
+            child: Text(
+              'REFERENCE',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppColors.secondary,
+              ),
+            ),
+          ),
+          const Expanded(
+            flex: 2,
+            child: Text(
+              'STATUS',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppColors.secondary,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Text(
+              'ACTIONS',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppColors.secondary,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -265,7 +383,9 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
       },
       child: Container(
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+          border: Border(
+            bottom: BorderSide(color: Theme.of(context).dividerColor),
+          ),
         ),
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: Row(
@@ -275,8 +395,20 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(test.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  Text('LOINC: ${test.loinc}', style: const TextStyle(fontSize: 11, color: AppColors.secondary)),
+                  Text(
+                    test.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    'LOINC: ${test.loinc}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.secondary,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -287,11 +419,20 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
                   children: [
                     TextSpan(
                       text: test.result,
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isAbnormal ? AppColors.danger : AppColors.primary),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: isAbnormal
+                            ? AppColors.danger
+                            : AppColors.primary,
+                      ),
                     ),
                     TextSpan(
                       text: ' ${test.unit}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.secondary),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondary,
+                      ),
                     ),
                   ],
                 ),
@@ -299,33 +440,54 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
             ),
             Expanded(
               flex: 2,
-              child: Text(test.reference, style: const TextStyle(fontSize: 14, color: AppColors.secondary)),
+              child: Text(
+                test.reference,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.secondary,
+                ),
+              ),
             ),
             Expanded(
               flex: 2,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: isAbnormal ? AppColors.danger.withValues(alpha: 0.1) : AppColors.success.withValues(alpha: 0.1),
+                  color: isAbnormal
+                      ? AppColors.danger.withValues(alpha: 0.1)
+                      : AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isAbnormal ? AppColors.danger.withValues(alpha: 0.3) : AppColors.success.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: isAbnormal
+                        ? AppColors.danger.withValues(alpha: 0.3)
+                        : AppColors.success.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      isAbnormal ? Icons.error_outline : Icons.check_circle_outline, 
-                      size: 12, 
-                      color: isAbnormal ? AppColors.danger : const Color(0xFF059669)
+                      isAbnormal
+                          ? Icons.error_outline
+                          : Icons.check_circle_outline,
+                      size: 12,
+                      color: isAbnormal
+                          ? AppColors.danger
+                          : const Color(0xFF059669),
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      test.status, 
+                      test.status,
                       style: TextStyle(
-                        fontSize: 12, 
-                        color: isAbnormal ? AppColors.danger : const Color(0xFF059669), 
-                        fontWeight: FontWeight.bold
-                      )
+                        fontSize: 12,
+                        color: isAbnormal
+                            ? AppColors.danger
+                            : const Color(0xFF059669),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -333,7 +495,15 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
             ),
             Expanded(
               flex: 1,
-              child: const Text('Details', textAlign: TextAlign.right, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary)),
+              child: const Text(
+                'Details',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
             ),
           ],
         ),

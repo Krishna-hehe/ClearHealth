@@ -6,7 +6,7 @@ import '../../core/theme.dart';
 import '../../core/navigation.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
-import '../../core/pdf_service.dart' deferred as pdfLib;
+import '../../core/pdf_service.dart' deferred as pdf_service;
 
 class ResultsListPage extends ConsumerStatefulWidget {
   const ResultsListPage({super.key});
@@ -267,39 +267,6 @@ class _ResultsListPageState extends ConsumerState<ResultsListPage> {
     );
   }
 
-  List<LabReport> _getMockResults() {
-    return [
-      LabReport(
-        id: '1',
-        date: DateTime(2025, 11, 14),
-        status: 'Abnormal',
-        testCount: 28,
-        labName: 'INDIAN RED CROSS SOCIETY AHMEDABAD DISTRICT BRANCH',
-      ),
-      LabReport(
-        id: '2',
-        date: DateTime(2024, 9, 17),
-        status: 'Normal',
-        testCount: 18,
-        labName: 'INDIAN RED CROSS SOCIETY AHMEDABAD DISTRICT BRANCH',
-      ),
-      LabReport(
-        id: '3',
-        date: DateTime(2024, 7, 10),
-        status: 'Normal',
-        testCount: 22,
-        labName: 'SUN PATHOLOGY LABORATORY & RESEARCH INSTITUTE',
-      ),
-      LabReport(
-        id: '4',
-        date: DateTime(2011, 8, 25),
-        status: 'Abnormal',
-        testCount: 18,
-        labName: 'GNU Solidario Hospital',
-      ),
-    ];
-  }
-
   Widget _buildPdfDownloadCard(
     BuildContext context,
     WidgetRef ref,
@@ -382,8 +349,8 @@ class _ResultsListPageState extends ConsumerState<ResultsListPage> {
               final aiSummaryAsync = ref.read(healthHistoryAiSummaryProvider);
               final aiSummary = aiSummaryAsync.asData?.value;
 
-              await pdfLib.loadLibrary();
-              await pdfLib.PdfService.generateSummaryPdf(
+              await pdf_service.loadLibrary();
+              await pdf_service.PdfService.generateSummaryPdf(
                 results,
                 patientName: patientName,
                 aiSummary: aiSummary,
@@ -678,8 +645,8 @@ class _ResultsListPageState extends ConsumerState<ResultsListPage> {
                           ? "${profile['first_name']} ${profile['last_name']}"
                           : null;
 
-                      await pdfLib.loadLibrary();
-                      await pdfLib.PdfService.generateLabReportPdf(
+                      await pdf_service.loadLibrary();
+                      await pdf_service.PdfService.generateLabReportPdf(
                         result,
                         result.testResults!,
                         patientName: patientName,

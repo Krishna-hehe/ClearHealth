@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -34,21 +35,24 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Future<void> _handleAuth() async {
     if (_isSignUp && (!_agreeToTerms || !_acknowledgeHipaa)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please agree to terms and HIPAA guidelines.')),
+        const SnackBar(
+          content: Text('Please agree to terms and HIPAA guidelines.'),
+        ),
       );
       return;
     }
 
     setState(() => _isLoading = true);
     try {
-      if (_emailController.text.trim().isEmpty || !_emailController.text.contains('@')) {
-        throw 'Please enter a valid email address.';
-      }
-      
+      final validator = ref.read(inputValidationServiceProvider);
+
+      final emailError = validator.validateEmail(_emailController.text.trim());
+      if (emailError != null) throw emailError;
+
       final password = _passwordController.text;
-      if (password.length < 8) {
-        throw 'Password must be at least 8 characters.';
-      }
+      final passwordError = validator.validatePassword(password);
+      if (passwordError != null) throw passwordError;
+
       if (_isSignUp && password != _confirmPasswordController.text) {
         throw 'Passwords do not match.';
       }
@@ -57,39 +61,51 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       if (_isSignUp) {
         await authService.signUp(_emailController.text, password);
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Registration successful! Please check your email to verify.')),
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Registration successful! Please check your email to verify.',
+              ),
+            ),
           );
           // Stay on login page after signup to encourage verification
         }
       } else {
-        final response = await authService.signIn(_emailController.text, password);
-        
+        final response = await authService.signIn(
+          _emailController.text,
+          password,
+        );
+
         // Check if MFA is required
         if (response.user != null) {
-           final factors = await ref.read(supabaseServiceProvider).getMFAFactors();
-           final verifiedFactors = factors.all.where((f) => f.status == FactorStatus.verified).toList();
-           
-           if (verifiedFactors.isNotEmpty) {
-             // User has MFA enabled, need to challenge
-             setState(() {
-               _mfaChallengeFactorId = verifiedFactors.first.id;
-               _isLoading = false;
-             });
-             return;
-           }
+          final factors = await ref
+              .read(supabaseServiceProvider)
+              .getMFAFactors();
+          final verifiedFactors = factors.all
+              .where((f) => f.status == FactorStatus.verified)
+              .toList();
+
+          if (verifiedFactors.isNotEmpty) {
+            // User has MFA enabled, need to challenge
+            setState(() {
+              _mfaChallengeFactorId = verifiedFactors.first.id;
+              _isLoading = false;
+            });
+            return;
+          }
         }
 
         if (mounted) {
-           ref.read(navigationProvider.notifier).state = NavItem.dashboard;
+          ref.read(navigationProvider.notifier).state = NavItem.dashboard;
         }
       }
     } catch (e) {
       if (mounted) {
         // SECURITY FIX: Don't show raw exception messages
-        String message = 'Authentication failed. Please check your credentials.';
+        String message =
+            'Authentication failed. Please check your credentials.';
         if (e is String) message = e; // Allow our custom validation messages
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message), backgroundColor: AppColors.danger),
         );
@@ -101,20 +117,25 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   Future<void> _handleMfaVerify() async {
     if (_mfaChallengeFactorId == null || _mfaController.text.length < 6) return;
-    
+
     setState(() => _isLoading = true);
     try {
-      await ref.read(supabaseServiceProvider).verifyMFA(
-        factorId: _mfaChallengeFactorId!,
-        code: _mfaController.text,
-      );
+      await ref
+          .read(supabaseServiceProvider)
+          .verifyMFA(
+            factorId: _mfaChallengeFactorId!,
+            code: _mfaController.text,
+          );
       if (mounted) {
-         ref.read(navigationProvider.notifier).state = NavItem.dashboard;
+        ref.read(navigationProvider.notifier).state = NavItem.dashboard;
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('MFA Error: $e'), backgroundColor: AppColors.danger),
+          SnackBar(
+            content: Text('MFA Error: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -135,14 +156,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Social Login Error: $e'), backgroundColor: AppColors.danger),
+          SnackBar(
+            content: Text('Social Login Error: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -178,8 +201,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    _isSignUp ? 'Already have an account? ' : "Don't have an account? ",
-                    style: const TextStyle(color: AppColors.secondary, fontSize: 14),
+                    _isSignUp
+                        ? 'Already have an account? '
+                        : "Don't have an account? ",
+                    style: const TextStyle(
+                      color: AppColors.secondary,
+                      fontSize: 14,
+                    ),
                   ),
                   GestureDetector(
                     onTap: () => setState(() => _isSignUp = !_isSignUp),
@@ -211,190 +239,308 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                   ],
                 ),
-                child: _mfaChallengeFactorId != null 
-                  ? Column(
-                      children: [
-                        const Text('Two-Factor Authentication', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 16),
-                        const Text('Enter the 6-digit code from your authenticator app.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.secondary)),
-                        const SizedBox(height: 32),
-                        TextField(
-                          controller: _mfaController,
-                          keyboardType: TextInputType.number,
-                          maxLength: 6,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
-                          decoration: InputDecoration(
-                            counterText: '',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          onChanged: (val) {
-                            if (val.length == 6) _handleMfaVerify();
-                          },
-                        ),
-                        const SizedBox(height: 32),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _handleMfaVerify,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1A1A1A),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 18),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: _mfaChallengeFactorId != null
+                    ? Column(
+                        children: [
+                          const Text(
+                            'Two-Factor Authentication',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
-                            child: _isLoading 
-                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : const Text('Verify Code'),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextButton(
-                          onPressed: () => setState(() => _mfaChallengeFactorId = null),
-                          child: const Text('Back to Login'),
-                        ),
-                      ],
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildInputField(
-                          label: 'Email address',
-                          controller: _emailController,
-                          hint: 'you@example.com',
-                          icon: Icons.mail_outline,
-                          keyboardType: TextInputType.emailAddress,
-                        ),
-                        const SizedBox(height: 24),
-                        _buildInputField(
-                          label: 'Password',
-                          controller: _passwordController,
-                          hint: _isSignUp ? 'Create a strong password' : 'Enter your password',
-                          icon: Icons.lock_outline,
-                          obscureText: true,
-                        ),
-                        if (_isSignUp) ...[
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Enter the 6-digit code from your authenticator app.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: AppColors.secondary),
+                          ),
+                          const SizedBox(height: 32),
+                          TextField(
+                            controller: _mfaController,
+                            keyboardType: TextInputType.number,
+                            maxLength: 6,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              letterSpacing: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            decoration: InputDecoration(
+                              counterText: '',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onChanged: (val) {
+                              if (val.length == 6) _handleMfaVerify();
+                            },
+                          ),
+                          const SizedBox(height: 32),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _handleMfaVerify,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1A1A1A),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 18,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text('Verify Code'),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextButton(
+                            onPressed: () =>
+                                setState(() => _mfaChallengeFactorId = null),
+                            child: const Text('Back to Login'),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildInputField(
+                            label: 'Email address',
+                            controller: _emailController,
+                            hint: 'you@example.com',
+                            icon: Icons.mail_outline,
+                            keyboardType: TextInputType.emailAddress,
+                          ),
                           const SizedBox(height: 24),
                           _buildInputField(
-                            label: 'Confirm password',
-                            controller: _confirmPasswordController,
-                            hint: 'Confirm your password',
+                            label: 'Password',
+                            controller: _passwordController,
+                            hint: _isSignUp
+                                ? 'Create a strong password'
+                                : 'Enter your password',
                             icon: Icons.lock_outline,
                             obscureText: true,
                           ),
-                        ],
-                        const SizedBox(height: 20),
-                        if (!_isSignUp)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: Checkbox(
-                                      value: _rememberMe,
-                                      onChanged: (v) => setState(() => _rememberMe = v!),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                          if (_isSignUp) ...[
+                            const SizedBox(height: 24),
+                            _buildInputField(
+                              label: 'Confirm password',
+                              controller: _confirmPasswordController,
+                              hint: 'Confirm your password',
+                              icon: Icons.lock_outline,
+                              obscureText: true,
+                            ),
+                          ],
+                          const SizedBox(height: 20),
+                          if (!_isSignUp)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: Checkbox(
+                                        value: _rememberMe,
+                                        onChanged: (v) =>
+                                            setState(() => _rememberMe = v!),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'Remember me',
+                                      style: TextStyle(
+                                        color: AppColors.secondary,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                GestureDetector(
+                                  onTap: () {},
+                                  child: const Text(
+                                    'Forgot password?',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: Color(0xFF111827),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  const Text('Remember me', style: TextStyle(color: AppColors.secondary, fontSize: 14)),
-                                ],
+                                ),
+                              ],
+                            )
+                          else ...[
+                            _buildCheckItem(
+                              value: _agreeToTerms,
+                              onChanged: (v) =>
+                                  setState(() => _agreeToTerms = v!),
+                              label:
+                                  'I agree to the Terms of Service and Privacy Policy',
+                            ),
+                            const SizedBox(height: 12),
+                            _buildCheckItem(
+                              value: _acknowledgeHipaa,
+                              onChanged: (v) =>
+                                  setState(() => _acknowledgeHipaa = v!),
+                              label:
+                                  'I acknowledge that LabSense handles my health information in accordance with HIPAA guidelines',
+                            ),
+                          ],
+                          const SizedBox(height: 32),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _handleAuth,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _isSignUp
+                                    ? const Color(0xFF9CA3AF)
+                                    : const Color(0xFF1A1A1A),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 18,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
                               ),
-                              GestureDetector(
-                                onTap: () {},
-                                child: const Text(
-                                  'Forgot password?',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: Color(0xFF111827),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          _isSignUp
+                                              ? 'Create account'
+                                              : 'Sign in',
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        const Icon(
+                                          Icons.arrow_forward,
+                                          size: 18,
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                          if (!_isSignUp) ...[
+                            const SizedBox(height: 32),
+                            Row(
+                              children: [
+                                const Expanded(child: Divider()),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  child: Text(
+                                    'Or continue with',
+                                    style: TextStyle(
+                                      color: Colors.grey[400],
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          )
-                        else ...[
-                          _buildCheckItem(
-                            value: _agreeToTerms,
-                            onChanged: (v) => setState(() => _agreeToTerms = v!),
-                            label: 'I agree to the Terms of Service and Privacy Policy',
-                          ),
-                          const SizedBox(height: 12),
-                          _buildCheckItem(
-                            value: _acknowledgeHipaa,
-                            onChanged: (v) => setState(() => _acknowledgeHipaa = v!),
-                            label: 'I acknowledge that LabSense handles my health information in accordance with HIPAA guidelines',
-                          ),
-                        ],
-                        const SizedBox(height: 32),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _handleAuth,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _isSignUp ? const Color(0xFF9CA3AF) : const Color(0xFF1A1A1A),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 18),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              elevation: 0,
+                                const Expanded(child: Divider()),
+                              ],
                             ),
-                            child: _isLoading
-                                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                : Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(_isSignUp ? 'Create account' : 'Sign in', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                      const SizedBox(width: 8),
-                                      const Icon(Icons.arrow_forward, size: 18),
-                                    ],
+                            const SizedBox(height: 32),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildSocialButton(
+                                    'Google',
+                                    FontAwesomeIcons.google,
+                                    () => _handleSocialAuth('Google'),
                                   ),
-                          ),
-                        ),
-                        if (!_isSignUp) ...[
-                          const SizedBox(height: 32),
-                          Row(
-                            children: [
-                              const Expanded(child: Divider()),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: Text('Or continue with', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
-                              ),
-                              const Expanded(child: Divider()),
-                            ],
-                          ),
-                          const SizedBox(height: 32),
-                          Row(
-                            children: [
-                              Expanded(child: _buildSocialButton('Google', FontAwesomeIcons.google, () => _handleSocialAuth('Google'))),
-                              const SizedBox(width: 16),
-                              Expanded(child: _buildSocialButton('Apple', FontAwesomeIcons.apple, () => _handleSocialAuth('Apple'))),
-                            ],
-                          ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: _buildSocialButton(
+                                    'Apple',
+                                    FontAwesomeIcons.apple,
+                                    () => _handleSocialAuth('Apple'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
+                      ),
               ),
               const SizedBox(height: 48),
               if (_isSignUp)
                 Column(
                   children: [
-                    const Text('Instant AI-powered explanations', style: TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Instant AI-powered explanations',
+                      style: TextStyle(
+                        color: Color(0xFF111827),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text('HIPAA-compliant security', style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+                    Text(
+                      'HIPAA-compliant security',
+                      style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                    ),
                   ],
                 )
-
               else
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('By signing in, you agree to our ', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                    Text('Terms of Service', style: TextStyle(color: Colors.grey[500], fontSize: 12, decoration: TextDecoration.underline)),
-                    Text(' and ', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                    Text('Privacy Policy', style: TextStyle(color: Colors.grey[500], fontSize: 12, decoration: TextDecoration.underline)),
+                    Text(
+                      'By signing in, you agree to our ',
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                    ),
+                    Text(
+                      'Terms of Service',
+                      style: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 12,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                    Text(
+                      ' and ',
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                    ),
+                    Text(
+                      'Privacy Policy',
+                      style: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 12,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
                   ],
                 ),
             ],
@@ -437,14 +583,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               prefixIcon: Icon(icon, size: 20, color: Colors.grey[400]),
               filled: true,
               fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 16,
+                horizontal: 16,
+              ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF111827), width: 1.5),
+                borderSide: const BorderSide(
+                  color: Color(0xFF111827),
+                  width: 1.5,
+                ),
               ),
               errorMaxLines: 3,
             ),
@@ -468,21 +620,31 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           child: Checkbox(
             value: value,
             onChanged: onChanged,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(color: Color(0xFF4B5563), fontSize: 13, height: 1.4),
+            style: const TextStyle(
+              color: Color(0xFF4B5563),
+              fontSize: 13,
+              height: 1.4,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSocialButton(String label, IconData icon, VoidCallback onPressed) {
+  Widget _buildSocialButton(
+    String label,
+    IconData icon,
+    VoidCallback onPressed,
+  ) {
     return OutlinedButton(
       onPressed: _isLoading ? null : onPressed,
       style: OutlinedButton.styleFrom(
@@ -507,5 +669,4 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ),
     );
   }
-
 }

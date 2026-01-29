@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
@@ -12,81 +13,106 @@ class HealthCirclesPage extends ConsumerStatefulWidget {
 }
 
 class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
-  
   Future<void> _createCircle(String name) async {
     try {
       await ref.read(userRepositoryProvider).createHealthCircle(name);
       ref.invalidate(healthCirclesProvider);
     } catch (e) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
   Future<void> _inviteMember(String circleId, String email, String role) async {
     try {
-      await ref.read(userRepositoryProvider).inviteMember(circleId, email, role);
-      
+      await ref
+          .read(userRepositoryProvider)
+          .inviteMember(circleId, email, role);
+
       // Force refresh
       ref.invalidate(healthCirclesProvider);
-      
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invitation sent successfully')));
+
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invitation sent successfully')),
+        );
     } catch (e) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
   Future<void> _joinCircle(String circleId) async {
-      try {
-           String id = circleId.trim();
-           // Handle full URL
-           if (id.contains('/join/')) {
-               id = id.split('/join/').last;
-           }
-           
-           await ref.read(userRepositoryProvider).joinCircle(id);
-           ref.invalidate(healthCirclesProvider);
-           if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Joined circle successfully')));
-      } catch (e) {
-         if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error joining: $e')));
+    try {
+      String id = circleId.trim();
+      // Handle full URL
+      if (id.contains('/join/')) {
+        id = id.split('/join/').last;
       }
+
+      await ref.read(userRepositoryProvider).joinCircle(id);
+      ref.invalidate(healthCirclesProvider);
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Joined circle successfully')),
+        );
+    } catch (e) {
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error joining: $e')));
+    }
   }
 
   void _showJoinCircleDialog() {
-       final controller = TextEditingController();
-       showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-             title: const Text('Join Health Circle'),
-             content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                   const Text('Enter the invite link or Circle ID shared with you.', style: TextStyle(color: AppColors.secondary, fontSize: 13)),
-                   const SizedBox(height: 16),
-                   TextField(
-                     controller: controller, 
-                     decoration: const InputDecoration(
-                       labelText: 'Circle Link or ID',
-                       border: OutlineInputBorder(),
-                       prefixIcon: Icon(Icons.link)
-                     )
-                   ),
-                ],
-             ),
-             actions: [
-                 TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                 ElevatedButton(
-                    onPressed: () {
-                        if (controller.text.isNotEmpty) {
-                            _joinCircle(controller.text);
-                            Navigator.pop(context);
-                        }
-                    },
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-                    child: const Text('Join Circle')
-                 )
-             ]
-          )
-       );
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Join Health Circle'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Enter the invite link or Circle ID shared with you.',
+              style: TextStyle(color: AppColors.secondary, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Circle Link or ID',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.link),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                _joinCircle(controller.text);
+                Navigator.pop(context);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Join Circle'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showInviteDialog(String circleId, String circleName) {
@@ -127,40 +153,50 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
                   ),
                 ],
               ),
-                  Row(
-                    children: [
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.link, size: 18),
-                        label: const Text('Join Circle'),
-                        onPressed: _showJoinCircleDialog,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          side: const BorderSide(color: AppColors.primary),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.link, size: 18),
+                    label: const Text('Join Circle'),
+                    onPressed: _showJoinCircleDialog,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
-                      const SizedBox(width: 12),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text('Create New Circle'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: _showCreateCircleDialog,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
+                    ),
                   ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Create New Circle'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: _showCreateCircleDialog,
+                  ),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 32),
           if (circles.isEmpty)
-             _buildEmptyState()
+            _buildEmptyState()
           else
-             ...circles.map((circle) => _buildCircleCard(circle)),
+            ...circles.map((circle) => _buildCircleCard(circle)),
         ],
       ),
     );
@@ -179,8 +215,14 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
         children: const [
           Icon(Icons.group_off_outlined, size: 48, color: AppColors.secondary),
           SizedBox(height: 16),
-          Text('No Health Circles yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          Text('Create one to share your results with family or doctors.', style: TextStyle(color: AppColors.secondary)),
+          Text(
+            'No Health Circles yet',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          Text(
+            'Create one to share your results with family or doctors.',
+            style: TextStyle(color: AppColors.secondary),
+          ),
         ],
       ),
     );
@@ -191,10 +233,15 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
 
     return InkWell(
       onTap: () {
-         Navigator.push(
-           context, 
-           MaterialPageRoute(builder: (_) => CircleChatPage(circleId: circle['id'], circleName: circle['name'] ?? 'Circle'))
-         );
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CircleChatPage(
+              circleId: circle['id'],
+              circleName: circle['name'] ?? 'Circle',
+            ),
+          ),
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 24),
@@ -219,17 +266,25 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
                           color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(Icons.group_outlined, color: AppColors.primary, size: 20),
+                        child: const Icon(
+                          Icons.group_outlined,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Text(
                         circle['name'] ?? 'Unnamed Circle',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
                       ),
                     ],
                   ),
                   TextButton(
-                    onPressed: () => _showInviteDialog(circle['id'], circle['name']),
+                    onPressed: () =>
+                        _showInviteDialog(circle['id'], circle['name']),
                     child: const Text('Invite Member'),
                   ),
                 ],
@@ -248,34 +303,60 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
                   final name = member['name'] ?? 'Unknown';
 
                   return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
                     leading: CircleAvatar(
-                      backgroundColor: Theme.of(context).dividerColor.withValues(alpha: 0.1),
-                      child: Text(name.isNotEmpty ? name[0] : '?', style: const TextStyle(color: AppColors.primary)),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).dividerColor.withValues(alpha: 0.1),
+                      child: Text(
+                        name.isNotEmpty ? name[0] : '?',
+                        style: const TextStyle(color: AppColors.primary),
+                      ),
                     ),
                     title: Text(
                       name,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                     subtitle: Text(
                       '${member['role'] ?? ''} • ${member['permissions'] ?? ''}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.secondary),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondary,
+                      ),
                     ),
                     trailing: isPending
                         ? Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.amber.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Text(
                               'Pending',
-                              style: TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: Colors.amber,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           )
                         : IconButton(
-                            icon: const Icon(Icons.settings_outlined, size: 20, color: AppColors.secondary),
-                            onPressed: () => _showPermissionDialog(circle['id'], member),
+                            icon: const Icon(
+                              Icons.settings_outlined,
+                              size: 20,
+                              color: AppColors.secondary,
+                            ),
+                            onPressed: () =>
+                                _showPermissionDialog(circle['id'], member),
                           ),
                   );
                 },
@@ -305,7 +386,8 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
                 subtitle: const Text('Can view lab results and AI summaries.'),
                 value: 'Read-Only',
                 groupValue: currentPermissions,
-                onChanged: (val) => setDialogState(() => currentPermissions = val!),
+                onChanged: (val) =>
+                    setDialogState(() => currentPermissions = val!),
                 activeColor: AppColors.primary,
               ),
               RadioListTile<String>(
@@ -313,19 +395,26 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
                 subtitle: const Text('Can view results and help manage data.'),
                 value: 'Full Access',
                 groupValue: currentPermissions,
-                onChanged: (val) => setDialogState(() => currentPermissions = val!),
+                onChanged: (val) =>
+                    setDialogState(() => currentPermissions = val!),
                 activeColor: AppColors.primary,
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
             ElevatedButton(
               onPressed: () async {
                 await _updatePermissions(circleId, userId, currentPermissions);
                 if (mounted) Navigator.pop(context);
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
               child: const Text('Update'),
             ),
           ],
@@ -334,13 +423,25 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
     );
   }
 
-  Future<void> _updatePermissions(String circleId, String userId, String permissions) async {
+  Future<void> _updatePermissions(
+    String circleId,
+    String userId,
+    String permissions,
+  ) async {
     try {
-      await ref.read(userRepositoryProvider).updateMemberPermissions(circleId, userId, permissions);
+      await ref
+          .read(userRepositoryProvider)
+          .updateMemberPermissions(circleId, userId, permissions);
       ref.invalidate(healthCirclesProvider);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Permissions updated')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Permissions updated')));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -369,15 +470,21 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
               if (controller.text.isNotEmpty) {
-                 _createCircle(controller.text);
-                 Navigator.pop(context);
+                _createCircle(controller.text);
+                Navigator.pop(context);
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Create Circle'),
           ),
         ],
@@ -401,7 +508,8 @@ class _InviteDialog extends StatefulWidget {
   State<_InviteDialog> createState() => _InviteDialogState();
 }
 
-class _InviteDialogState extends State<_InviteDialog> with SingleTickerProviderStateMixin {
+class _InviteDialogState extends State<_InviteDialog>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _emailCtrl = TextEditingController();
   final _roleCtrl = TextEditingController();
@@ -461,7 +569,10 @@ class _InviteDialogState extends State<_InviteDialog> with SingleTickerProviderS
                           decoration: const InputDecoration(
                             labelText: 'Email Address',
                             border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -471,7 +582,10 @@ class _InviteDialogState extends State<_InviteDialog> with SingleTickerProviderS
                             labelText: 'Relationship',
                             hintText: 'e.g. Doctor, Spouse',
                             border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
                           ),
                         ),
                       ],
@@ -483,7 +597,11 @@ class _InviteDialogState extends State<_InviteDialog> with SingleTickerProviderS
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('Anyone with this link can request to join.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 13)),
+                        const Text(
+                          'Anyone with this link can request to join.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                        ),
                         const SizedBox(height: 16),
                         Container(
                           padding: const EdgeInsets.all(12),
@@ -494,13 +612,20 @@ class _InviteDialogState extends State<_InviteDialog> with SingleTickerProviderS
                           ),
                           child: SelectableText(
                             widget.inviteLink,
-                            style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
                           onPressed: () {
-                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link copied to clipboard!')));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Link copied to clipboard!'),
+                              ),
+                            );
                           },
                           icon: const Icon(Icons.copy, size: 16),
                           label: const Text('Copy Link'),
@@ -510,7 +635,7 @@ class _InviteDialogState extends State<_InviteDialog> with SingleTickerProviderS
                             elevation: 0,
                             side: const BorderSide(color: AppColors.primary),
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -521,16 +646,22 @@ class _InviteDialogState extends State<_InviteDialog> with SingleTickerProviderS
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
         if (_tabController.index == 0)
           ElevatedButton(
             onPressed: () {
-               if(_emailCtrl.text.isNotEmpty && _roleCtrl.text.isNotEmpty) {
-                 widget.onInvite(_emailCtrl.text, _roleCtrl.text);
-                 Navigator.pop(context);
-               }
+              if (_emailCtrl.text.isNotEmpty && _roleCtrl.text.isNotEmpty) {
+                widget.onInvite(_emailCtrl.text, _roleCtrl.text);
+                Navigator.pop(context);
+              }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Send Invite'),
           ),
       ],

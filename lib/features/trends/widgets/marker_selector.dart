@@ -21,19 +21,19 @@ class _MarkerSelectorState extends ConsumerState<MarkerSelector> {
   final List<Map<String, dynamic>> _healthBundles = [
     {
       'name': 'Thyroid Panel',
-      'tests': ['TSH', 'Free T4', 'Free T3']
+      'tests': ['TSH', 'Free T4', 'Free T3'],
     },
     {
       'name': 'Bone Health',
-      'tests': ['Vitamin D', 'Calcium', 'Phosphorus']
+      'tests': ['Vitamin D', 'Calcium', 'Phosphorus'],
     },
     {
       'name': 'Kidney Health',
-      'tests': ['Creatinine', 'BUN', 'GFR']
+      'tests': ['Creatinine', 'BUN', 'GFR'],
     },
     {
       'name': 'Lipid Profile',
-      'tests': ['Total Cholesterol', 'LDL', 'HDL', 'Triglycerides']
+      'tests': ['Total Cholesterol', 'LDL', 'HDL', 'Triglycerides'],
     },
   ];
 
@@ -68,19 +68,22 @@ class _MarkerSelectorState extends ConsumerState<MarkerSelector> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            ...widget.selectedMarkers.map((marker) => Chip(
-              label: Text(marker),
-              deleteIcon: const Icon(Icons.close, size: 18),
-              onDeleted: () => _removeMarker(marker),
-              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              labelStyle: const TextStyle(color: AppColors.primary),
-              side: BorderSide.none,
-            )),
+            ...widget.selectedMarkers.map(
+              (marker) => Chip(
+                label: Text(marker),
+                deleteIcon: const Icon(Icons.close, size: 18),
+                onDeleted: () => _removeMarker(marker),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                labelStyle: const TextStyle(color: AppColors.primary),
+                side: BorderSide.none,
+              ),
+            ),
             if (widget.selectedMarkers.length < 3)
               ActionChip(
                 label: const Text('Add Marker'),
                 avatar: const Icon(Icons.add, size: 18),
-                onPressed: () => _showAddMarkerDialog(availableTests.value ?? []),
+                onPressed: () =>
+                    _showAddMarkerDialog(availableTests.value ?? []),
                 backgroundColor: Colors.grey[100],
                 side: BorderSide(color: Colors.grey[300]!),
               ),
@@ -93,13 +96,14 @@ class _MarkerSelectorState extends ConsumerState<MarkerSelector> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _healthBundles.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (c, i) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final bundle = _healthBundles[index];
               return ChoiceChip(
                 label: Text(bundle['name']),
                 selected: false,
-                onSelected: (_) => _applyBundle(bundle['tests'] as List<String>),
+                onSelected: (_) =>
+                    _applyBundle(bundle['tests'] as List<String>),
                 backgroundColor: Colors.white,
                 side: BorderSide(color: Colors.grey[300]!),
               );
@@ -133,13 +137,18 @@ class _MarkerSelectorState extends ConsumerState<MarkerSelector> {
                         _addMarker(marker);
                         Navigator.pop(context);
                       },
-                      trailing: isSelected ? const Icon(Icons.check, color: AppColors.success) : null,
+                      trailing: isSelected
+                          ? const Icon(Icons.check, color: AppColors.success)
+                          : null,
                     );
                   },
                 ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
         ],
       ),
     );

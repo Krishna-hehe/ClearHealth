@@ -17,11 +17,26 @@ class AdminPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          _buildAdminStatCard(context, 'Total Users', '142', Icons.people, Colors.blue),
+          _buildAdminStatCard(
+            context,
+            'Total Users',
+            '142',
+            Icons.people,
+            Colors.blue,
+          ),
           const SizedBox(height: 16),
-          _buildAdminStatCard(context, 'System Health', '98%', Icons.health_and_safety, Colors.green),
+          _buildAdminStatCard(
+            context,
+            'System Health',
+            '98%',
+            Icons.health_and_safety,
+            Colors.green,
+          ),
           const SizedBox(height: 32),
-          const Text('Recent Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'Recent Actions',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 16),
           _buildActionItem('User "John Doe" uploaded a report', '2 mins ago'),
           _buildActionItem('New user registration', '15 mins ago'),
@@ -31,7 +46,13 @@ class AdminPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildAdminStatCard(BuildContext context, String title, String value, IconData icon, Color color) {
+  Widget _buildAdminStatCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -40,7 +61,7 @@ class AdminPage extends ConsumerWidget {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -51,7 +72,7 @@ class AdminPage extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 28),
@@ -60,8 +81,17 @@ class AdminPage extends ConsumerWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 14)),
-              Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Text(
+                title,
+                style: const TextStyle(color: Colors.grey, fontSize: 14),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
         ],

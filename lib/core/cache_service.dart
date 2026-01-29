@@ -15,55 +15,73 @@ class CacheService {
   static const String _aiCacheBox = 'ai_results_box_enc';
 
   Future<void> init() async {
-    print('📦 CacheService: Initializing Hive...');
+    debugPrint('📦 CacheService: Initializing Hive...');
     try {
       await Hive.initFlutter();
-      print('📦 CacheService: Hive initialized.');
+      debugPrint('📦 CacheService: Hive initialized.');
 
-       // Web: Skip encryption to avoid issues with flutter_secure_storage or IndexedDB locking
+      // Web: Skip encryption to avoid issues with flutter_secure_storage or IndexedDB locking
       if (kIsWeb) {
-        print('🌐 CacheService: Web detected. Opening boxes without encryption...');
+        debugPrint(
+          '🌐 CacheService: Web detected. Opening boxes without encryption...',
+        );
         await Hive.openBox(_profileBox);
-        print('✅ Box opened: $_profileBox');
+        debugPrint('✅ Box opened: $_profileBox');
         await Hive.openBox(_labResultsBox);
-        print('✅ Box opened: $_labResultsBox');
+        debugPrint('✅ Box opened: $_labResultsBox');
         await Hive.openBox(_prescriptionsBox);
-        print('✅ Box opened: $_prescriptionsBox');
+        debugPrint('✅ Box opened: $_prescriptionsBox');
         await Hive.openBox('sync_queue');
-        print('✅ Box opened: sync_queue');
+        debugPrint('✅ Box opened: sync_queue');
         await Hive.openBox(_aiCacheBox);
-        print('✅ Box opened: $_aiCacheBox');
+        debugPrint('✅ Box opened: $_aiCacheBox');
         return;
       }
-    
-    // Get or create encryption key
-    final encryptionKeyString = await _secureStorage.read(key: 'hive_encryption_key');
-    Uint8List encryptionKey;
-    
-    if (encryptionKeyString == null) {
-      final key = Hive.generateSecureKey();
-      await _secureStorage.write(
-        key: 'hive_encryption_key',
-        value: base64UrlEncode(key),
-      );
-      encryptionKey = Uint8List.fromList(key);
-    } else {
-      encryptionKey = base64Url.decode(encryptionKeyString);
-    }
 
-    // Open boxes with encryption
-    await Hive.openBox(_profileBox, encryptionCipher: HiveAesCipher(encryptionKey));
-    await Hive.openBox(_labResultsBox, encryptionCipher: HiveAesCipher(encryptionKey));
-    await Hive.openBox(_prescriptionsBox, encryptionCipher: HiveAesCipher(encryptionKey));
-    await Hive.openBox('sync_queue', encryptionCipher: HiveAesCipher(encryptionKey));
-    await Hive.openBox(_aiCacheBox, encryptionCipher: HiveAesCipher(encryptionKey));
+      // Get or create encryption key
+      final encryptionKeyString = await _secureStorage.read(
+        key: 'hive_encryption_key',
+      );
+      Uint8List encryptionKey;
+
+      if (encryptionKeyString == null) {
+        final key = Hive.generateSecureKey();
+        await _secureStorage.write(
+          key: 'hive_encryption_key',
+          value: base64UrlEncode(key),
+        );
+        encryptionKey = Uint8List.fromList(key);
+      } else {
+        encryptionKey = base64Url.decode(encryptionKeyString);
+      }
+
+      // Open boxes with encryption
+      await Hive.openBox(
+        _profileBox,
+        encryptionCipher: HiveAesCipher(encryptionKey),
+      );
+      await Hive.openBox(
+        _labResultsBox,
+        encryptionCipher: HiveAesCipher(encryptionKey),
+      );
+      await Hive.openBox(
+        _prescriptionsBox,
+        encryptionCipher: HiveAesCipher(encryptionKey),
+      );
+      await Hive.openBox(
+        'sync_queue',
+        encryptionCipher: HiveAesCipher(encryptionKey),
+      );
+      await Hive.openBox(
+        _aiCacheBox,
+        encryptionCipher: HiveAesCipher(encryptionKey),
+      );
     } catch (e) {
-      print('❌ CacheService Init Failed: $e');
+      debugPrint('❌ CacheService Init Failed: $e');
       // On web we might want to try fallback if encryption fails?
       // For now just log
     }
   }
-
 
   // Profile Cache
   Future<void> cacheProfile(Map<String, dynamic>? profile) async {
@@ -91,7 +109,9 @@ class CacheService {
   }
 
   // Prescriptions Cache
-  Future<void> cachePrescriptions(List<Map<String, dynamic>> prescriptions) async {
+  Future<void> cachePrescriptions(
+    List<Map<String, dynamic>> prescriptions,
+  ) async {
     final box = Hive.box(_prescriptionsBox);
     await box.put('list', prescriptions);
   }
@@ -116,7 +136,7 @@ class CacheService {
     if (!Hive.isBoxOpen(_aiCacheBox)) return null;
     final box = Hive.box(_aiCacheBox);
     final entry = box.get(key);
-    
+
     if (entry != null && entry is Map) {
       final timestamp = DateTime.tryParse(entry['timestamp'] ?? '');
       if (timestamp != null) {
