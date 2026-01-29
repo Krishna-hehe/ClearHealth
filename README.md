@@ -280,16 +280,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Flutter team for the amazing framework
 - Open source community for various packages
 
-## 📞 Support
-
-- **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/labsense2/issues)
-- **Security**: For security concerns, see [SECURITY.md](SECURITY.md)
-
----
-
-**Built with ❤️ for better health management**
-
-**Version**: 2.0.0  
-**Last Updated**: January 2026  
-**Security Score**: 65/100 (Target: 85/100)
