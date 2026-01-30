@@ -71,12 +71,15 @@ class _EditMedicationDialogState extends ConsumerState<EditMedicationDialog> {
           setState(() => _imageUrl = url);
         }
       } catch (e) {
-        if (mounted)
+        if (mounted) {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('Error uploading image: $e')));
+        }
       } finally {
-        if (mounted) setState(() => _isUploadingImage = false);
+        if (mounted) {
+          setState(() => _isUploadingImage = false);
+        }
       }
     }
   }

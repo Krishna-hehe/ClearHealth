@@ -18,10 +18,11 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
       await ref.read(userRepositoryProvider).createHealthCircle(name);
       ref.invalidate(healthCirclesProvider);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
@@ -34,15 +35,17 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
       // Force refresh
       ref.invalidate(healthCirclesProvider);
 
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invitation sent successfully')),
         );
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
@@ -56,15 +59,17 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
 
       await ref.read(userRepositoryProvider).joinCircle(id);
       ref.invalidate(healthCirclesProvider);
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Joined circle successfully')),
         );
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error joining: $e')));
+      }
     }
   }
 
@@ -433,15 +438,17 @@ class _HealthCirclesPageState extends ConsumerState<HealthCirclesPage> {
           .read(userRepositoryProvider)
           .updateMemberPermissions(circleId, userId, permissions);
       ref.invalidate(healthCirclesProvider);
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Permissions updated')));
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 

@@ -200,7 +200,7 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage>
                   height: 48,
                   width: 48,
                   decoration: BoxDecoration(
-                    color: AppColors.primaryBrand.withOpacity(0.1),
+                    color: AppColors.primaryBrand.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     image: m.imageUrl != null
                         ? DecorationImage(
@@ -280,8 +280,10 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage>
                       ),
                       decoration: BoxDecoration(
                         color: active
-                            ? AppColors.success.withOpacity(0.1)
-                            : AppColors.lightTextSecondary.withOpacity(0.1),
+                            ? AppColors.success.withValues(alpha: 0.1)
+                            : AppColors.lightTextSecondary.withValues(
+                                alpha: 0.1,
+                              ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -351,7 +353,7 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.lightTextSecondary.withOpacity(0.1),
+            color: AppColors.lightTextSecondary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(
@@ -402,7 +404,7 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage>
   Widget _buildTabs() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.lightTextSecondary.withOpacity(0.1),
+        color: AppColors.lightTextSecondary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       padding: const EdgeInsets.all(4),
@@ -413,7 +415,7 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage>
           borderRadius: BorderRadius.circular(6),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -450,7 +452,7 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage>
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.lightTextSecondary.withOpacity(0.1),
+                color: AppColors.lightTextSecondary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
