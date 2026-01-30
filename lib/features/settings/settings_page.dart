@@ -8,6 +8,7 @@ import '../../core/navigation.dart';
 import '../../core/biometric_service.dart';
 import 'mfa_setup_dialog.dart';
 import 'data_export_service.dart';
+import '../../widgets/glass_card.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
@@ -19,14 +20,14 @@ class SettingsPage extends ConsumerStatefulWidget {
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   final _formKey = GlobalKey<FormState>();
-  
+
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _stateController = TextEditingController();
   final _postalCodeController = TextEditingController();
   final _countryController = TextEditingController();
-  
+
   String _email = '';
   String _dob = 'Not set';
   String _gender = 'Not set';
@@ -65,7 +66,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       _emailNotifications = profile['email_notifications'] ?? true;
       _resultReminders = profile['result_reminders'] ?? true;
     }
-    
+
     try {
       _canCheckBiometrics = await BiometricService().canCheckBiometrics();
       _biometricEnabled = await BiometricService().isEnabled();
@@ -78,14 +79,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     try {
       final factors = await ref.read(supabaseServiceProvider).getMFAFactors();
       if (factors.all.isNotEmpty) {
-        final activeFactor = factors.all.firstWhere((f) => f.status == FactorStatus.verified);
+        final activeFactor = factors.all.firstWhere(
+          (f) => f.status == FactorStatus.verified,
+        );
         _mfaEnabled = true;
         _mfaFactorId = activeFactor.id;
       }
     } catch (e) {
       debugPrint('Error getting MFA factors: $e');
     }
-    
+
     setState(() => _isLoading = false);
   }
 
@@ -108,13 +111,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       ref.invalidate(userProfileStreamProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully'), backgroundColor: AppColors.success),
+          const SnackBar(
+            content: Text('Profile updated successfully'),
+            backgroundColor: AppColors.success,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating profile: $e'), backgroundColor: AppColors.danger),
+          SnackBar(
+            content: Text('Error updating profile: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -125,30 +134,43 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Future<void> _uploadPhoto() async {
     try {
       final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-      
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+      );
+
       if (image == null) return;
 
       setState(() => _isUploadingPhoto = true);
-      
+
       final bytes = await image.readAsBytes();
-      final publicUrl = await ref.read(storageServiceProvider).uploadProfilePhoto(bytes);
-      
+      final publicUrl = await ref
+          .read(storageServiceProvider)
+          .uploadProfilePhoto(bytes);
+
       if (publicUrl != null) {
-        await ref.read(userRepositoryProvider).updateProfile({'avatar_url': publicUrl});
+        await ref.read(userRepositoryProvider).updateProfile({
+          'avatar_url': publicUrl,
+        });
         ref.invalidate(userProfileProvider);
         ref.invalidate(userProfileStreamProvider);
         setState(() => _avatarUrl = publicUrl);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Photo uploaded successfully'), backgroundColor: AppColors.success),
+            const SnackBar(
+              content: Text('Photo uploaded successfully'),
+              backgroundColor: AppColors.success,
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error uploading photo: $e'), backgroundColor: AppColors.danger),
+          SnackBar(
+            content: Text('Error uploading photo: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -168,13 +190,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       await ref.read(dataExportServiceProvider).exportUserData();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Data exported successfully!'), backgroundColor: AppColors.success),
+          const SnackBar(
+            content: Text('Data exported successfully!'),
+            backgroundColor: AppColors.success,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e'), backgroundColor: AppColors.danger),
+          SnackBar(
+            content: Text('Export failed: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -187,12 +215,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Account?'),
-        content: const Text('This will permanently delete ALL your lab results, prescriptions, and health data. This action cannot be undone.'),
+        content: const Text(
+          'This will permanently delete ALL your lab results, prescriptions, and health data. This action cannot be undone.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(
-            onPressed: () => Navigator.pop(context, true), 
-            child: const Text('Delete Permanently', style: TextStyle(color: Colors.red))
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete Permanently',
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -205,7 +241,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         await ref.read(userRepositoryProvider).deleteAccountData();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Your account and data have been permanently deleted.'), backgroundColor: AppColors.success),
+            const SnackBar(
+              content: Text(
+                'Your account and data have been permanently deleted.',
+              ),
+              backgroundColor: AppColors.success,
+            ),
           );
         }
         await _signOut();
@@ -213,7 +254,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         if (mounted) {
           setState(() => _isLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error closing account: $e'), backgroundColor: AppColors.danger),
+            SnackBar(
+              content: Text('Error closing account: $e'),
+              backgroundColor: AppColors.danger,
+            ),
           );
         }
       }
@@ -237,7 +281,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     try {
       if (_dob != 'Not set') initial = DateTime.parse(_dob);
     } catch (_) {}
-    
+
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -254,10 +298,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       context: context,
       builder: (context) => Column(
         mainAxisSize: MainAxisSize.min,
-        children: ['Male', 'Female', 'Other', 'Prefer not to say'].map((g) => ListTile(
-          title: Text(g),
-          onTap: () => Navigator.pop(context, g),
-        )).toList(),
+        children: ['Male', 'Female', 'Other', 'Prefer not to say']
+            .map(
+              (g) => ListTile(
+                title: Text(g),
+                onTap: () => Navigator.pop(context, g),
+              ),
+            )
+            .toList(),
       ),
     );
     if (gender != null) {
@@ -265,26 +313,32 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
-  Widget _buildEditableField(String label, String value, {IconData? icon, VoidCallback? onTap}) {
+  Widget _buildEditableField(
+    String label,
+    String value, {
+    IconData? icon,
+    VoidCallback? onTap,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
         const SizedBox(height: 8),
         InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(8),
-          child: Container(
-            width: double.infinity,
+          child: GlassCard(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: AppColors.border),
-              borderRadius: BorderRadius.circular(8),
-            ),
+            opacity: 0.1,
             child: Row(
               children: [
-                Text(value, style: const TextStyle(fontSize: 14, color: Colors.black)),
+                Text(
+                  value,
+                  style: const TextStyle(fontSize: 14, color: Colors.black),
+                ),
                 if (icon != null) ...[
                   const Spacer(),
                   Icon(icon, size: 16, color: AppColors.secondary),
@@ -320,7 +374,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           Center(
             child: TextButton(
               onPressed: _signOut,
-              child: const Text('Sign Out', style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Sign Out',
+                style: TextStyle(
+                  color: AppColors.secondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 32),
@@ -332,13 +392,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget _buildHeader() {
     return Row(
       children: [
-        Container(
+        GlassCard(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(8),
+          opacity: 0.1,
+          child: const Icon(
+            Icons.settings,
+            size: 24,
+            color: AppColors.secondary,
           ),
-          child: const Icon(Icons.settings, size: 24, color: AppColors.secondary),
         ),
         const SizedBox(width: 16),
         Column(
@@ -359,13 +420,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Widget _buildPersonalInfoSection() {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
+      opacity: 0.05,
       child: Form(
         key: _formKey,
         child: Column(
@@ -373,9 +430,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           children: [
             Row(
               children: const [
-                Icon(Icons.person_outline, size: 18, color: AppColors.secondary),
+                Icon(
+                  Icons.person_outline,
+                  size: 18,
+                  color: AppColors.secondary,
+                ),
                 SizedBox(width: 12),
-                Text('Personal Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(
+                  'Personal Information',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
               ],
             ),
             const SizedBox(height: 24),
@@ -389,13 +453,29 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             const SizedBox(height: 16),
             _buildTextField('Phone Number', _phoneController),
             const SizedBox(height: 16),
-            _buildEditableField('Date of Birth', _dob, icon: Icons.calendar_today, onTap: _pickDate),
+            _buildEditableField(
+              'Date of Birth',
+              _dob,
+              icon: Icons.calendar_today,
+              onTap: _pickDate,
+            ),
             const SizedBox(height: 8),
-            const Text('Used for age-appropriate reference ranges', style: TextStyle(color: AppColors.secondary, fontSize: 12)),
+            const Text(
+              'Used for age-appropriate reference ranges',
+              style: TextStyle(color: AppColors.secondary, fontSize: 12),
+            ),
             const SizedBox(height: 16),
-            _buildEditableField('Gender', _gender, icon: Icons.keyboard_arrow_down, onTap: _pickGender),
+            _buildEditableField(
+              'Gender',
+              _gender,
+              icon: Icons.keyboard_arrow_down,
+              onTap: _pickGender,
+            ),
             const SizedBox(height: 8),
-            const Text('Used for gender-specific reference ranges', style: TextStyle(color: AppColors.secondary, fontSize: 12)),
+            const Text(
+              'Used for gender-specific reference ranges',
+              style: TextStyle(color: AppColors.secondary, fontSize: 12),
+            ),
             const SizedBox(height: 32),
             _buildTextField('State / Province', _stateController),
             const SizedBox(height: 16),
@@ -408,11 +488,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-              child: _isSaving 
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Text('Save Changes'),
             ),
           ],
@@ -426,8 +518,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       children: [
         CircleAvatar(
           radius: 35,
-          backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty) 
-              ? NetworkImage(_avatarUrl!) 
+          backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+              ? NetworkImage(_avatarUrl!)
               : const NetworkImage('https://via.placeholder.com/150'),
           backgroundColor: const Color(0xFFF3F4F6),
           child: _isUploadingPhoto ? const CircularProgressIndicator() : null,
@@ -436,24 +528,43 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Profile Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            const Text('JPG, PNG, or WebP up to 5MB.', style: TextStyle(color: AppColors.secondary, fontSize: 12)),
+            const Text(
+              'Profile Photo',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const Text(
+              'JPG, PNG, or WebP up to 5MB.',
+              style: TextStyle(color: AppColors.secondary, fontSize: 12),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
                 OutlinedButton(
                   onPressed: _isUploadingPhoto ? null : _uploadPhoto,
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     side: const BorderSide(color: AppColors.border),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  child: const Text('Upload Photo', style: TextStyle(color: AppColors.primary, fontSize: 13)),
+                  child: const Text(
+                    'Upload Photo',
+                    style: TextStyle(color: AppColors.primary, fontSize: 13),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 TextButton(
-                  onPressed: (_avatarUrl == null || _avatarUrl!.isEmpty) ? null : _removePhoto,
-                  child: const Text('Remove', style: TextStyle(color: Colors.red, fontSize: 13)),
+                  onPressed: (_avatarUrl == null || _avatarUrl!.isEmpty)
+                      ? null
+                      : _removePhoto,
+                  child: const Text(
+                    'Remove',
+                    style: TextStyle(color: Colors.red, fontSize: 13),
+                  ),
                 ),
               ],
             ),
@@ -467,12 +578,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: AppColors.border),
@@ -491,19 +608,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
         const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
+        GlassCard(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF9FAFB),
-            border: Border.all(color: AppColors.border),
-            borderRadius: BorderRadius.circular(8),
-          ),
+          opacity: 0.05,
           child: Row(
             children: [
-              Text(value, style: const TextStyle(fontSize: 14, color: AppColors.secondary)),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.secondary,
+                ),
+              ),
               if (icon != null) ...[
                 const Spacer(),
                 Icon(icon, size: 16, color: AppColors.secondary),
@@ -516,51 +637,71 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Widget _buildNotificationsSection() {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
+      opacity: 0.05,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: const [
-              Icon(Icons.notifications_none_outlined, size: 18, color: AppColors.secondary),
+              Icon(
+                Icons.notifications_none_outlined,
+                size: 18,
+                color: AppColors.secondary,
+              ),
               SizedBox(width: 12),
-              Text('Notifications', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                'Notifications',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ],
           ),
           const SizedBox(height: 24),
           _buildSwitchTile(
-            'Email Notifications', 
-            'Receive updates about new features and tips', 
+            'Email Notifications',
+            'Receive updates about new features and tips',
             _emailNotifications,
-            (val) => setState(() => _emailNotifications = val)
+            (val) => setState(() => _emailNotifications = val),
           ),
           const Divider(height: 32),
           _buildSwitchTile(
-            'Result Reminders', 
-            'Get reminded to check your lab results', 
+            'Result Reminders',
+            'Get reminded to check your lab results',
             _resultReminders,
-            (val) => setState(() => _resultReminders = val)
+            (val) => setState(() => _resultReminders = val),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSwitchTile(String title, String subtitle, bool value, ValueChanged<bool> onChanged) {
+  Widget _buildSwitchTile(
+    String title,
+    String subtitle,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
     return Row(
       children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              Text(subtitle, style: const TextStyle(color: AppColors.secondary, fontSize: 12)),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: AppColors.secondary,
+                  fontSize: 12,
+                ),
+              ),
             ],
           ),
         ),
@@ -574,13 +715,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Widget _buildPrivacySection() {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
+      opacity: 0.05,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -588,22 +725,25 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             children: const [
               Icon(Icons.shield_outlined, size: 18, color: AppColors.secondary),
               SizedBox(width: 12),
-              Text('Privacy & Security', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                'Privacy & Security',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ],
           ),
           const SizedBox(height: 24),
           _buildActionRow(
-            Icons.file_download_outlined, 
-            'Export Your Data', 
-            'Download all your lab results and account data', 
+            Icons.file_download_outlined,
+            'Export Your Data',
+            'Download all your lab results and account data',
             'Export',
-            onPressed: _exportData
+            onPressed: _exportData,
           ),
           if (_canCheckBiometrics) ...[
             const Divider(height: 32),
             _buildSwitchTile(
-              'Biometric Lock', 
-              'Require FaceID/Fingerprint to open the app', 
+              'Biometric Lock',
+              'Require FaceID/Fingerprint to open the app',
               _biometricEnabled,
               (val) async {
                 bool success = true;
@@ -615,22 +755,22 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   await BiometricService().setEnabled(val);
                   setState(() => _biometricEnabled = val);
                 }
-              }
+              },
             ),
           ],
           const Divider(height: 32),
           _buildActionRow(
-            Icons.delete_outline, 
-            'Delete Account', 
-            'Permanently delete your account and all data', 
-            'Delete', 
+            Icons.delete_outline,
+            'Delete Account',
+            'Permanently delete your account and all data',
+            'Delete',
             isDestructive: true,
-            onPressed: _deleteAccount
+            onPressed: _deleteAccount,
           ),
           const Divider(height: 32),
           _buildSwitchTile(
-            'Two-Factor Authentication (2FA)', 
-            'Use an authenticator app to protect your account', 
+            'Two-Factor Authentication (2FA)',
+            'Use an authenticator app to protect your account',
             _mfaEnabled,
             (val) async {
               if (val) {
@@ -643,11 +783,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 }
               } else {
                 if (_mfaFactorId != null) {
-                  await ref.read(supabaseServiceProvider).removeMfaFactor(_mfaFactorId!);
+                  await ref
+                      .read(supabaseServiceProvider)
+                      .removeMfaFactor(_mfaFactorId!);
                   _fetchProfile();
                 }
               }
-            }
+            },
           ),
         ],
       ),
@@ -655,13 +797,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Widget _buildSupportSection() {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
+      opacity: 0.05,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -669,43 +807,69 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             children: const [
               Icon(Icons.help_outline, size: 18, color: AppColors.secondary),
               SizedBox(width: 12),
-              Text('Help & Support', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                'Help & Support',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ],
           ),
           const SizedBox(height: 24),
           _buildActionRow(
-            Icons.map_outlined, 
-            'Take a Tour', 
-            'Replay the onboarding walkthrough to see key features', 
+            Icons.map_outlined,
+            'Take a Tour',
+            'Replay the onboarding walkthrough to see key features',
             'Start Tour',
             onPressed: () {
               ref.read(showOnboardingProvider.notifier).state = true;
-            }
+            },
           ),
           const Divider(height: 32),
           _buildActionRow(
-            Icons.chat_bubble_outline, 
-            'Contact Support', 
-            'Get help with your account or report an issue', 
-            'Contact', 
-            onPressed: () {}
+            Icons.chat_bubble_outline,
+            'Contact Support',
+            'Get help with your account or report an issue',
+            'Contact',
+            onPressed: () {},
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionRow(IconData icon, String title, String subtitle, String actionLabel, {bool isDestructive = false, required VoidCallback onPressed}) {
+  Widget _buildActionRow(
+    IconData icon,
+    String title,
+    String subtitle,
+    String actionLabel, {
+    bool isDestructive = false,
+    required VoidCallback onPressed,
+  }) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: isDestructive ? Colors.red : AppColors.secondary),
+        Icon(
+          icon,
+          size: 18,
+          color: isDestructive ? Colors.red : AppColors.secondary,
+        ),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              Text(subtitle, style: const TextStyle(color: AppColors.secondary, fontSize: 12)),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: AppColors.secondary,
+                  fontSize: 12,
+                ),
+              ),
             ],
           ),
         ),
@@ -713,9 +877,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
             side: const BorderSide(color: AppColors.border),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
-          child: Text(actionLabel, style: TextStyle(color: isDestructive ? Colors.red : AppColors.primary, fontSize: 13)),
+          child: Text(
+            actionLabel,
+            style: TextStyle(
+              color: isDestructive ? Colors.red : AppColors.primary,
+              fontSize: 13,
+            ),
+          ),
         ),
       ],
     );

@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/navigation.dart';
+import '../../widgets/glass_card.dart';
 
 class ComparisonPage extends ConsumerStatefulWidget {
   const ComparisonPage({super.key});
@@ -110,20 +111,9 @@ class _ComparisonPageState extends ConsumerState<ComparisonPage> {
     List<String> sortedTestNames,
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return GlassCard(
+      opacity: 0.05,
+      padding: EdgeInsets.zero, // Table handles spacing
       child: SingleChildScrollView(
         scrollDirection: Axis.vertical,
         child: SingleChildScrollView(
@@ -254,20 +244,10 @@ class _ComparisonPageState extends ConsumerState<ComparisonPage> {
         final testName = sortedTestNames[index];
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
-        return Container(
+        return GlassCard(
           margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardTheme.color,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+          padding: EdgeInsets.zero,
+          opacity: 0.05,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

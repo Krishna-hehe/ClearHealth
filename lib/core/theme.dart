@@ -3,13 +3,18 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   // --- Palette ---
-  static const Color primaryBrand = Color(0xFF1E293B); // Dark Slate
+  static const Color midnightBlue = Color(0xFF0B0E14); // Deepest Midnight
+  static const Color glassSurface = Color(
+    0xFF161B22,
+  ); // Slightly lighter for cards
+
+  static const Color primaryBrand = Color(0xFF00F0FF); // Electric Cyan
   static const Color primaryDark = Color(0xFFF8FAFC); // White-ish for Dark Mode
 
-  static const Color accent = Color(0xFF0EA5E9); // Sky Blue
-  static const Color success = Color(0xFF10B981); // Emerald
+  static const Color accent = Color(0xFF00F0FF); // Electric Cyan
+  static const Color success = Color(0xFF00FF94); // Neon Emerald
   static const Color warning = Color(0xFFF59E0B); // Amber
-  static const Color danger = Color(0xFFEF4444); // Red
+  static const Color danger = Color(0xFFFF2E2E); // Bright Red
 
   // --- Light Mode ---
   static const Color lightBg = Color(0xFFF8FAFC);
@@ -19,14 +24,13 @@ class AppColors {
   static const Color lightBorder = Color(0xFFE2E8F0);
 
   // --- Dark Mode ---
-  static const Color darkBg = Color(0xFF0F172A); // Slate 900
-  static const Color darkSurface = Color(0xFF1E293B); // Slate 800
+  static const Color darkBg = midnightBlue;
+  static const Color darkSurface = glassSurface;
   static const Color darkTextPrimary = Color(0xFFF1F5F9); // Slate 100
   static const Color darkTextSecondary = Color(0xFF94A3B8); // Slate 400
-  static const Color darkBorder = Color(0xFF334155); // Slate 700
+  static const Color darkBorder = Color(0xFF2D3748); // Slate 700
 
-  // Legacy aliases for backward compatibility (will map to Light mode defaults to avoid breakage)
-  // Legacy aliases for backward compatibility (Deprecated: Prefer Theme.of(context))
+  // Legacy aliases
   static const Color primary = primaryBrand;
   static const Color secondary = lightTextSecondary;
   static const Color background = lightBg;
@@ -36,6 +40,33 @@ class AppColors {
 }
 
 class AppTheme {
+  static TextTheme _buildTextTheme(
+    TextTheme base,
+    Color bodyColor,
+    Color displayColor,
+  ) {
+    // Inter for Body text
+    final baseTheme = GoogleFonts.interTextTheme(
+      base,
+    ).apply(bodyColor: bodyColor, displayColor: displayColor);
+
+    // Outfit for Headings (Display, Headline, Title)
+    final outfitTheme = GoogleFonts.outfitTextTheme(base);
+
+    return baseTheme.copyWith(
+      displayLarge: outfitTheme.displayLarge?.copyWith(color: displayColor),
+      displayMedium: outfitTheme.displayMedium?.copyWith(color: displayColor),
+      displaySmall: outfitTheme.displaySmall?.copyWith(color: displayColor),
+      headlineLarge: outfitTheme.headlineLarge?.copyWith(color: displayColor),
+      headlineMedium: outfitTheme.headlineMedium?.copyWith(color: displayColor),
+      headlineSmall: outfitTheme.headlineSmall?.copyWith(color: displayColor),
+      titleLarge: outfitTheme.titleLarge?.copyWith(
+        color: displayColor,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -47,14 +78,15 @@ class AppTheme {
         secondary: AppColors.accent,
         surface: AppColors.lightSurface,
         error: AppColors.danger,
-        onPrimary: Colors.white,
+        onPrimary: Colors.black,
         onSurface: AppColors.lightTextPrimary,
         outline: AppColors.lightBorder,
       ),
       iconTheme: const IconThemeData(color: AppColors.lightTextSecondary),
-      textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme).apply(
-        bodyColor: AppColors.lightTextPrimary,
-        displayColor: AppColors.lightTextPrimary,
+      textTheme: _buildTextTheme(
+        ThemeData.light().textTheme,
+        AppColors.lightTextPrimary,
+        AppColors.lightTextPrimary,
       ),
       cardTheme: CardThemeData(
         color: AppColors.lightSurface,
@@ -72,24 +104,25 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      primaryColor: AppColors.primaryDark,
+      primaryColor: AppColors.primaryBrand,
       scaffoldBackgroundColor: AppColors.darkBg,
       colorScheme: const ColorScheme.dark(
-        primary: Colors.white,
+        primary: AppColors.primaryBrand,
         secondary: AppColors.accent,
-        surface: AppColors.darkSurface,
+        surface: Colors.transparent, // Important for glassmorphism
         error: AppColors.danger,
-        onPrimary: AppColors.darkBg,
+        onPrimary: Colors.black,
         onSurface: AppColors.darkTextPrimary,
         outline: AppColors.darkBorder,
       ),
       iconTheme: const IconThemeData(color: AppColors.darkTextSecondary),
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).apply(
-        bodyColor: AppColors.darkTextPrimary,
-        displayColor: AppColors.darkTextPrimary,
+      textTheme: _buildTextTheme(
+        ThemeData.dark().textTheme,
+        AppColors.darkTextPrimary,
+        AppColors.darkTextPrimary,
       ),
       cardTheme: CardThemeData(
-        color: AppColors.darkSurface, // Glassmorphic
+        color: AppColors.darkSurface.withValues(alpha: 0.5), // Base falllback
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),

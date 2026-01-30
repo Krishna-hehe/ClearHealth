@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../core/navigation.dart';
+import '../../widgets/glass_card.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/pdf_service.dart' deferred as pdf_service;
@@ -272,13 +273,10 @@ class _ResultsListPageState extends ConsumerState<ResultsListPage> {
     WidgetRef ref,
     List<LabReport> results,
   ) {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
+      tintColor: AppColors.primary,
+      opacity: 0.05,
       child: Row(
         children: [
           Expanded(
@@ -432,18 +430,10 @@ class _ResultsListPageState extends ConsumerState<ResultsListPage> {
           }
         },
         borderRadius: BorderRadius.circular(12),
-        child: Container(
+        child: GlassCard(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? AppColors.primary
-                  : Theme.of(context).dividerColor,
-              width: isSelected ? 2 : 1,
-            ),
-          ),
+          tintColor: isSelected ? AppColors.primary : null,
+          opacity: isSelected ? 0.1 : 0.05, // Subtle highlight if selected
           child: Row(
             children: [
               if (isComparisonMode) ...[

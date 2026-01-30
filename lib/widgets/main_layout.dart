@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/theme.dart';
 import '../core/navigation.dart';
 import '../core/providers.dart';
 import '../core/services/upload_service.dart';
-import 'navigation/app_sidebar.dart';
+import '../features/shared/ambient_background.dart';
+import 'navigation/floating_dock.dart';
 import 'navigation/app_navbar.dart';
 import '../features/home/dashboard_page.dart';
 import '../features/lab_results/results_list_page.dart';
@@ -70,61 +70,34 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    bool isDesktop = MediaQuery.of(context).size.width > 1100;
     final currentNav = ref.watch(navigationProvider);
-    final themeMode = ref.watch(themeProvider);
-    final isDark = themeMode == ThemeMode.dark;
     final uploadState = ref.watch(uploadControllerProvider);
 
     return Stack(
       children: [
-        Container(
-          decoration: BoxDecoration(
-            gradient: isDark
-                ? const RadialGradient(
-                    center: Alignment(-0.6, -0.6),
-                    radius: 2.0,
-                    colors: [
-                      Color(0xFF1F2937),
-                      Color(0xFF111827),
-                      Color(0xFF030712),
-                    ],
-                    stops: [0.0, 0.4, 1.0],
-                  )
-                : const LinearGradient(
-                    colors: [Color(0xFFFFFFFF), Color(0xFFF9FAFB)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-          ),
-        ),
-        Scaffold(
-          backgroundColor: Colors.transparent,
-          body: Column(
-            children: [
-              const OfflineBanner(),
-              if (currentNav == NavItem.auth)
-                const Expanded(child: LoginPage())
-              else ...[
-                if (currentNav == NavItem.landing)
-                  _buildLandingNavbar()
-                else if (isDesktop)
-                  const SizedBox.shrink(),
-                Expanded(
-                  child: Row(
-                    children: [
-                      if (isDesktop && currentNav != NavItem.landing)
-                        AppSidebar(currentNav: currentNav),
-                      Expanded(
-                        child: Column(
+        AmbientBackground(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Column(
+              children: [
+                const OfflineBanner(),
+                if (currentNav == NavItem.auth)
+                  const Expanded(child: LoginPage())
+                else ...[
+                  if (currentNav == NavItem.landing) _buildLandingNavbar(),
+
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        Column(
                           children: [
                             if (uploadState.isUploading)
                               LinearProgressIndicator(
-                                backgroundColor: AppColors.primary.withAlpha(
-                                  51,
-                                ),
+                                backgroundColor: const Color(
+                                  0xFF00F0FF,
+                                ).withValues(alpha: 0.2), // Cyan 20%
                                 valueColor: const AlwaysStoppedAnimation<Color>(
-                                  AppColors.primary,
+                                  Color(0xFF00F0FF), // Cyan
                                 ),
                               ),
                             if (currentNav != NavItem.landing)
@@ -139,12 +112,14 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                        // Add Floating Dock on top of content (but only if logged in)
+                        if (currentNav != NavItem.landing) const FloatingDock(),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
         if (ref.watch(showOnboardingProvider))

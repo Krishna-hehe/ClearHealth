@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/theme.dart';
 import '../../core/providers.dart';
+import '../../widgets/glass_card.dart';
 
 class Message {
   final String text;
@@ -157,14 +158,10 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
       children: [
         _buildHeader(),
         Expanded(
-          child: Container(
+          child: GlassCard(
             margin: const EdgeInsets.symmetric(vertical: 24),
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
+            opacity: 0.05,
             child: Column(
               children: [
                 Expanded(
@@ -252,12 +249,9 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
   Widget _buildHeader() {
     return Row(
       children: [
-        Container(
+        GlassCard(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEEF2FF),
-            borderRadius: BorderRadius.circular(8),
-          ),
+          opacity: 0.1,
           child: const Icon(
             FontAwesomeIcons.robot,
             size: 24,

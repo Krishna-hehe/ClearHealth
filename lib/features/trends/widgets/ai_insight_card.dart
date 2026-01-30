@@ -5,6 +5,7 @@ import '../../../core/theme.dart';
 import '../../../core/providers.dart';
 import '../../../core/models.dart';
 import 'package:intl/intl.dart';
+import '../../../widgets/glass_card.dart';
 
 class AiInsightCard extends ConsumerStatefulWidget {
   final Map<String, List<LabReport>> data;
@@ -84,21 +85,9 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
+    return GlassCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+      opacity: 0.1,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -107,12 +96,12 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: AppColors.primaryBrand.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.auto_awesome,
-                  color: AppColors.primary,
+                  color: AppColors.primaryBrand,
                   size: 24,
                 ),
               ),
@@ -125,7 +114,7 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF111827),
+                      color: Colors.white,
                     ),
                   ),
                   Text(
@@ -144,11 +133,14 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard> {
                 icon: const Icon(Icons.analytics_outlined),
                 label: const Text('Analyze Relationship'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.primaryBrand,
+                  foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
-                    vertical: 12,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
@@ -157,11 +149,11 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard> {
             const Center(
               child: Column(
                 children: [
-                  CircularProgressIndicator(),
+                  CircularProgressIndicator(color: AppColors.primaryBrand),
                   SizedBox(height: 16),
                   Text(
                     'Analyzing trends...',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(color: AppColors.secondary),
                   ),
                 ],
               ),
@@ -173,11 +165,11 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard> {
                 p: const TextStyle(
                   fontSize: 15,
                   height: 1.6,
-                  color: Color(0xFF374151),
+                  color: Colors.white,
                 ),
                 strong: const TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF111827),
+                  color: AppColors.primaryBrand,
                 ),
               ),
             ),

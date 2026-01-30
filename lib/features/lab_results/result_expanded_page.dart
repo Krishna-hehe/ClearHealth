@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../core/navigation.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
+import '../../widgets/glass_card.dart';
 
 class ResultExpandedPage extends ConsumerStatefulWidget {
   const ResultExpandedPage({super.key});
@@ -53,12 +54,9 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
 
     final tests = report.testResults ?? [];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
+    return GlassCard(
+      opacity: 0.02,
+      padding: EdgeInsets.zero, // ScrollView handles padding if needed
       child: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(
@@ -99,12 +97,9 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
       padding: const EdgeInsets.all(24),
       child: Row(
         children: [
-          Container(
+          GlassCard(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
+            opacity: 0.1,
             child: const Icon(
               FontAwesomeIcons.fileLines,
               size: 20,
@@ -242,13 +237,11 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
         final summary = snapshot.data ?? 'Analyzing your results with AI...';
         final isLoading = snapshot.connectionState == ConnectionState.waiting;
 
-        return Container(
+        return GlassCard(
           margin: const EdgeInsets.symmetric(horizontal: 24),
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(12),
-          ),
+          tintColor: AppColors.primary, // Subtle tint for AI
+          opacity: 0.05,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
