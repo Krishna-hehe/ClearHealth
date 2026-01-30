@@ -1,95 +1,53 @@
-# ✅ API Key & Model Update Complete
+# ✅ API Key & Model Update Summary
 
-## Date: 2026-01-29 18:31
+## Date: 2026-01-30 10:08
 
 ---
 
-## Changes Applied
+## 🔄 Changes Applied
 
 ### 1. API Key Updated ✅
 
 **File:** `.env`
-
-**Old Key:** `AIzaSyBI5Zt_dyEcXc--2zwoOmUgRrrnT2mSwNY`  
-**New Key:** `AIzaSyDrIm0GIBRvZS36TL4ydAyX_WB1ce65I1c`
-
-**Updated Variables:**
-
-- `GEMINI_API_KEY`
-- `LABSENSE_CHAT_API_KEY`
+**New Key:** `AIzaSyBVRe76itVHhsmgcttxGglAnaIdSRzdGEk`
 
 ---
 
 ### 2. Gemini Model Updated ✅
 
 **File:** `lib/core/ai_service.dart`
-
-**Changes:**
-
-- `gemini-2.0-flash` → `gemini-flash-latest` (Text Model)
-- `gemini-2.0-flash` → `gemini-flash-latest` (Vision Model)
-- `gemini-1.5-flash` → `gemini-flash-latest` (Chat Model)
-
-**Benefits:**
-
-- ✅ Always uses the latest Flash model
-- ✅ Better performance and features
-- ✅ Automatic updates when Google releases new versions
+**Model:** `gemini-2.5-flash`
 
 ---
 
-### 3. App Restarted ✅
+### 3. Bugs Fixed 🐛
 
-The Flutter app has been fully restarted to apply the changes.
+**AI Health Insight & Forecast:**
 
----
-
-## ⚠️ IMPORTANT: Still Need to Fix Vector Error
-
-You still need to run the **EMERGENCY_FIX.sql** in Supabase to fix the vector search error.
-
-### Quick Steps
-
-1. **Open** `EMERGENCY_FIX.sql` (you have it open already)
-2. **Select ALL** (Ctrl+A)
-3. **Copy** (Ctrl+C)
-4. **Go to Supabase Dashboard** → SQL Editor
-5. **New Query** → **Paste** → **RUN**
+- **Issue:** The AI was receiving empty test data because of a JSON key mismatch.
+  - `LabReport.toJson()` outputs `test_results`.
+  - `AiService`'s previous logic expected `testResults` or `value` keys which didn't exist in the JSON map.
+- **Fix:**
+  - Updated `_minifyHistory` to look for **`test_results`**.
+  - Updated `getTrendCorrelationAnalysis` to extract values from the nested `test_results` list.
+  - Fixed a syntax error caused by code duplication during the fix.
 
 ---
 
-## Current Status
+### 4. App Status ✅
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| API Key | ✅ Updated | New key active |
-| Gemini Model | ✅ Updated | Using `gemini-flash-latest` |
-| App Running | ✅ Active | Listening on Chrome |
-| Vector Fix | ⏳ Pending | **Need to run EMERGENCY_FIX.sql** |
+**Status:** Restarted & Running
+**URL:** `http://localhost:62241`
+**PID:** 55568
 
 ---
 
-## Next Steps
+## 📋 Next Steps
 
-1. ✅ API key updated
-2. ✅ Model updated to gemini-flash-latest
-3. ✅ App restarted
-4. ⏳ **YOU DO:** Run EMERGENCY_FIX.sql in Supabase
-5. ⏳ **YOU DO:** Test Ask LabSense
-6. ⏳ **YOU DO:** Test AI Health Insight
+1. **Verify AI Features:**
+   - **Trend Dashboard:** Check "AI Health Insight" - it should now show valid analysis instead of "unable to perform".
+   - **Health Forecast:** Check prediction cards - "Undefined" error should be gone.
 
 ---
 
-## Testing Checklist
-
-After running EMERGENCY_FIX.sql:
-
-- [ ] Ask LabSense works without errors
-- [ ] AI Health Insight generates summaries
-- [ ] No "operator does not exist" errors
-- [ ] AI responses use the new API key
-- [ ] All features working correctly
-
----
-
-**Status:** API & Model updated, waiting for vector fix to be applied
+**Status:** ALL FIXES APPLIED. Ready for testing.

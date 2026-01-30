@@ -84,11 +84,10 @@ class AiService {
       );
     }
     _textModel =
-        textModel ??
-        GenerativeModel(model: 'gemini-flash-latest', apiKey: apiKey);
+        textModel ?? GenerativeModel(model: 'gemini-2.5-flash', apiKey: apiKey);
     _visionModel =
         visionModel ??
-        GenerativeModel(model: 'gemini-flash-latest', apiKey: apiKey);
+        GenerativeModel(model: 'gemini-2.5-flash', apiKey: apiKey);
     // Initialize Chat Model - prefer chatApiKey, fallback to main apiKey
     final effectiveChatKey = (chatApiKey != null && chatApiKey!.isNotEmpty)
         ? chatApiKey!
@@ -98,7 +97,7 @@ class AiService {
     );
     _chatModel =
         chatModel ??
-        GenerativeModel(model: 'gemini-flash-latest', apiKey: effectiveChatKey);
+        GenerativeModel(model: 'gemini-2.5-flash', apiKey: effectiveChatKey);
   }
 
   String _sanitizeInput(String input) {
@@ -122,12 +121,13 @@ class AiService {
   ) {
     return history.map((report) {
       List<Map<String, dynamic>> meaningfulTests = [];
-      if (report['testResults'] != null) {
-        for (var test in report['testResults']) {
+      final results = report['test_results'] ?? report['testResults'];
+      if (results != null) {
+        for (var test in results) {
           // We only keep essential fields
           meaningfulTests.add({
             'n': test['name'] ?? test['test_name'],
-            'v': test['result'] ?? test['value'],
+            'v': test['result'] ?? test['value'] ?? test['result_value'],
             'u': test['unit'],
             's': test['status'], // 'High', 'Low', 'Normal'
           });
@@ -306,16 +306,23 @@ class AiService {
     final minifiedData = <String, List<Map<String, dynamic>>>{};
     data.forEach((key, value) {
       if (markers.contains(key)) {
-        minifiedData[key] = value
-            .take(5)
-            .map(
-              (v) => {
-                'd': v['date'],
-                'v': v['value'] ?? v['result_value'],
-                's': v['status'],
-              },
-            )
-            .toList();
+        minifiedData[key] = value.take(5).map((v) {
+          // Extract value from test_results since passing LabReport json
+          // LabRepository puts the trend result in test_results[0]
+          String? val;
+          String? status;
+          final tests = v['test_results'] as List?;
+          if (tests != null && tests.isNotEmpty) {
+            val = tests[0]['result_value'] ?? tests[0]['result'];
+            status = tests[0]['status'];
+          }
+
+          return {
+            'd': v['date'],
+            'v': val ?? v['value'] ?? v['result_value'],
+            's': status ?? v['status'],
+          };
+        }).toList();
       }
     });
 
@@ -332,7 +339,7 @@ class AiService {
       You are a specialized Medical Analyst. Analyze the correlation and relationships between these lab markers.
       
       Markers: ${markers.join(', ')}
-      Historical Data: \${jsonEncode(minifiedData)}
+      Historical Data: ${jsonEncode(minifiedData)}
       
       Provide a concise (3-5 sentences) insight explaining:
       1. If the trends are moving together or inversely.
@@ -349,7 +356,7 @@ class AiService {
       cacheService.cacheAiResponse(cacheKey, text);
       return text;
     } catch (e) {
-      AppLogger.error('Correlation analysis error: \$e');
+      AppLogger.error('Correlation analysis error: $e');
       return 'Unable to analyze marker correlations at this time.';
     }
   }
@@ -379,10 +386,11 @@ class AiService {
           .toList();
     }
 
-    final prompt = '''
+    final prompt =
+        '''
       You are a health optimization expert. Provide 4-6 nutritional tips for these abnormal results.
       
-      Results: \${jsonEncode(minifiedTests)}
+      Results: ${jsonEncode(minifiedTests)}
       
       Include Veg and Non-Veg.
       
@@ -411,7 +419,7 @@ class AiService {
 
       return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     } catch (e) {
-      AppLogger.debug('Error fetching optimization tips: \$e');
+      AppLogger.debug('Error fetching optimization tips: $e');
       return [];
     }
   }
@@ -481,7 +489,7 @@ class AiService {
       cacheService.cacheAiResponse(cacheKey, data);
       return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     } catch (e) {
-      AppLogger.debug('Error fetching wellness tips: \$e');
+      AppLogger.debug('Error fetching wellness tips: $e');
       return [];
     }
   }
@@ -502,10 +510,11 @@ class AiService {
           .toList();
     }
 
-    final prompt = '''
+    final prompt =
+        '''
       Predictive Analyst. Forecast trends (3mo) based on this history (d=date, n=test, v=val, s=status).
       
-      Data: \${jsonEncode(minifiedHistory)}
+      Data: ${jsonEncode(minifiedHistory)}
       
       JSON Only:
       [
@@ -560,7 +569,7 @@ class AiService {
       Medical AI. Summarize these lab results (JSON).
       ${profile != null ? 'Patient Context: ${_getPatientContext(profile)}' : ''}
       
-      Data: \${jsonEncode(minifiedTests)}
+      Data: ${jsonEncode(minifiedTests)}
       
       Summary (5-7 sentences):
       1. Overall assessment (considering age and gender).
@@ -688,7 +697,7 @@ class AiService {
       final response = await _chatModel.generateContent(content);
       return response.text?.trim() ?? 'I was unable to generate a response.';
     } catch (e) {
-      return 'Error generating response: \$e';
+      return 'Error generating response: $e';
     }
   }
 
@@ -774,7 +783,7 @@ class AiService {
 
       return parsed;
     } catch (e) {
-      AppLogger.error('Error parsing lab report: \$e');
+      AppLogger.error('Error parsing lab report: $e');
       rethrow;
     }
   }
