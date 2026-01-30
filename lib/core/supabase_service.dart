@@ -108,6 +108,7 @@ class SupabaseService {
     // Use upsert to create the profile if it doesn't exist
     await client.from('profiles').upsert({
       'id': client.auth.currentUser!.id,
+      'user_id': client.auth.currentUser!.id,
       ...data,
     });
   }

@@ -102,7 +102,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         'state': _stateController.text,
         'postal_code': _postalCodeController.text,
         'country': _countryController.text,
-        'dob': _dob != 'Not set' ? _dob : null,
+        'date_of_birth': _dob != 'Not set' ? _dob : null,
         'gender': _gender != 'Not set' ? _gender : null,
         'email_notifications': _emailNotifications,
         'result_reminders': _resultReminders,
