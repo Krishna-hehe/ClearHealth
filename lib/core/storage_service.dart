@@ -13,12 +13,14 @@ class StorageService {
       if (userId == null) return null;
 
       final path = '$userId/${DateTime.now().millisecondsSinceEpoch}_$fileName';
-      
-      await _supabase.storage.from('lab-reports').uploadBinary(
-        path,
-        bytes,
-        fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
-      );
+
+      await _supabase.storage
+          .from('lab-reports')
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
+          );
 
       return path;
     } catch (e) {
@@ -36,14 +38,18 @@ class StorageService {
 
     // Use userId as folder to match RLS: (storage.foldername(name))[1] == auth.uid()
     final path = '$userId/profile.jpg';
-    
-    await _supabase.storage.from('profiles').uploadBinary(
-      path,
-      compressedBytes,
-      fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
-    );
 
-    final String publicUrl = _supabase.storage.from('profiles').getPublicUrl(path);
+    await _supabase.storage
+        .from('profiles')
+        .uploadBinary(
+          path,
+          compressedBytes,
+          fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+        );
+
+    final String publicUrl = _supabase.storage
+        .from('profiles')
+        .getPublicUrl(path);
     return publicUrl;
   }
 
@@ -55,14 +61,18 @@ class StorageService {
       final compressedBytes = await _compressImage(bytes);
 
       final path = '$userId/${DateTime.now().millisecondsSinceEpoch}.jpg';
-      
-      await _supabase.storage.from('prescriptions').uploadBinary(
-        path,
-        compressedBytes,
-        fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
-      );
 
-      final String publicUrl = _supabase.storage.from('prescriptions').getPublicUrl(path);
+      await _supabase.storage
+          .from('prescriptions')
+          .uploadBinary(
+            path,
+            compressedBytes,
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
+          );
+
+      final String publicUrl = _supabase.storage
+          .from('prescriptions')
+          .getPublicUrl(path);
       return publicUrl;
     } catch (e) {
       debugPrint('Error uploading prescription image: $e');
@@ -73,7 +83,7 @@ class StorageService {
   Future<Uint8List> _compressImage(Uint8List list) async {
     try {
       // Simple validation for small files (skip if < 200KB)
-      if (list.lengthInBytes < 200 * 1024) return list;
+      if (list.lengthInBytes < 200 * 1024 || kIsWeb) return list;
 
       final result = await FlutterImageCompress.compressWithList(
         list,
@@ -87,6 +97,7 @@ class StorageService {
       return list;
     }
   }
+
   Future<void> deleteLabReportFile(String? path) async {
     if (path == null || path.isEmpty) return;
     try {
