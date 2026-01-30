@@ -2,7 +2,7 @@
 
 ## 1. The Problem
 
-**"Your Health Data, Decoded."**
+### "Your Health Data, Decoded."
 
 * **Confusion**: Medical lab reports are filled with complex jargon, abbreviations (e.g., "ALT", "HgbA1c"), and numbers that mean nothing to the average patient.
 * **Anxiety**: "Is this slight deviation normal or dangerous?" Patients often resort to "Dr. Google," leading to unnecessary panic.
@@ -37,16 +37,16 @@
 
 * **Market Size**: The Global Digital Health Market is projected to reach massive valuations (trillions) by 2030. The "Personal Health Record" (PHR) niche is rapidly growing as patient autonomy increases.
 * **Scope**:
-    * *Initial*: Lab result analysis & storage.
-    * *Expansion*: Wearable integration (Apple Health/fitbit), Medication management, Telemedicine partnerships, Insurance integration.
+  * *Initial*: Lab result analysis & storage.
+  * *Expansion*: Wearable integration (Apple Health/fitbit), Medication management, Telemedicine partnerships, Insurance integration.
 
 ## 6. Business Model
 
 * **Freemium Model**:
-    * *Free*: Basic result analysis (limited uploads/month), local storage.
-    * *Premium (Subscription)*: Unlimited AI analyses, deep historical trend analysis, multiple profiles (family mode), cloud backup, advanced "What-if" scenarios.
+  * *Free*: Basic result analysis (limited uploads/month), local storage.
+  * *Premium (Subscription)*: Unlimited AI analyses, deep historical trend analysis, multiple profiles (family mode), cloud backup, advanced "What-if" scenarios.
 * **B2B Partnerships (Future)**:
-    * API licensing for clinics/labs to offer "Smart Reports" to their patients.
+  * API licensing for clinics/labs to offer "Smart Reports" to their patients.
 
 ## 7. Competitors
 
@@ -62,14 +62,14 @@
 ## 9. Progress & Future Plan
 
 * **Current Status (MVP Ready)**:
-    * ✅ Robust Cross-Platform App (Web/Mobile) built with Flutter.
-    * ✅ AI Integration complete (reading structure & unstructured data).
-    * ✅ Secure Authentication & Database (Supabase + HIPAA compliance standards).
-    * ✅ Dynamic Dashboard & Trend Visualization.
+  * ✅ Robust Cross-Platform App (Web/Mobile) built with Flutter.
+  * ✅ AI Integration complete (reading structure & unstructured data).
+  * ✅ Secure Authentication & Database (Supabase + HIPAA compliance standards).
+  * ✅ Dynamic Dashboard & Trend Visualization.
 * **Roadmap**:
-    * *Q2 2026*: Wearable Device Sync (Watch/Fitbit) for holistic health view.
-    * *Q3 2026*: "Smart Interventions" - AI suggesting lifestyle tweaks based on results.
-    * *Q4 2026*: Doctor Portal & Telehealth connectivity.
+  * *Q2 2026*: Wearable Device Sync (Watch/Fitbit) for holistic health view.
+  * *Q3 2026*: "Smart Interventions" - AI suggesting lifestyle tweaks based on results.
+  * *Q4 2026*: Doctor Portal & Telehealth connectivity.
 
 ## 10. Demo Features (Screenshots)
 

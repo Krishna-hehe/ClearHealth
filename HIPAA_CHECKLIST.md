@@ -9,7 +9,7 @@ Ensuring HIPAA compliance involves Technical Safeguards, Physical Safeguards, an
 - [ ] **MFA (Multi-Factor Authentication)**: Enable 2FA in Supabase Auth settings to add a layer beyond just email/password.
 - [ ] **Biometric Enforcement**: Make biometric login mandatory for quick access (currently optional).
 - [ ] **Automatic Logoff**: Implement an inactivity timer that logs the user out or locks the screen after 5-10 minutes of inactivity.
-    - *Requirement*: § 164.312(a)(2)(iii)
+  - *Requirement*: § 164.312(a)(2)(iii)
 
 ### B. Encryption (At Rest & In Transit)
 
@@ -25,7 +25,7 @@ Ensuring HIPAA compliance involves Technical Safeguards, Physical Safeguards, an
 ### D. App Privacy
 
 - [ ] **Screen Security**: Prevent the OS from taking screenshots of the app in the "Recent Apps" switcher.
-    - *Implementation*: Use `flutter_windowmanager` (Android) to set `FLAG_SECURE`.
+  - *Implementation*: Use `flutter_windowmanager` (Android) to set `FLAG_SECURE`.
 - [ ] **Sanitized Logging**: Ensure `debugPrint` or `print` statements containing PII are strictly removed in Release builds.
 
 ## 2. AI & Third-Party Processors

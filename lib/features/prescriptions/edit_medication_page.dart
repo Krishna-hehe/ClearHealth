@@ -284,7 +284,7 @@ class _EditMedicationDialogState extends ConsumerState<EditMedicationDialog> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: _frequencyController.text.isNotEmpty
+                      initialValue: _frequencyController.text.isNotEmpty
                           ? _frequencyController.text
                           : 'Daily',
                       icon: const Icon(
