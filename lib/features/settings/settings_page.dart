@@ -134,10 +134,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Future<void> _uploadPhoto() async {
     try {
       final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 70,
-      );
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
       if (image == null) return;
 

@@ -23,19 +23,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Content Security Policy - Relaxed for development, tighten in production -->
+  <!-- Content Security Policy - Relaxed for development, tighten in production -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
                  script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; 
                  style-src 'self' 'unsafe-inline' https:; 
                  font-src 'self' https: data: blob:; 
                  img-src 'self' data: https: blob:; 
-                 connect-src 'self' https: wss: ws://localhost:* ws://127.0.0.1:*; 
+                 connect-src 'self' https: wss: ws://localhost:* ws://127.0.0.1:* blob: data:; 
                  worker-src 'self' blob:; 
-                 frame-ancestors 'none'; 
                  base-uri 'self'; 
                  form-action 'self';">
 
-  <!-- Security Headers -->
-  <meta http-equiv="X-Frame-Options" content="DENY">
+  <!-- Security Headers (Note: X-Frame-Options is ignored in meta tags, use HTTP headers if possible) -->
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
   <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">

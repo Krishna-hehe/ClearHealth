@@ -145,8 +145,22 @@ class _OcrReviewDialogState extends ConsumerState<OcrReviewDialog> {
               return;
             }
 
-            // Validate Results
-            for (var test in _testResults) {
+            // Filter out empty results
+            final validTests = _testResults.where((test) {
+              return (test['result']?.toString().trim() ?? '').isNotEmpty;
+            }).toList();
+
+            if (validTests.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('At least one test result is required'),
+                ),
+              );
+              return;
+            }
+
+            // Validate Results & Numbers
+            for (var test in validTests) {
               final resultStr = test['result']?.toString() ?? '';
               final err = validator.validateLabValue(resultStr);
               if (err != null) {
@@ -163,7 +177,7 @@ class _OcrReviewDialogState extends ConsumerState<OcrReviewDialog> {
             Navigator.pop(context, {
               'lab_name': validator.sanitizeInput(_labNameController.text),
               'date': validator.sanitizeInput(_dateController.text),
-              'test_results': _testResults
+              'test_results': validTests
                   .map(
                     (t) => {
                       ...t,

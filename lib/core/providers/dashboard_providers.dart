@@ -70,9 +70,15 @@ final dashboardStatsProvider = Provider<DashboardStats>((ref) {
 });
 
 final dashboardWelcomeNameProvider = Provider<String>((ref) {
-  final profileAsync = ref.watch(userProfileProvider);
+  final profileAsync = ref.watch(userProfileStreamProvider);
   return profileAsync.maybeWhen(
-    data: (profile) => profile?['first_name'] ?? 'User',
+    data: (profile) {
+      if (profile == null) return 'User';
+      final first = profile['first_name'] as String? ?? '';
+      final last = profile['last_name'] as String? ?? '';
+      final full = '$first $last'.trim();
+      return full.isNotEmpty ? full : 'User';
+    },
     orElse: () => 'User',
   );
 });
