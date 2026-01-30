@@ -87,9 +87,12 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                   if (currentNav == NavItem.landing) _buildLandingNavbar(),
 
                   Expanded(
-                    child: Stack(
-                      children: [
-                        Column(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isDesktop = constraints.maxWidth > 800;
+                        final showDock = currentNav != NavItem.landing;
+
+                        final contentBody = Column(
                           children: [
                             if (uploadState.isUploading)
                               LinearProgressIndicator(
@@ -111,10 +114,33 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                               ),
                             ),
                           ],
-                        ),
-                        // Add Floating Dock on top of content (but only if logged in)
-                        if (currentNav != NavItem.landing) const FloatingDock(),
-                      ],
+                        );
+
+                        if (isDesktop && showDock) {
+                          return Row(
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(left: 24),
+                                child: Center(child: FloatingDock()),
+                              ),
+                              Expanded(child: contentBody),
+                            ],
+                          );
+                        }
+
+                        return Stack(
+                          children: [
+                            contentBody,
+                            if (showDock)
+                              const Positioned(
+                                bottom: 24,
+                                left: 0,
+                                right: 0,
+                                child: Center(child: FloatingDock()),
+                              ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ],

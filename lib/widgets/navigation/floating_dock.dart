@@ -23,28 +23,20 @@ class _FloatingDockState extends ConsumerState<FloatingDock> {
     bool isDesktop = MediaQuery.of(context).size.width > 800;
     final navItems = _getNavItems();
 
-    return Positioned(
-      left: isDesktop ? 24 : 0,
-      right: isDesktop ? null : 0,
-      bottom: isDesktop ? 0 : 24,
-      top: isDesktop ? 0 : null,
-      child: Center(
-        child: GlassCard(
-          opacity: 0.2, // Higher opacity for dock
-          blur: 15,
-          padding: EdgeInsets.symmetric(
-            horizontal: isDesktop ? 12 : 24,
-            vertical: isDesktop ? 24 : 12,
-          ),
-          child: Flex(
-            direction: isDesktop ? Axis.vertical : Axis.horizontal,
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(navItems.length, (index) {
-              final item = navItems[index];
-              return _buildDockItem(context, index, item, isDesktop);
-            }),
-          ),
-        ),
+    return GlassCard(
+      opacity: 0.2, // Higher opacity for dock
+      blur: 15,
+      padding: EdgeInsets.symmetric(
+        horizontal: isDesktop ? 12 : 24,
+        vertical: isDesktop ? 24 : 12,
+      ),
+      child: Flex(
+        direction: isDesktop ? Axis.vertical : Axis.horizontal,
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(navItems.length, (index) {
+          final item = navItems[index];
+          return _buildDockItem(context, index, item, isDesktop);
+        }),
       ),
     );
   }
