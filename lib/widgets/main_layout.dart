@@ -48,6 +48,12 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         setState(() {
           _email = user.email ?? '';
         });
+
+        // Fix: If user is logged in but nav state is default (landing/auth), go to dashboard
+        final currentNav = ref.read(navigationProvider);
+        if (currentNav == NavItem.landing || currentNav == NavItem.auth) {
+          ref.read(navigationProvider.notifier).state = NavItem.dashboard;
+        }
       }
     });
     _checkOnboarding();
