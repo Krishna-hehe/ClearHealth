@@ -62,11 +62,7 @@ final prescriptionsProvider = FutureProvider<List<Map<String, dynamic>>>((
   return await ref.watch(userRepositoryProvider).getPrescriptions();
 });
 
-final healthCirclesProvider = FutureProvider<List<Map<String, dynamic>>>((
-  ref,
-) async {
-  return await ref.watch(userRepositoryProvider).getHealthCircles();
-});
+
 
 final medicationsProvider = FutureProvider<List<Medication>>((ref) async {
   final profile = ref.watch(selectedProfileProvider).value;

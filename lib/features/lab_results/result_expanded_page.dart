@@ -151,6 +151,15 @@ class _ResultExpandedPageState extends ConsumerState<ResultExpandedPage> {
             ),
           ),
           IconButton(
+            icon: const Icon(Icons.share_outlined, color: AppColors.primary),
+            tooltip: 'Share Report',
+            onPressed: () {
+              ref.read(navigationProvider.notifier).state =
+                  NavItem.shareResults;
+            },
+          ),
+          const SizedBox(width: 8),
+          IconButton(
             icon: const Icon(Icons.delete_outline, color: AppColors.danger),
             onPressed: () async {
               final confirm = await showDialog<bool>(

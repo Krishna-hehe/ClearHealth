@@ -14,7 +14,6 @@ enum NavItem {
   shareResults,
   comparison,
   healthOptimization,
-  healthCircles,
   resultExpanded,
   healthChat,
 

@@ -89,27 +89,6 @@ class UserRepository {
   Future<void> markNotificationAsRead(String id) =>
       _supabaseService.markNotificationAsRead(id);
 
-  Future<List<Map<String, dynamic>>> getHealthCircles() =>
-      _supabaseService.getHealthCircles();
-
-  Future<void> updateHealthCircles(List<Map<String, dynamic>> circles) =>
-      _supabaseService.updateHealthCircles(circles);
-
-  Future<void> createHealthCircle(String name) =>
-      _supabaseService.createHealthCircle(name);
-
-  Future<void> inviteMember(String circleId, String email, String role) =>
-      _supabaseService.inviteMember(circleId, email, role);
-
-  Future<void> updateMemberPermissions(
-    String circleId,
-    String userId,
-    String permissions,
-  ) => _supabaseService.updateMemberPermissions(circleId, userId, permissions);
-
-  Future<void> joinCircle(String circleId) =>
-      _supabaseService.joinCircle(circleId);
-
   Future<void> deleteAccountData() => _supabaseService.deleteAccountData();
 
   Future<String?> uploadProfilePhoto(String profileId, Uint8List bytes) async {

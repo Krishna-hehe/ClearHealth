@@ -177,6 +177,11 @@ class _FloatingDockState extends ConsumerState<FloatingDock> {
         navItem: NavItem.healthChat,
       ),
       _DockItem(
+        icon: FontAwesomeIcons.shareFromSquare,
+        label: 'Share Results',
+        navItem: NavItem.shareResults,
+      ),
+      _DockItem(
         icon: FontAwesomeIcons.leaf,
         label: 'Optimization',
         navItem: NavItem.healthOptimization,

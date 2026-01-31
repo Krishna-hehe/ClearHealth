@@ -23,7 +23,6 @@ import 'onboarding_overlay.dart';
 import 'offline_banner.dart';
 import '../features/lab_results/comparison_page.dart';
 import '../features/optimization/recipes_page.dart';
-import '../features/community/health_circles_page.dart';
 import '../features/home/landing_page.dart';
 import '../features/admin/admin_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -249,8 +248,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         return const ComparisonPage();
       case NavItem.healthOptimization:
         return const RecipesPage();
-      case NavItem.healthCircles:
-        return const HealthCirclesPage();
       case NavItem.admin:
         return const AdminPage();
       default:

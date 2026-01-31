@@ -102,13 +102,6 @@ class AppSidebar extends ConsumerWidget {
                   FontAwesomeIcons.leaf,
                   'Optimization',
                 ),
-                _buildSidebarItem(
-                  context,
-                  ref,
-                  NavItem.healthCircles,
-                  FontAwesomeIcons.users,
-                  'Health Circles',
-                ),
               ],
             ),
           ),

@@ -50,14 +50,11 @@ class _LandingPageState extends ConsumerState<LandingPage> {
     );
   }
 
-
   Widget _buildHeroSection() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 24),
-      decoration: const BoxDecoration(
-        color: Color(0xFFFCFBF7),
-      ),
+      decoration: const BoxDecoration(color: Color(0xFFFCFBF7)),
       child: Column(
         children: [
           const Text(
@@ -75,8 +72,8 @@ class _LandingPageState extends ConsumerState<LandingPage> {
             'Upload your lab reports and get instant, AI-powered explanations in plain\nlanguage. Understand your health without the confusion.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 20, 
-              color: Color(0xFF6B7280), 
+              fontSize: 20,
+              color: Color(0xFF6B7280),
               height: 1.6,
             ),
           ),
@@ -91,13 +88,24 @@ class _LandingPageState extends ConsumerState<LandingPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2D2D2D),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 22),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 22,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   elevation: 0,
                 ),
                 child: const Row(
                   children: [
-                    Text('Get Started', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(
+                      'Get Started',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                     SizedBox(width: 8),
                     Icon(Icons.arrow_forward, size: 18),
                   ],
@@ -107,14 +115,23 @@ class _LandingPageState extends ConsumerState<LandingPage> {
               OutlinedButton(
                 onPressed: _scrollToHowItWorks,
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 22),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 22,
+                  ),
                   side: const BorderSide(color: Color(0xFFE5E7EB)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   backgroundColor: Colors.white,
                 ),
                 child: const Text(
                   'See How It Works',
-                  style: TextStyle(color: Color(0xFF1F2937), fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(
+                    color: Color(0xFF1F2937),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ],
@@ -123,7 +140,6 @@ class _LandingPageState extends ConsumerState<LandingPage> {
       ),
     );
   }
-
 
   Widget _buildFeatureGrid() {
     return Container(
@@ -159,7 +175,7 @@ class _LandingPageState extends ConsumerState<LandingPage> {
                 ),
                 _buildModernFeatureCard(
                   FontAwesomeIcons.users,
-                  'Health Circles',
+                  'Share Results',
                   'Securely share your health data with family members and doctors for better care.',
                 ),
                 _buildModernFeatureCard(
@@ -175,7 +191,11 @@ class _LandingPageState extends ConsumerState<LandingPage> {
     );
   }
 
-  Widget _buildModernFeatureCard(IconData icon, String title, String description) {
+  Widget _buildModernFeatureCard(
+    IconData icon,
+    String title,
+    String description,
+  ) {
     return Container(
       width: 280,
       padding: const EdgeInsets.all(12),
@@ -192,13 +212,21 @@ class _LandingPageState extends ConsumerState<LandingPage> {
           const SizedBox(height: 24),
           Text(
             title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2937),
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             description,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 15, color: Color(0xFF6B7280), height: 1.5),
+            style: const TextStyle(
+              fontSize: 15,
+              color: Color(0xFF6B7280),
+              height: 1.5,
+            ),
           ),
         ],
       ),
@@ -215,7 +243,11 @@ class _LandingPageState extends ConsumerState<LandingPage> {
           const Text(
             'Uncompromised Privacy & Compliance',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2937),
+            ),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -249,7 +281,12 @@ class _LandingPageState extends ConsumerState<LandingPage> {
     );
   }
 
-  Widget _buildComplianceCard(IconData icon, String title, String description, Color color) {
+  Widget _buildComplianceCard(
+    IconData icon,
+    String title,
+    String description,
+    Color color,
+  ) {
     return Container(
       width: 320,
       padding: const EdgeInsets.all(32),
@@ -279,13 +316,21 @@ class _LandingPageState extends ConsumerState<LandingPage> {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2937),
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             description,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 15, color: Color(0xFF6B7280), height: 1.5),
+            style: const TextStyle(
+              fontSize: 15,
+              color: Color(0xFF6B7280),
+              height: 1.5,
+            ),
           ),
         ],
       ),
@@ -303,7 +348,11 @@ class _LandingPageState extends ConsumerState<LandingPage> {
         children: [
           const Text(
             'How It Works',
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2937),
+            ),
           ),
           const SizedBox(height: 80),
           Row(
@@ -336,7 +385,12 @@ class _LandingPageState extends ConsumerState<LandingPage> {
     );
   }
 
-  Widget _buildStepCard(String number, IconData icon, String title, String description) {
+  Widget _buildStepCard(
+    String number,
+    IconData icon,
+    String title,
+    String description,
+  ) {
     return Container(
       width: 320,
       padding: const EdgeInsets.all(40),
@@ -356,7 +410,11 @@ class _LandingPageState extends ConsumerState<LandingPage> {
             child: Center(
               child: Text(
                 number,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),
@@ -365,13 +423,21 @@ class _LandingPageState extends ConsumerState<LandingPage> {
           const SizedBox(height: 24),
           Text(
             title,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2937),
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             description,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 15, color: Color(0xFF6B7280), height: 1.5),
+            style: const TextStyle(
+              fontSize: 15,
+              color: Color(0xFF6B7280),
+              height: 1.5,
+            ),
           ),
         ],
       ),
@@ -395,7 +461,11 @@ class _LandingPageState extends ConsumerState<LandingPage> {
           const Text(
             'Ready to understand your lab results?',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2937),
+            ),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -412,19 +482,23 @@ class _LandingPageState extends ConsumerState<LandingPage> {
               backgroundColor: const Color(0xFF2D2D2D),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 22),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
               elevation: 0,
             ),
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Get Started Free', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(
+                  'Get Started Free',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
                 SizedBox(width: 8),
                 Icon(Icons.arrow_forward, size: 18),
               ],
             ),
           ),
-
         ],
       ),
     );
@@ -441,7 +515,11 @@ class _LandingPageState extends ConsumerState<LandingPage> {
         children: [
           const Text(
             'LabSense',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2937),
+            ),
           ),
           Row(
             children: [

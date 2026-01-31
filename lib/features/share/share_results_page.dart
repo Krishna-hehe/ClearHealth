@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'dart:ui';
 import '../../core/theme.dart';
-import '../../core/navigation.dart';
-import '../../core/providers.dart';
-
-import '../../core/pdf_service.dart';
-import '../../core/models.dart';
+import '../../widgets/glass_card.dart';
+import '../../widgets/glass_shimmer.dart';
 
 class ShareResultsPage extends ConsumerStatefulWidget {
   const ShareResultsPage({super.key});
@@ -17,219 +14,501 @@ class ShareResultsPage extends ConsumerStatefulWidget {
 }
 
 class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
-  String _selectedDuration = '24h';
-  bool _allowDownload = false;
+  // New Form State
+  bool _shareLabSummary = true;
+  bool _shareDownloadReports = false;
+  bool _shareMedicalConditions = false;
+  bool _sharePrescriptions = false;
+  String? _selectedRelationship = 'Healthcare Provider';
+  String _selectedExpiration = '7 days';
+
   bool _isGenerating = false;
 
-  final Map<String, String> _durationLabels = {
-    '1h': '1 Hour',
-    '24h': '24 Hours',
-    '7d': '7 Days',
-    '30d': '30 Days',
-  };
+  final List<String> _expirationOptions = [
+    'One Time',
+    '7 days',
+    '30 days',
+    '90 days',
+    'Never',
+  ];
+  final List<String> _relationships = [
+    'Healthcare Provider',
+    'Family Member',
+    'Insurance Provider',
+    'Fitness Coach',
+    'Other',
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Stack(
       children: [
-        TextButton.icon(
-          onPressed: () =>
-              ref.read(navigationProvider.notifier).state = NavItem.dashboard,
-          icon: const Icon(Icons.arrow_back, size: 16),
-          label: const Text('Back to Dashboard'),
-          style: TextButton.styleFrom(foregroundColor: AppColors.secondary),
+        // Background Decoration
+        Positioned(
+          top: -100,
+          right: -100,
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primaryBrand.withValues(alpha: 0.15),
+              ),
+            ),
+          ),
         ),
-        const SizedBox(height: 16),
-        const Text(
-          'Share Results',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        Positioned(
+          bottom: 50,
+          left: -50,
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.success.withValues(alpha: 0.1),
+              ),
+            ),
+          ),
         ),
-        const Text(
-          'Securely share your health data with doctors or family.',
-          style: TextStyle(color: AppColors.secondary, fontSize: 14),
+        TweenAnimationBuilder<double>(
+          duration: const Duration(milliseconds: 800),
+          tween: Tween(begin: 0.1, end: 1.0),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            return Transform.translate(
+              offset: Offset(0, 30 * (1 - value)),
+              child: Opacity(opacity: value, child: child),
+            );
+          },
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 32.0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 32),
+                  _buildCreateShareForm(),
+                  const SizedBox(height: 16),
+                  _buildSecureSharingTip(),
+                  const SizedBox(height: 32),
+                  _buildActiveSharesSection(),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ),
         ),
-        const SizedBox(height: 32),
-        _buildProfessionalPdfCard(context, ref),
-        const SizedBox(height: 24),
-        _buildQuickShareFamily(context, ref),
-        const SizedBox(height: 24),
-        _buildShareOptions(context),
-        const SizedBox(height: 24),
-        _buildSharingHistory(),
       ],
     );
   }
 
-  Widget _buildShareOptions(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primaryBrand,
+                    AppColors.primaryBrand.withValues(alpha: 0.7),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryBrand.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.ios_share, color: Colors.black, size: 24),
+            ),
+            const SizedBox(width: 20),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Share Results',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.lightTextPrimary,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                Text(
+                  'Grant secure health record access',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.lightTextSecondary.withValues(alpha: 0.8),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        ElevatedButton(
+          onPressed: () {},
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primaryBrand,
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            elevation: 0,
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.add, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Create Share',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCreateShareForm() {
+    return GlassCard(
+      padding: const EdgeInsets.all(32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Create Secure Link',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              Container(
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryBrand,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-              Icon(Icons.shield_outlined, size: 20, color: AppColors.primary),
+              const SizedBox(width: 12),
+              const Text(
+                'Create New Share',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Generate a temporary, encrypted link. You control access.',
-            style: TextStyle(color: AppColors.secondary, fontSize: 13),
-          ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          // --- Controls ---
+          // What to share
+          const Text(
+            'SELECT DATA ACCESS',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+              color: AppColors.lightTextSecondary,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildCheckbox(
+            'Lab Summary & Results',
+            _shareLabSummary,
+            (v) => setState(() => _shareLabSummary = v!),
+          ),
+          _buildCheckbox(
+            'Download PDF Reports',
+            _shareDownloadReports,
+            (v) => setState(() => _shareDownloadReports = v!),
+          ),
+          _buildCheckbox(
+            'Medical Conditions History',
+            _shareMedicalConditions,
+            (v) => setState(() => _shareMedicalConditions = v!),
+          ),
+          _buildCheckbox(
+            'Active Prescriptions',
+            _sharePrescriptions,
+            (v) => setState(() => _sharePrescriptions = v!),
+          ),
+
+          const SizedBox(height: 32),
+
+          // Relationship
+          const Text(
+            'RECIPIENT TYPE',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+              color: AppColors.lightTextSecondary,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.lightBorder.withValues(alpha: 0.5),
+              ),
+              color: Colors.white.withValues(alpha: 0.3),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedRelationship,
+                isExpanded: true,
+                dropdownColor: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                icon: const Icon(
+                  Icons.keyboard_arrow_down,
+                  color: AppColors.primaryBrand,
+                ),
+                items: _relationships
+                    .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                    .toList(),
+                onChanged: (val) => setState(() => _selectedRelationship = val),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // Expiration
+          const Text(
+            'LINK EXPIRATION',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+              color: AppColors.lightTextSecondary,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: _expirationOptions
+                .map((opt) => _buildExpirationPill(opt))
+                .toList(),
+          ),
+
+          const SizedBox(height: 48),
+
+          // Footer Actions
           Row(
             children: [
-              // Duration Dropdown
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Expires In',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.secondary,
-                      ),
+                child: OutlinedButton(
+                  onPressed: () {},
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    side: BorderSide(color: AppColors.lightBorder),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[300]!),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedDuration,
-                          isExpanded: true,
-                          items: _durationLabels.entries.map((e) {
-                            return DropdownMenuItem(
-                              value: e.key,
-                              child: Text(e.value),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() => _selectedDuration = val);
-                            }
-                          },
-                        ),
-                      ),
+                  ),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: AppColors.lightTextPrimary,
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
-              // Permissions Toggle
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Permissions',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.secondary,
+                flex: 2,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primaryBrand.withValues(alpha: 0.4),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
                       ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    onPressed: _isGenerating
+                        ? null
+                        : _generateSecureLinkRedesigned,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryBrand,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
                     ),
-                    const SizedBox(height: 8),
-                    InkWell(
-                      onTap: () =>
-                          setState(() => _allowDownload = !_allowDownload),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _allowDownload
-                              ? AppColors.primary.withValues(alpha: 0.1)
-                              : Colors.grey[50],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _allowDownload
-                                ? AppColors.primary
-                                : Colors.grey[300]!,
+                    child: _isGenerating
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black,
+                            ),
+                          )
+                        : const Text(
+                            'Generate Secure Link',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              _allowDownload
-                                  ? Icons.download_done
-                                  : Icons.remove_red_eye_outlined,
-                              size: 18,
-                              color: _allowDownload
-                                  ? AppColors.primary
-                                  : Colors.grey[600],
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _allowDownload ? 'Download' : 'View Only',
-                              style: TextStyle(
-                                color: _allowDownload
-                                    ? AppColors.primary
-                                    : Colors.grey[800],
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
 
-          const SizedBox(height: 24),
+  Widget _buildCheckbox(
+    String label,
+    bool value,
+    ValueChanged<bool?> onChanged,
+  ) {
+    return InkWell(
+      onTap: () => onChanged(!value),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              height: 24,
+              width: 24,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: value ? AppColors.primaryBrand : AppColors.lightBorder,
+                  width: 2,
+                ),
+                color: value ? AppColors.primaryBrand : Colors.transparent,
+              ),
+              child: value
+                  ? const Icon(Icons.check, size: 16, color: Colors.black)
+                  : null,
+            ),
+            const SizedBox(width: 16),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                color: value
+                    ? AppColors.lightTextPrimary
+                    : AppColors.lightTextSecondary,
+                fontWeight: value ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              icon: _isGenerating
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.link, size: 18),
-              label: Text(
-                _isGenerating ? 'Generating...' : 'Generate Share Link',
-              ),
-              onPressed: _isGenerating ? null : _generateSecureLink,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
+  Widget _buildExpirationPill(String label) {
+    final isSelected = _selectedExpiration == label;
+    return InkWell(
+      onTap: () => setState(() => _selectedExpiration = label),
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryBrand
+              : Colors.white.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primaryBrand
+                : AppColors.lightBorder.withValues(alpha: 0.5),
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primaryBrand.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.black : AppColors.lightTextPrimary,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSecureSharingTip() {
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      opacity: 0.1,
+      blur: 20,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primaryBrand.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.shield_outlined,
+              color: AppColors.primaryBrand,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 20),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Secure Sharing',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                SizedBox(height: 4),
+                Text(
+                  'Share links are read-only and automatically expire based on your selection. No one can edit your original health records.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.lightTextSecondary,
+                    height: 1.4,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
@@ -237,7 +516,70 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
     );
   }
 
-  Future<void> _generateSecureLink() async {
+  Widget _buildActiveSharesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4),
+          child: Text(
+            'Active Shares',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        GlassCard(
+          padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 32),
+          child: Center(
+            child: Column(
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    GlassShimmer(
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryBrand.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.history_toggle_off_rounded,
+                      size: 40,
+                      color: AppColors.primaryBrand.withValues(alpha: 0.5),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'No Active Share Links',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Create your first secure link above to share your results with others.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.lightTextSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _generateSecureLinkRedesigned() async {
     setState(() => _isGenerating = true);
 
     // Simulate API delay
@@ -257,337 +599,148 @@ class _ShareResultsPageState extends ConsumerState<ShareResultsPage> {
       }
     } catch (_) {}
 
-    final String permissionParam = _allowDownload ? 'full' : 'view';
+    final String permissionParam = _shareDownloadReports ? 'full' : 'view';
     final String uniqueId = DateTime.now().millisecondsSinceEpoch
         .toString()
         .substring(8);
     final String link =
-        '$baseUrl/share/$uniqueId?e=$_selectedDuration&p=$permissionParam';
+        '$baseUrl/share/$uniqueId?e=$_selectedExpiration&p=$permissionParam';
 
     if (!mounted) return;
     setState(() => _isGenerating = false);
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.hub, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text('Share Link Created'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: Colors.amber[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.amber[200]!),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, size: 16, color: Colors.amber),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'This is a simulation. In production, this link would route to a secure viewer.',
-                      style: TextStyle(fontSize: 12, color: Colors.brown),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Text(
-              'Share this secure link:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: SelectableText(
-                link,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(Icons.timer, size: 14, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text(
-                  'Expires in ${_durationLabels[_selectedDuration]}',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-                const SizedBox(width: 16),
-                Icon(
-                  _allowDownload ? Icons.download : Icons.remove_red_eye,
-                  size: 14,
-                  color: Colors.grey,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _allowDownload ? 'Download Allowed' : 'View Only',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Link copied to clipboard!')),
-              );
-            },
-            child: const Text('Copy Link'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfessionalPdfCard(BuildContext context, WidgetRef ref) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Professional Health Summary',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Generate a medical-grade PDF summary of your entire lab history with AI insights to share with your doctor.',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 24),
-          ElevatedButton.icon(
-            icon: const Icon(FontAwesomeIcons.fileMedical, size: 14),
-            label: const Text('Generate PDF'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onPressed: () async {
-              final reports = ref.read(labResultsProvider).value ?? [];
-              if (reports.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('No lab reports found to generate summary.'),
-                  ),
-                );
-                return;
-              }
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Generating AI insights...')),
-              );
-
-              final List<Map<String, dynamic>> flatTests = [];
-              for (var r in reports) {
-                if (r.testResults != null) {
-                  flatTests.addAll(r.testResults!.map((t) => t.toJson()));
-                }
-              }
-
-              final aiSummary = await ref
-                  .read(aiServiceProvider)
-                  .getBatchSummary(flatTests);
-              final user = ref.read(currentUserProvider);
-              final userName =
-                  '${user?.userMetadata?['first_name'] ?? ''} ${user?.userMetadata?['last_name'] ?? ''}'
-                      .trim();
-
-              await PdfService.generateSummaryPdf(
-                reports,
-                aiSummary: aiSummary,
-                patientName: userName.isEmpty ? 'LabSense User' : userName,
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickShareFamily(BuildContext context, WidgetRef ref) {
-    final profilesAsync = ref.watch(userProfilesProvider);
-
-    return profilesAsync.when(
-      data: (profiles) {
-        final spouse = profiles.firstWhere(
-          (p) => p.relationship.toLowerCase() == 'spouse',
-          orElse: () =>
-              UserProfile(id: '', userId: '', firstName: '', relationship: ''),
-        );
-
-        if (spouse.id.isEmpty) return const SizedBox.shrink();
-
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-          ),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          padding: const EdgeInsets.all(32),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(
-                    Icons.family_restroom,
-                    color: AppColors.primary,
-                    size: 20,
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryBrand.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.link,
+                      color: AppColors.primaryBrand,
+                    ),
                   ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Quick Share: Family',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  const SizedBox(width: 16),
+                  const Text(
+                    'Share Link Created',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ],
               ),
+              const SizedBox(height: 24),
+              const Text(
+                'Share this secure, read-only link with your healthcare provider or family member.',
+                style: TextStyle(
+                  color: AppColors.lightTextSecondary,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.lightBorder.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: SelectableText(
+                  link,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 14,
+                    color: AppColors.primaryBrand,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
               const SizedBox(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(
-                  backgroundColor: Color(
-                    int.parse(
-                      spouse.avatarColor.replaceFirst('0x', ''),
-                      radix: 16,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.timer_outlined,
+                    size: 16,
+                    color: AppColors.lightTextSecondary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Expires in $_selectedExpiration',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.lightTextSecondary,
                     ),
-                  ).withValues(alpha: 0.1),
-                  child: Icon(
-                    Icons.favorite,
-                    color: Color(
-                      int.parse(
-                        spouse.avatarColor.replaceFirst('0x', ''),
-                        radix: 16,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Close'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Link copied to clipboard!'),
+                            backgroundColor: AppColors.primaryBrand,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryBrand,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Copy Link',
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
-                    size: 16,
                   ),
-                ),
-                title: Text(
-                  'Share with ${spouse.firstName}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                subtitle: const Text(
-                  'Instantly grant view-only access to your records.',
-                  style: TextStyle(fontSize: 12),
-                ),
-                trailing: TextButton(
-                  onPressed: () => _handleFamilyShare(spouse, ref),
-                  child: const Text('Share Now'),
-                ),
+                ],
               ),
             ],
           ),
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (e, s) => const SizedBox.shrink(),
-    );
-  }
-
-  Future<void> _handleFamilyShare(UserProfile companion, WidgetRef ref) async {
-    setState(() => _isGenerating = true);
-    // In a real app, this would call a Care Circle invitation or direct permission grant.
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isGenerating = false);
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Succesfully shared health records with ${companion.firstName}!',
         ),
-        backgroundColor: AppColors.success,
-      ),
-    );
-  }
-
-  Widget _buildSharingHistory() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Active Shares',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const SizedBox(height: 16),
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 40),
-              child: Text(
-                'No active share links. Generate one above to get started.',
-                style: TextStyle(color: AppColors.secondary, fontSize: 14),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
