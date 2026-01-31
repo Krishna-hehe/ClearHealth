@@ -6,6 +6,7 @@ import '../../../core/navigation.dart';
 import '../../../core/providers.dart';
 import '../../../core/services/upload_service.dart';
 import '../ocr_review_dialog.dart';
+import 'profile_switcher.dart';
 
 class AppSidebar extends ConsumerWidget {
   final NavItem currentNav;
@@ -125,62 +126,90 @@ class AppSidebar extends ConsumerWidget {
   }
 
   Widget _buildUserCard(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(userProfileStreamProvider);
+    final profileAsync = ref.watch(selectedProfileProvider);
 
     return profileAsync.when(
       data: (profile) {
-        final name = profile != null
-            ? '${profile['first_name'] ?? ''} ${profile['last_name'] ?? ''}'
-                  .trim()
-            : 'LabSense User';
-        final avatarUrl = profile?['avatar_url'];
+        final name = profile?.fullName ?? 'LabSense User';
+        final avatarUrl = profile?.avatarUrl;
+        final avatarColor = profile != null
+            ? Color(int.parse(profile.avatarColor))
+            : const Color(0xFFF3F4F6);
+        final relationship = profile?.relationship ?? 'Personal';
 
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardTheme.color,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Theme.of(context).dividerColor),
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
-                    ? NetworkImage(avatarUrl)
-                    : const NetworkImage('https://via.placeholder.com/150'),
-                backgroundColor: const Color(0xFFF3F4F6),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name.isEmpty ? 'LabSense User' : name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      'Personal',
-                      style: TextStyle(
-                        color: AppColors.secondary,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
+        return InkWell(
+          onTap: () {
+            showDialog(
+              context: context,
+              barrierColor: Colors.black26,
+              builder: (context) => Center(
+                child: Hero(
+                  tag: 'profile-switcher',
+                  child: const ProfileSwitcher(),
                 ),
               ),
-              const Icon(
-                Icons.keyboard_arrow_down,
-                size: 16,
-                color: AppColors.secondary,
-              ),
-            ],
+            );
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardTheme.color,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Theme.of(context).dividerColor),
+            ),
+            child: Row(
+              children: [
+                Hero(
+                  tag: 'profile-avatar',
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
+                        ? NetworkImage(avatarUrl)
+                        : null,
+                    backgroundColor: avatarColor,
+                    child: (avatarUrl == null || avatarUrl.isEmpty)
+                        ? Text(
+                            (profile?.firstName[0] ?? 'L').toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        relationship,
+                        style: TextStyle(
+                          color: AppColors.secondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.unfold_more_rounded,
+                  size: 16,
+                  color: AppColors.secondary,
+                ),
+              ],
+            ),
           ),
         );
       },

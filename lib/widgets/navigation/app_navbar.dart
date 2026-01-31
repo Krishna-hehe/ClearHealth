@@ -4,6 +4,7 @@ import '../../../core/theme.dart';
 import '../../../core/navigation.dart';
 import '../../../core/providers.dart';
 import '../../../features/settings/family_profiles_page.dart';
+import 'profile_switcher.dart';
 
 class AppNavbar extends ConsumerWidget {
   final String email;
@@ -75,8 +76,12 @@ class AppNavbar extends ConsumerWidget {
   }
 
   Widget _buildUserMenu(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(userProfileStreamProvider);
-    final avatarUrl = profileAsync.value?['avatar_url'];
+    final profileAsync = ref.watch(selectedProfileProvider);
+    final profile = profileAsync.value;
+    final avatarUrl = profile?.avatarUrl;
+    final avatarColor = profile != null
+        ? Color(int.parse(profile.avatarColor))
+        : const Color(0xFFF3F4F6);
 
     return PopupMenuButton<String>(
       offset: const Offset(0, 48),
@@ -87,8 +92,18 @@ class AppNavbar extends ConsumerWidget {
             radius: 16,
             backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
                 ? NetworkImage(avatarUrl)
-                : const NetworkImage('https://via.placeholder.com/150'),
-            backgroundColor: const Color(0xFFF3F4F6),
+                : null,
+            backgroundColor: avatarColor,
+            child: (avatarUrl == null || avatarUrl.isEmpty)
+                ? Text(
+                    (profile?.firstName[0] ?? 'L').toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(width: 8),
           const Icon(
@@ -99,7 +114,13 @@ class AppNavbar extends ConsumerWidget {
         ],
       ),
       onSelected: (value) async {
-        if (value == 'settings') {
+        if (value == 'switch_profile') {
+          showDialog(
+            context: context,
+            barrierColor: Colors.black26,
+            builder: (context) => const Center(child: ProfileSwitcher()),
+          );
+        } else if (value == 'settings') {
           ref.read(navigationProvider.notifier).state = NavItem.settings;
         } else if (value == 'family_profiles') {
           Navigator.push(
@@ -130,6 +151,28 @@ class AppNavbar extends ConsumerWidget {
               const Text(
                 'Free Plan',
                 style: TextStyle(fontSize: 11, color: AppColors.secondary),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(
+          value: 'switch_profile',
+          child: Row(
+            children: [
+              Icon(
+                Icons.swap_horiz_rounded,
+                size: 16,
+                color: AppColors.primaryBrand,
+              ),
+              SizedBox(width: 12),
+              Text(
+                'Switch Profile',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryBrand,
+                ),
               ),
             ],
           ),

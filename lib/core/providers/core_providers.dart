@@ -10,8 +10,14 @@ import '../app_config.dart';
 import '../services/input_validation_service.dart';
 import '../services/rate_limiter_service.dart';
 import '../cache_service.dart';
+import '../services/rls_verification_service.dart';
 
 // --- Core Infrastructure Providers ---
+
+final rlsVerificationServiceProvider = Provider<RlsVerificationService>((ref) {
+  final client = ref.watch(supabaseClientProvider);
+  return RlsVerificationService(client);
+});
 
 final inputValidationServiceProvider = Provider<InputValidationService>((ref) {
   return InputValidationService();
@@ -35,11 +41,17 @@ final supabaseClientProvider = Provider<SupabaseClient>((ref) {
 });
 
 final supabaseServiceProvider = Provider<SupabaseService>((ref) {
-  return SupabaseService(ref.watch(supabaseClientProvider));
+  return SupabaseService(
+    ref.watch(supabaseClientProvider),
+    ref.watch(inputValidationServiceProvider),
+  );
 });
 
 final storageServiceProvider = Provider<StorageService>((ref) {
-  return StorageService(ref.watch(supabaseClientProvider));
+  return StorageService(
+    ref.watch(supabaseClientProvider),
+    ref.read(rateLimiterProvider),
+  );
 });
 
 final vectorServiceProvider = Provider<VectorService>((ref) {
@@ -56,5 +68,6 @@ final aiServiceProvider = Provider<AiService>((ref) {
     chatApiKey: AppConfig.labSenseChatApiKey,
     vectorService: vectorService,
     cacheService: CacheService(),
+    rateLimiter: ref.read(rateLimiterProvider),
   );
 });

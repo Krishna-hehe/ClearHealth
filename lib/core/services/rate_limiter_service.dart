@@ -11,20 +11,26 @@ class RateLimiterService {
 
   /// Check if an action is allowed. If allowed, records the action.
   /// Returns null if allowed, or time remaining (Duration) if blocked.
-  Duration? checkLimit(String actionKey) {
+  /// Check if an action is allowed. If allowed, records the action.
+  /// Returns null if allowed, or time remaining (Duration) if blocked.
+  Duration? checkLimit(
+    String actionKey, {
+    int limit = _maxChatRequests,
+    Duration window = _chatWindow,
+  }) {
     final now = DateTime.now();
     _buckets.putIfAbsent(actionKey, () => Queue<DateTime>());
     final queue = _buckets[actionKey]!;
 
     // Prune old timestamps
-    while (queue.isNotEmpty && now.difference(queue.first) > _chatWindow) {
+    while (queue.isNotEmpty && now.difference(queue.first) > window) {
       queue.removeFirst();
     }
 
-    if (queue.length >= _maxChatRequests) {
+    if (queue.length >= limit) {
       // Blocked. Calculate wait time based on oldest request expiration
       final oldest = queue.first;
-      final expiration = oldest.add(_chatWindow);
+      final expiration = oldest.add(window);
       return expiration.difference(now);
     }
 
@@ -35,6 +41,23 @@ class RateLimiterService {
 
   void reset(String actionKey) {
     _buckets.remove(actionKey);
+  }
+
+  /// Get current count of requests in the window for an action
+  int getUsage(String actionKey, {Duration? window}) {
+    final now = DateTime.now();
+    final queue = _buckets[actionKey];
+    if (queue == null) return 0;
+
+    final effectiveWindow = window ?? _chatWindow;
+    return queue.where((dt) => now.difference(dt) <= effectiveWindow).length;
+  }
+
+  /// Get all active buckets and their usage
+  Map<String, int> getAllUsage({Duration? window}) {
+    return _buckets.map(
+      (key, _) => MapEntry(key, getUsage(key, window: window)),
+    );
   }
 }
 

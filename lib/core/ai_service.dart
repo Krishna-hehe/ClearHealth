@@ -4,7 +4,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'vector_service.dart';
-import 'utils/rate_limiter.dart';
+import 'services/rate_limiter_service.dart';
 import 'services/log_service.dart';
 import 'cache_service.dart';
 import 'utils/medical_terms.dart';
@@ -57,10 +57,7 @@ class AiService {
   late final GenerativeModel _visionModel;
   late final GenerativeModel _chatModel;
 
-  final _rateLimiter = RateLimiter(
-    maxRequests: 10,
-    duration: const Duration(minutes: 1),
-  );
+  final RateLimiterService _rateLimiter;
 
   // Test hook
   final Future<GenerateContentResponse> Function(Iterable<Content> content)?
@@ -71,11 +68,13 @@ class AiService {
     this.chatApiKey,
     required this.vectorService,
     required this.cacheService,
+
+    required RateLimiterService rateLimiter,
     GenerativeModel? textModel,
     GenerativeModel? visionModel,
     GenerativeModel? chatModel,
     this.mockTextGenerator,
-  }) {
+  }) : _rateLimiter = rateLimiter {
     if (apiKey.isEmpty) {
       AppLogger.debug('❌ AiService: API Key is empty!');
     } else {
@@ -164,17 +163,22 @@ class AiService {
       return LabTestAnalysis.fromJson(Map<String, dynamic>.from(cached));
     }
 
-    if (!_rateLimiter.canRequest()) {
+    final waitTime = _rateLimiter.checkLimit(
+      'ai_analysis',
+      limit: 20,
+      window: const Duration(minutes: 10),
+    );
+    if (waitTime != null) {
       return LabTestAnalysis(
         description: 'Rate limit exceeded.',
         status: 'Error',
         keyInsight: 'Please wait before requesting another analysis.',
         clinicalSignificance: 'System is temporarily overloaded.',
-        resultContext: 'Please try again in a moment.',
+        resultContext: 'Please try again in ${waitTime.inMinutes + 1} minutes.',
         potentialCauses: [],
         factors: [],
         questions: [],
-        recommendation: 'Wait 1 minute and refresh.',
+        recommendation: 'Wait a moment and refresh.',
       );
     }
 
@@ -251,11 +255,17 @@ class AiService {
     required String testName,
     required List<Map<String, dynamic>> history,
   }) async {
-    if (!_rateLimiter.canRequest()) {
+    final waitTime = _rateLimiter.checkLimit(
+      'ai_trend',
+      limit: 20,
+      window: const Duration(minutes: 10),
+    );
+    if (waitTime != null) {
       return {
         'direction': 'Stable',
         'change_percent': '--',
-        'analysis': 'Rate limit exceeded. Please try again later.',
+        'analysis':
+            'Rate limit exceeded. Please try again in ${waitTime.inMinutes + 1} minutes.',
       };
     }
     if (history.length < 2) {
@@ -318,8 +328,13 @@ class AiService {
     required Map<String, List<Map<String, dynamic>>> data,
     required List<String> markers,
   }) async {
-    if (!_rateLimiter.canRequest()) {
-      return 'Rate limit exceeded. Please wait a moment.';
+    final waitTime = _rateLimiter.checkLimit(
+      'ai_correlation',
+      limit: 20,
+      window: const Duration(minutes: 10),
+    );
+    if (waitTime != null) {
+      return 'Rate limit exceeded. Please wait ${waitTime.inMinutes + 1} minutes.';
     }
     if (markers.isEmpty) return 'No markers selected for correlation analysis.';
 
@@ -384,7 +399,14 @@ class AiService {
   Future<List<Map<String, dynamic>>> getOptimizationTips(
     List<Map<String, dynamic>> abnormalTests,
   ) async {
-    if (!_rateLimiter.canRequest()) return [];
+    if (_rateLimiter.checkLimit(
+          'ai_tips',
+          limit: 30,
+          window: const Duration(minutes: 10),
+        ) !=
+        null) {
+      return [];
+    }
     if (abnormalTests.isEmpty) return [];
 
     // Minimize input
@@ -448,7 +470,14 @@ class AiService {
   Future<List<Map<String, dynamic>>> getWellnessTips(
     List<Map<String, dynamic>> recentNormalTests,
   ) async {
-    if (!_rateLimiter.canRequest()) return [];
+    if (_rateLimiter.checkLimit(
+          'ai_wellness',
+          limit: 30,
+          window: const Duration(minutes: 10),
+        ) !=
+        null) {
+      return [];
+    }
     if (recentNormalTests.isEmpty) {
       // If no data at all, return generic healthy living tips
       return [
@@ -519,7 +548,14 @@ class AiService {
   Future<List<Map<String, dynamic>>> getHealthPredictions(
     List<Map<String, dynamic>> fullHistory,
   ) async {
-    if (!_rateLimiter.canRequest()) return [];
+    if (_rateLimiter.checkLimit(
+          'ai_predict',
+          limit: 30,
+          window: const Duration(minutes: 10),
+        ) !=
+        null) {
+      return [];
+    }
     if (fullHistory.length < 2) return [];
 
     final recentHistory = fullHistory.take(5).toList();
@@ -577,8 +613,13 @@ class AiService {
     List<Map<String, dynamic>> tests, {
     UserProfile? profile,
   }) async {
-    if (!_rateLimiter.canRequest()) {
-      return 'System is busy (Rate Limit). Please try again in 1 minute.';
+    final waitTime = _rateLimiter.checkLimit(
+      'ai_summary',
+      limit: 20,
+      window: const Duration(minutes: 10),
+    );
+    if (waitTime != null) {
+      return 'System is busy (Rate Limit). Please try again in ${waitTime.inMinutes + 1} minutes.';
     }
     if (tests.isEmpty) {
       return 'No lab results available.';
@@ -624,8 +665,13 @@ class AiService {
     String query, {
     Map<String, dynamic>? healthContext,
   }) async {
-    if (!_rateLimiter.canRequest()) {
-      return 'Rate limit exceeded. Please wait a moment.';
+    final waitTime = _rateLimiter.checkLimit(
+      'ai_chat',
+      limit: 50,
+      window: const Duration(minutes: 30),
+    );
+    if (waitTime != null) {
+      return 'Rate limit exceeded. Please wait ${waitTime.inMinutes + 1} minutes.';
     }
 
     query = _sanitizeInput(query);
@@ -673,7 +719,11 @@ class AiService {
           .toList();
 
       final meds = (healthContext['active_prescriptions'] as List?)
-          ?.map((m) => '${m['name']} (${m['dosage']})')
+          ?.map((m) => '${m['medication']} (${m['dosage']})')
+          .toList();
+
+      final conditions = (healthContext['known_conditions'] as List?)
+          ?.map((c) => c.toString())
           .toList();
 
       healthContextStr =
@@ -681,6 +731,7 @@ class AiService {
       PATIENT HEALTH CONTEXT:
       - Abnormal Lab Results: ${jsonEncode(abnormal)}
       - Active Medications: ${jsonEncode(meds)}
+      - Known Conditions: ${jsonEncode(conditions)}
       ''';
     }
 

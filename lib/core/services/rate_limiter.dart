@@ -188,7 +188,7 @@ class RateLimiters {
   static final login = RateLimiter(
     maxAttempts: 5,
     window: const Duration(minutes: 15),
-    lockoutDuration: const Duration(minutes: 30),
+    lockoutDuration: const Duration(minutes: 15),
   );
 
   /// Password reset - moderate limits
@@ -212,7 +212,7 @@ class RateLimiters {
 
   /// AI queries - moderate limits (to prevent API cost abuse)
   static final aiQueries = RateLimiter(
-    maxAttempts: 20,
-    window: const Duration(minutes: 5),
+    maxAttempts: 30,
+    window: const Duration(minutes: 10),
   );
 }

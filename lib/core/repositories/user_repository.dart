@@ -2,12 +2,18 @@ import 'package:flutter/foundation.dart';
 import '../supabase_service.dart';
 import '../cache_service.dart';
 import '../models.dart';
+import '../storage_service.dart';
 
 class UserRepository {
   final SupabaseService _supabaseService;
+  final StorageService _storageService;
   final CacheService _cacheService;
 
-  UserRepository(this._supabaseService, this._cacheService);
+  UserRepository(
+    this._supabaseService,
+    this._storageService,
+    this._cacheService,
+  );
 
   Future<Map<String, dynamic>?> getProfile() async {
     try {
@@ -105,6 +111,21 @@ class UserRepository {
       _supabaseService.joinCircle(circleId);
 
   Future<void> deleteAccountData() => _supabaseService.deleteAccountData();
+
+  Future<String?> uploadProfilePhoto(String profileId, Uint8List bytes) async {
+    try {
+      final url = await _storageService.uploadProfilePhoto(profileId, bytes);
+      if (url != null) {
+        await _supabaseService.updateProfileData(profileId, {
+          'avatar_url': url,
+        });
+      }
+      return url;
+    } catch (e) {
+      debugPrint('Error uploading profile photo: $e');
+      return null;
+    }
+  }
 
   Future<String> generateShareLink() => _supabaseService.generateShareLink();
 }

@@ -110,8 +110,10 @@ class UserProfile {
   final String lastName; // Optional in UI, but good for model
   final String relationship; // 'Self', 'Spouse', 'Child', 'Parent', 'Other'
   final String avatarColor; // Hex string e.g. "0xFF123456"
+  final String? avatarUrl;
   final DateTime? dateOfBirth;
   final String gender; // 'Male', 'Female', 'Other'
+  final List<String> conditions;
 
   UserProfile({
     required this.id,
@@ -120,8 +122,10 @@ class UserProfile {
     this.lastName = '',
     this.relationship = 'Self',
     this.avatarColor = '0xFF2196F3', // Default Blue
+    this.avatarUrl,
     this.dateOfBirth,
     this.gender = 'Other',
+    this.conditions = const [],
   });
 
   String get fullName => '$firstName $lastName'.trim();
@@ -134,8 +138,10 @@ class UserProfile {
       lastName: json['last_name'] ?? '',
       relationship: json['relationship'] ?? 'Self',
       avatarColor: json['avatar_color'] ?? '0xFF2196F3',
+      avatarUrl: json['avatar_url'],
       dateOfBirth: DateTime.tryParse(json['date_of_birth'] ?? ''),
       gender: json['gender'] ?? 'Other',
+      conditions: List<String>.from(json['conditions'] ?? []),
     );
   }
 
@@ -147,8 +153,10 @@ class UserProfile {
       'last_name': lastName,
       'relationship': relationship,
       'avatar_color': avatarColor,
+      'avatar_url': avatarUrl,
       'date_of_birth': dateOfBirth?.toIso8601String(),
       'gender': gender,
+      'conditions': conditions,
     };
   }
 }

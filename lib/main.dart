@@ -15,7 +15,6 @@ import 'core/notification_service.dart';
 import 'core/cache_service.dart';
 import 'core/services/session_timeout_manager.dart';
 import 'core/services/log_service.dart';
-import 'core/services/rls_verification_service.dart';
 import 'package:flutter_windowmanager/flutter_windowmanager.dart';
 import 'package:flutter/foundation.dart';
 import 'features/splash/splash_page.dart';
@@ -38,14 +37,14 @@ void main() {
   );
 }
 
-class AppEntryPoint extends StatefulWidget {
+class AppEntryPoint extends ConsumerStatefulWidget {
   const AppEntryPoint({super.key});
 
   @override
-  State<AppEntryPoint> createState() => _AppEntryPointState();
+  ConsumerState<AppEntryPoint> createState() => _AppEntryPointState();
 }
 
-class _AppEntryPointState extends State<AppEntryPoint> {
+class _AppEntryPointState extends ConsumerState<AppEntryPoint> {
   bool _isInitialized = false;
   String _status = 'Initializing...';
   String? _error;
@@ -137,7 +136,7 @@ class _AppEntryPointState extends State<AppEntryPoint> {
 
   /// Set up RLS verification to run when user authenticates
   void _setupRlsVerification() {
-    final rlsService = RlsVerificationService(Supabase.instance.client);
+    final rlsService = ref.read(rlsVerificationServiceProvider);
 
     // Verify RLS when user authenticates
     Supabase.instance.client.auth.onAuthStateChange.listen((data) async {

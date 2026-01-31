@@ -10,6 +10,7 @@ import 'mfa_setup_dialog.dart';
 import 'data_export_service.dart';
 import '../../widgets/glass_card.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../security/security_dashboard_page.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -108,6 +109,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isSaving = true);
     try {
       await ref.read(userRepositoryProvider).updateProfile(_getProfileData());
@@ -145,18 +148,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       setState(() => _isUploadingPhoto = true);
 
       final bytes = await image.readAsBytes();
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) return;
+
       final publicUrl = await ref
-          .read(storageServiceProvider)
-          .uploadProfilePhoto(bytes);
+          .read(userRepositoryProvider)
+          .uploadProfilePhoto(userId, bytes);
 
       if (publicUrl != null) {
-        final profileData = _getProfileData();
-        profileData['avatar_url'] = publicUrl;
-
-        await ref.read(userRepositoryProvider).updateProfile(profileData);
+        setState(() => _avatarUrl = publicUrl);
         ref.invalidate(userProfileProvider);
         ref.invalidate(userProfileStreamProvider);
-        setState(() => _avatarUrl = publicUrl);
+        ref.invalidate(userProfilesProvider);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -486,13 +489,27 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             const SizedBox(height: 32),
             _buildProfilePhotoRow(),
             const SizedBox(height: 32),
-            _buildTextField('First Name', _firstNameController),
+            _buildTextField(
+              'First Name',
+              _firstNameController,
+              validator: ref.read(inputValidationServiceProvider).validateName,
+            ),
             const SizedBox(height: 20),
-            _buildTextField('Last Name', _lastNameController),
+            _buildTextField(
+              'Last Name',
+              _lastNameController,
+              validator: ref.read(inputValidationServiceProvider).validateName,
+            ),
             const SizedBox(height: 20),
             _buildReadOnlyField('Email Address', _email),
             const SizedBox(height: 20),
-            _buildTextField('Phone Number', _phoneController),
+            _buildTextField(
+              'Phone Number',
+              _phoneController,
+              validator: (val) => ref
+                  .read(inputValidationServiceProvider)
+                  .validateRequired(val, fieldName: 'Phone Number'),
+            ),
             const SizedBox(height: 20),
             _buildEditableField(
               'Date of Birth',
@@ -521,16 +538,34 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             Row(
               children: [
                 Expanded(
-                  child: _buildTextField('State / Province', _stateController),
+                  child: _buildTextField(
+                    'State / Province',
+                    _stateController,
+                    validator: (val) => ref
+                        .read(inputValidationServiceProvider)
+                        .validateRequired(val, fieldName: 'State'),
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: _buildTextField('Postal Code', _postalCodeController),
+                  child: _buildTextField(
+                    'Postal Code',
+                    _postalCodeController,
+                    validator: (val) => ref
+                        .read(inputValidationServiceProvider)
+                        .validateRequired(val, fieldName: 'Postal Code'),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            _buildTextField('Country', _countryController),
+            _buildTextField(
+              'Country',
+              _countryController,
+              validator: (val) => ref
+                  .read(inputValidationServiceProvider)
+                  .validateRequired(val, fieldName: 'Country'),
+            ),
             const SizedBox(height: 40),
             SizedBox(
               width: double.infinity,
@@ -591,9 +626,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             radius: 40,
             backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
                 ? NetworkImage(_avatarUrl!)
-                : const NetworkImage('https://via.placeholder.com/150'),
+                : null,
             backgroundColor: const Color(0xFFF3F4F6),
-            child: _isUploadingPhoto ? const CircularProgressIndicator() : null,
+            child: _isUploadingPhoto
+                ? const CircularProgressIndicator()
+                : (_avatarUrl == null || _avatarUrl!.isEmpty)
+                ? Text(
+                    (_firstNameController.text.isNotEmpty
+                            ? _firstNameController.text[0]
+                            : 'U')
+                        .toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  )
+                : null,
           ),
         ),
         const SizedBox(width: 24),
@@ -653,7 +702,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller) {
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
+    String? Function(String?)? validator,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -671,6 +724,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           padding: EdgeInsets.zero,
           child: TextFormField(
             controller: controller,
+            validator: validator,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             style: const TextStyle(fontWeight: FontWeight.w500),
             decoration: const InputDecoration(
               contentPadding: EdgeInsets.symmetric(
@@ -680,6 +735,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               border: InputBorder.none,
               focusedBorder: InputBorder.none,
               enabledBorder: InputBorder.none,
+              errorStyle: TextStyle(height: 0.8), // Compact error
             ),
           ),
         ),
@@ -800,7 +856,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: AppColors.primary,
+          activeThumbColor: AppColors.primary,
         ),
       ],
     );
@@ -850,7 +906,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               },
             ),
           ],
-          const Divider(height: 48),
           _buildActionRow(
             Icons.delete_rounded,
             'Delete Account',
@@ -858,6 +913,21 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             'Delete',
             isDestructive: true,
             onPressed: _deleteAccount,
+          ),
+          const Divider(height: 48),
+          _buildActionRow(
+            Icons.security_rounded,
+            'Security Dashboard',
+            'Monitor real-time security events and RLS status.',
+            'View',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SecurityDashboardPage(),
+                ),
+              );
+            },
           ),
           const Divider(height: 48),
           _buildSwitchTile(

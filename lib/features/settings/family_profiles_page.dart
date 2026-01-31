@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
@@ -13,7 +14,40 @@ class FamilyProfilesPage extends ConsumerStatefulWidget {
 }
 
 class _FamilyProfilesPageState extends ConsumerState<FamilyProfilesPage> {
-  // bool _isLoading = false; // Unused
+  Future<void> _updateProfilePhoto(UserProfile profile) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+      if (image == null) return;
+
+      final bytes = await image.readAsBytes();
+      final publicUrl = await ref
+          .read(userRepositoryProvider)
+          .uploadProfilePhoto(profile.id, bytes);
+
+      if (publicUrl != null) {
+        ref.invalidate(userProfilesProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile photo updated successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating photo: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   void _showAddProfileDialog() {
     final nameController = TextEditingController();
@@ -423,11 +457,22 @@ class _FamilyProfilesPageState extends ConsumerState<FamilyProfilesPage> {
                       )
                     : null,
                 child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Color(int.parse(profile.avatarColor)),
-                    child: Text(
-                      profile.firstName[0].toUpperCase(),
-                      style: const TextStyle(color: Colors.white),
+                  leading: GestureDetector(
+                    onTap: () => _updateProfilePhoto(profile),
+                    child: Hero(
+                      tag: 'profile_${profile.id}',
+                      child: CircleAvatar(
+                        backgroundColor: Color(int.parse(profile.avatarColor)),
+                        backgroundImage: profile.avatarUrl != null
+                            ? NetworkImage(profile.avatarUrl!)
+                            : null,
+                        child: profile.avatarUrl == null
+                            ? Text(
+                                profile.firstName[0].toUpperCase(),
+                                style: const TextStyle(color: Colors.white),
+                              )
+                            : null,
+                      ),
                     ),
                   ),
                   title: Text(
@@ -454,7 +499,7 @@ class _FamilyProfilesPageState extends ConsumerState<FamilyProfilesPage> {
                               value: 'select',
                               child: Text('Switch to this Profile'),
                             ),
-                          if (profile.relationship != 'Self')
+                          if (profile.id != profile.userId)
                             const PopupMenuItem(
                               value: 'delete',
                               child: Text(

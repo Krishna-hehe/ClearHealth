@@ -85,6 +85,8 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
     // Gather Context
     final labResults = ref.read(labResultsProvider).value ?? [];
     final prescriptions = ref.read(prescriptionsProvider).value ?? [];
+    final selectedProfile = ref.read(selectedProfileProvider).value;
+    final conditions = selectedProfile?.conditions ?? [];
 
     // Filter Abnormal Labs
     final abnormalLabs = <Map<String, dynamic>>[];
@@ -126,6 +128,7 @@ class _HealthChatPageState extends ConsumerState<HealthChatPage> {
         healthContext: {
           'abnormal_labs': abnormalLabs,
           'active_prescriptions': activePrescriptions,
+          'known_conditions': conditions,
         },
       );
       if (!mounted) return;

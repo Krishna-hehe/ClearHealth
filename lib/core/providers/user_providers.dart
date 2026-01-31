@@ -7,7 +7,11 @@ import '../models.dart';
 import '../repositories/medication_repository.dart';
 
 final userRepositoryProvider = Provider<UserRepository>((ref) {
-  return UserRepository(ref.watch(supabaseServiceProvider), CacheService());
+  return UserRepository(
+    ref.watch(supabaseServiceProvider),
+    ref.watch(storageServiceProvider),
+    CacheService(),
+  );
 });
 
 // Phase 3: List of all family profiles

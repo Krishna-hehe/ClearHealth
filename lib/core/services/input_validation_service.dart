@@ -69,6 +69,28 @@ class InputValidationService {
     }
     return null;
   }
+
+  /// Validates a name (letters, spaces, hyphens only)
+  String? validateName(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Name is required';
+    if (!RegExp(r'^[a-zA-Z\s-]+$').hasMatch(value)) {
+      return 'Name must contain only letters, spaces, or hyphens';
+    }
+    return null;
+  }
+
+  /// Detects potential SQL injection patterns
+  /// Returns true if risky patterns are found
+  bool containsSqlInjection(String value) {
+    final upper = value.toUpperCase();
+    return upper.contains('DROP TABLE') ||
+        upper.contains('SELECT *') ||
+        upper.contains('UNION SELECT') ||
+        upper.contains('DELETE FROM') ||
+        upper.contains('UPDATE SET') ||
+        upper.contains('INSERT INTO') ||
+        upper.contains('WHERE 1=1');
+  }
 }
 
 final inputValidationServiceProvider = Provider<InputValidationService>((ref) {

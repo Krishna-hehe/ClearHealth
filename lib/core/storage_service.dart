@@ -1,16 +1,29 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'services/rate_limiter_service.dart';
 
 class StorageService {
   final SupabaseClient _supabase;
+  final RateLimiterService _rateLimiter;
 
-  StorageService(this._supabase);
+  StorageService(this._supabase, this._rateLimiter);
 
   Future<String?> uploadLabReport(Uint8List bytes, String fileName) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return null;
+
+      // Rate Limit: 10 uploads per 5 mins
+      final limitKey = 'upload_$userId';
+      final waitTime = _rateLimiter.checkLimit(
+        limitKey,
+        limit: 10,
+        window: const Duration(minutes: 5),
+      );
+      if (waitTime != null) {
+        throw 'Upload limit reached. Retry in ${waitTime.inMinutes + 1} min.';
+      }
 
       final path = '$userId/${DateTime.now().millisecondsSinceEpoch}_$fileName';
 
@@ -32,15 +45,26 @@ class StorageService {
     }
   }
 
-  Future<String?> uploadProfilePhoto(Uint8List bytes) async {
+  Future<String?> uploadProfilePhoto(String profileId, Uint8List bytes) async {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) throw Exception('User not logged in');
+
+    // Rate Limit
+    final limitKey = 'upload_$userId';
+    final waitTime = _rateLimiter.checkLimit(
+      limitKey,
+      limit: 10,
+      window: const Duration(minutes: 5),
+    );
+    if (waitTime != null) {
+      throw 'Upload limit reached. Retry in ${waitTime.inMinutes + 1} min.';
+    }
 
     // Compress
     final compressedBytes = await _compressImage(bytes);
 
-    // Use userId as folder to match RLS: (storage.foldername(name))[1] == auth.uid()
-    final path = '$userId/profile.jpg';
+    // Use profileId for distinct photos
+    final path = '$userId/profiles/$profileId.jpg';
 
     await _supabase.storage
         .from('profiles')
@@ -60,6 +84,17 @@ class StorageService {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return null;
+
+      // Rate Limit
+      final limitKey = 'upload_$userId';
+      final waitTime = _rateLimiter.checkLimit(
+        limitKey,
+        limit: 10,
+        window: const Duration(minutes: 5),
+      );
+      if (waitTime != null) {
+        throw 'Upload limit reached. Retry in ${waitTime.inMinutes + 1} min.';
+      }
 
       final compressedBytes = await _compressImage(bytes);
 

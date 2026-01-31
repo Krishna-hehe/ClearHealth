@@ -46,6 +46,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     try {
       final validator = ref.read(inputValidationServiceProvider);
 
+      // Rate Limiting (5 attempts / 15 mins)
+      final rateLimiter = ref.read(rateLimiterProvider);
+      final waitTime = rateLimiter.checkLimit(
+        'login_attempt',
+        limit: 5,
+        window: const Duration(minutes: 15),
+      );
+      if (waitTime != null) {
+        throw 'Too many login attempts. Please try again in ${waitTime.inMinutes + 1} minutes.';
+      }
+
       final emailError = validator.validateEmail(_emailController.text.trim());
       if (emailError != null) throw emailError;
 

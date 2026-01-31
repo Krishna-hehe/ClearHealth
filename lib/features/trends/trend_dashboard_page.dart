@@ -7,7 +7,6 @@ import 'widgets/ai_insight_card.dart';
 import 'widgets/marker_stat_card.dart';
 import '../../core/providers.dart';
 import '../../core/models.dart';
-import '../../core/services/trend_analysis_service.dart';
 
 class TrendDashboardPage extends ConsumerStatefulWidget {
   const TrendDashboardPage({super.key});
@@ -44,7 +43,10 @@ class _TrendDashboardPageState extends ConsumerState<TrendDashboardPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(content: Text('Error loading data: $e'), backgroundColor: AppColors.danger),
+          SnackBar(
+            content: Text('Error loading data: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -56,14 +58,17 @@ class _TrendDashboardPageState extends ConsumerState<TrendDashboardPage> {
   Widget build(BuildContext context) {
     // Prepare data for chart
     final trendService = ref.watch(trendAnalysisServiceProvider);
-    final normalizedData = _normalizeData 
+    final normalizedData = _normalizeData
         ? trendService.normalizeData(_loadedData)
         : null; // Chart widget handles raw vs normalized
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: const Text('Advanced Analytics', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Advanced Analytics',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -89,7 +94,11 @@ class _TrendDashboardPageState extends ConsumerState<TrendDashboardPage> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4)),
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
                 ],
               ),
               child: Column(
@@ -97,14 +106,24 @@ class _TrendDashboardPageState extends ConsumerState<TrendDashboardPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Health Trajectory', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const Text(
+                        'Health Trajectory',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
                       if (_selectedMarkers.length > 1)
                         Row(
                           children: [
-                            const Text('Normalize', style: TextStyle(fontSize: 12)),
+                            const Text(
+                              'Normalize',
+                              style: TextStyle(fontSize: 12),
+                            ),
                             Switch(
-                              value: _normalizeData, 
-                              onChanged: (v) => setState(() => _normalizeData = v),
+                              value: _normalizeData,
+                              onChanged: (v) =>
+                                  setState(() => _normalizeData = v),
                               activeThumbColor: AppColors.primary,
                             ),
                           ],
@@ -114,14 +133,19 @@ class _TrendDashboardPageState extends ConsumerState<TrendDashboardPage> {
                   const SizedBox(height: 24),
                   SizedBox(
                     height: 300,
-                    child: _isLoading 
-                      ? const Center(child: CircularProgressIndicator())
-                      : _selectedMarkers.isEmpty 
-                        ? const Center(child: Text('Select markers to compare', style: TextStyle(color: Colors.grey)))
+                    child: _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _selectedMarkers.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Select markers to compare',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          )
                         : MultiTrendChart(
-                            data: _loadedData, 
+                            data: _loadedData,
                             normalizedData: normalizedData,
-                            isNormalized: _normalizeData
+                            isNormalized: _normalizeData,
                           ),
                   ),
                 ],
@@ -140,7 +164,10 @@ class _TrendDashboardPageState extends ConsumerState<TrendDashboardPage> {
                   itemCount: _selectedMarkers.length,
                   itemBuilder: (context, index) {
                     final marker = _selectedMarkers[index];
-                    final stats = trendService.calculateStats(_loadedData[marker] ?? [], marker);
+                    final stats = trendService.calculateStats(
+                      _loadedData[marker] ?? [],
+                      marker,
+                    );
                     return MarkerStatCard(stats: stats);
                   },
                 ),
@@ -148,10 +175,7 @@ class _TrendDashboardPageState extends ConsumerState<TrendDashboardPage> {
               const SizedBox(height: 32),
             ],
             if (_selectedMarkers.length > 1 && !_isLoading)
-               AiInsightCard(
-                 data: _loadedData,
-                 markers: _selectedMarkers,
-               ),
+              AiInsightCard(data: _loadedData, markers: _selectedMarkers),
           ],
         ),
       ),
