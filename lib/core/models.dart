@@ -164,6 +164,7 @@ class Medication {
   final DateTime? endDate;
   final List<ReminderSchedule>? schedules;
   final String? imageUrl;
+  final bool isActive;
 
   Medication({
     required this.id,
@@ -176,6 +177,7 @@ class Medication {
     this.endDate,
     this.schedules,
     this.imageUrl,
+    this.isActive = true,
   });
 
   factory Medication.fromJson(Map<String, dynamic> json) {
@@ -192,12 +194,12 @@ class Medication {
           ?.map((s) => ReminderSchedule.fromJson(s))
           .toList(),
       imageUrl: json['image_url'],
+      isActive: json['is_active'] ?? true,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
+    final val = <String, dynamic>{
       'user_id': userId,
       'profile_id': profileId,
       'name': name,
@@ -206,7 +208,12 @@ class Medication {
       'start_date': startDate.toIso8601String(),
       'end_date': endDate?.toIso8601String(),
       'image_url': imageUrl,
+      'is_active': isActive,
     };
+    if (id.isNotEmpty) {
+      val['id'] = id;
+    }
+    return val;
   }
 }
 

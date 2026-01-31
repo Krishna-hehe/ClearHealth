@@ -47,22 +47,24 @@ class UploadController extends StateNotifier<UploadState> {
       final fileName = file.name;
       final mimeType = lookupMimeType(fileName) ?? 'image/jpeg';
 
-      state = state.copyWith(status: 'Uploading to storage...');
+      state = state.copyWith(status: 'Uploading & Analyzing...');
 
-      // 1. Upload to Storage
-      final storagePath = await _ref
+      // Run parallel tasks:
+      // 1. Upload to Storage (compressed automatically by service)
+      final uploadFuture = _ref
           .read(storageServiceProvider)
           .uploadLabReport(bytes, fileName);
 
-      if (storagePath == null) throw Exception('Failed to upload to storage');
-
-      state = state.copyWith(status: 'AI parsing document...');
-
       // 2. AI Parse (Gemini Vision)
-      final parsedData = await _ref
+      final parseFuture = _ref
           .read(aiServiceProvider)
           .parseLabReport(bytes, mimeType);
 
+      final results = await Future.wait([uploadFuture, parseFuture]);
+      final storagePath = results[0] as String?;
+      final parsedData = results[1] as Map<String, dynamic>?;
+
+      if (storagePath == null) throw Exception('Failed to upload to storage');
       if (parsedData == null) {
         throw Exception(
           'AI failed to parse the document. Please try a clearer photo.',

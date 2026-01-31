@@ -14,11 +14,14 @@ class StorageService {
 
       final path = '$userId/${DateTime.now().millisecondsSinceEpoch}_$fileName';
 
+      // Compress image if possible to speed up upload
+      final compressedBytes = await _compressImage(bytes);
+
       await _supabase.storage
           .from('lab-reports')
           .uploadBinary(
             path,
-            bytes,
+            compressedBytes,
             fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
           );
 

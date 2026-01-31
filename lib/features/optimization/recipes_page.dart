@@ -13,6 +13,20 @@ class RecipesPage extends ConsumerStatefulWidget {
 class _RecipesPageState extends ConsumerState<RecipesPage> {
   String _filter = 'All'; // 'All', 'Veg', 'Non-Veg'
 
+  List<String> _parseIngredients(dynamic input) {
+    if (input == null) return [];
+    if (input is List) return input.map((e) => e.toString()).toList();
+    if (input is Map) return input.values.map((e) => e.toString()).toList();
+    if (input is String) return [input.toString()];
+    return [];
+  }
+
+  String _safeString(dynamic input, [String fallback = '']) {
+    if (input == null) return fallback;
+    if (input is String) return input;
+    return input.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     final optimizationAsync = ref.watch(optimizationTipsProvider);
@@ -43,17 +57,20 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
                 return _buildEmptyState();
               }
 
-              final filteredTips = _filter == 'All' 
-                  ? tips 
+              final filteredTips = _filter == 'All'
+                  ? tips
                   : tips.where((t) => (t['type'] ?? 'Veg') == _filter).toList();
 
               if (filteredTips.isEmpty) {
-                 return SizedBox(
-                   height: 300,
-                   child: Center(
-                     child: Text('No $_filter recommendations found.', style: const TextStyle(color: AppColors.secondary)),
-                   ),
-                 );
+                return SizedBox(
+                  height: 300,
+                  child: Center(
+                    child: Text(
+                      'No $_filter recommendations found.',
+                      style: const TextStyle(color: AppColors.secondary),
+                    ),
+                  ),
+                );
               }
 
               return GridView.builder(
@@ -63,10 +80,11 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
                   maxCrossAxisExtent: 450,
                   mainAxisSpacing: 24,
                   crossAxisSpacing: 24,
-                  mainAxisExtent: 400, // Slightly taller for tags
+                  mainAxisExtent: 500, // Increased height to prevent overflow
                 ),
                 itemCount: filteredTips.length,
-                itemBuilder: (context, index) => _buildRecipeCard(context, filteredTips[index]),
+                itemBuilder: (context, index) =>
+                    _buildRecipeCard(context, filteredTips[index]),
               );
             },
             loading: () => const Center(
@@ -75,9 +93,8 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
                 child: CircularProgressIndicator(),
               ),
             ),
-            error: (err, stack) => Center(
-              child: Text('Error generating optimization tips: $err'),
-            ),
+            error: (err, stack) =>
+                Center(child: Text('Error generating optimization tips: $err')),
           ),
         ],
       ),
@@ -93,11 +110,7 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
       ),
       padding: const EdgeInsets.all(4),
       child: Row(
-        children: [
-          _buildChip('All'),
-          _buildChip('Veg'),
-          _buildChip('Non-Veg'),
-        ],
+        children: [_buildChip('All'), _buildChip('Veg'), _buildChip('Non-Veg')],
       ),
     );
   }
@@ -130,7 +143,11 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
       child: Column(
         children: [
           const SizedBox(height: 48),
-          Icon(Icons.check_circle_outline, size: 64, color: AppColors.success.withValues(alpha: 0.5)),
+          Icon(
+            Icons.check_circle_outline,
+            size: 64,
+            color: AppColors.success.withValues(alpha: 0.5),
+          ),
           const SizedBox(height: 16),
           const Text(
             'All your lab values are looking great!',
@@ -147,8 +164,8 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
   }
 
   Widget _buildRecipeCard(BuildContext context, Map<String, dynamic> tip) {
-    final ingredients = List<String>.from(tip['ingredients'] ?? []);
-    final type = tip['type'] ?? 'Veg';
+    final ingredients = _parseIngredients(tip['ingredients']);
+    final type = _safeString(tip['type'], 'Veg');
     final isVeg = type == 'Veg';
 
     return Container(
@@ -174,9 +191,9 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: isVeg 
-                  ? [Colors.green.shade400, Colors.green.shade700]
-                  : [Colors.orange.shade400, Colors.deepOrange.shade600],
+                colors: isVeg
+                    ? [Colors.green.shade400, Colors.green.shade700]
+                    : [Colors.orange.shade400, Colors.deepOrange.shade600],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -187,18 +204,32 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
               children: [
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        tip['metric_targeted'] ?? 'General',
-                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            _safeString(tip['metric_targeted'], 'General'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
@@ -215,10 +246,14 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  tip['title'] ?? 'Optimization Tip',
+                  _safeString(tip['title'], 'Optimization Tip'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -230,44 +265,76 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    tip['description'] ?? '',
+                    _safeString(tip['description']),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 14, color: Color(0xFF4B5563), height: 1.5),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF4B5563),
+                      height: 1.5,
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Key Ingredients:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: ingredients.take(3).map((item) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF3F4F6),
-                        borderRadius: BorderRadius.circular(6),
+                  if (ingredients.isNotEmpty) ...[
+                    const Text(
+                      'Key Ingredients:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
-                      child: Text(item, style: const TextStyle(fontSize: 11, color: Color(0xFF374151))),
-                    )).toList(),
-                  ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: ingredients
+                          .take(3)
+                          .map(
+                            (item) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3F4F6),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                item.replaceAll(
+                                  RegExp(r'^\[|\]$'),
+                                  '',
+                                ), // Clean brackets
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF374151),
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ],
                   const Spacer(),
                   const Divider(),
                   Row(
                     children: [
-                      Icon(Icons.flash_on, size: 14, color: isVeg ? Colors.green : Colors.orange),
+                      Icon(
+                        Icons.flash_on,
+                        size: 14,
+                        color: isVeg ? Colors.green : Colors.orange,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          tip['benefit'] ?? '',
+                          _safeString(tip['benefit']),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 12, 
-                            fontWeight: FontWeight.bold, 
-                            color: isVeg ? Colors.green : Colors.orange
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isVeg ? Colors.green : Colors.orange,
                           ),
                         ),
                       ),
@@ -287,17 +354,20 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
   }
 
   void _showRecipeDetails(BuildContext context, Map<String, dynamic> tip) {
-    final type = tip['type'] ?? 'Veg';
+    final type = _safeString(tip['type'], 'Veg');
     final isVeg = type == 'Veg';
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.restaurant_menu, color: isVeg ? Colors.green : Colors.deepOrange),
+            Icon(
+              Icons.restaurant_menu,
+              color: isVeg ? Colors.green : Colors.deepOrange,
+            ),
             const SizedBox(width: 12),
-            Expanded(child: Text(tip['title'] ?? 'Recipe Details')),
+            Expanded(child: Text(_safeString(tip['title'], 'Recipe Details'))),
           ],
         ),
         content: SizedBox(
@@ -308,11 +378,20 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: isVeg ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
+                    color: isVeg
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: isVeg ? Colors.green.withValues(alpha: 0.3) : Colors.orange.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: isVeg
+                          ? Colors.green.withValues(alpha: 0.3)
+                          : Colors.orange.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Text(
                     type,
@@ -324,24 +403,42 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(tip['description'] ?? '', style: const TextStyle(fontSize: 14, height: 1.5)),
+                Text(
+                  _safeString(tip['description']),
+                  style: const TextStyle(fontSize: 14, height: 1.5),
+                ),
                 const SizedBox(height: 24),
-                const Text('Ingredients', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text(
+                  'Ingredients',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
                 const SizedBox(height: 8),
-                ...List<String>.from(tip['ingredients'] ?? []).map((item) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.fiber_manual_record, size: 8, color: AppColors.primary),
-                      const SizedBox(width: 12),
-                      Text(item),
-                    ],
+                ..._parseIngredients(tip['ingredients']).map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.fiber_manual_record,
+                          size: 8,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(item),
+                      ],
+                    ),
                   ),
-                )),
+                ),
                 const SizedBox(height: 24),
-                const Text('Instructions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text(
+                  'Instructions',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
                 const SizedBox(height: 12),
-                Text(tip['instructions'] ?? '', style: const TextStyle(fontSize: 14, height: 1.6)),
+                Text(
+                  _safeString(tip['instructions']),
+                  style: const TextStyle(fontSize: 14, height: 1.6),
+                ),
               ],
             ),
           ),

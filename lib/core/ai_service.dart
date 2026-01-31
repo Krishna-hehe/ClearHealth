@@ -101,10 +101,20 @@ class AiService {
   }
 
   String _sanitizeInput(String input) {
+    // 1. Length Check
     if (input.length > 2000) {
-      return input.substring(0, 2000);
+      input = input.substring(0, 2000);
     }
-    return input;
+    // 2. Strip Control Characters (keep newlines/tabs)
+    // This removes non-printable characters unless they are standard whitespace
+    input = input.replaceAll(RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F]'), '');
+
+    // 3. Basic "Prompt Injection" keywords check (Simplistic, for obvious attacks)
+    // We don't want to block medical terms, but we can check for strict system overrides
+    // This is optional and simplistic.
+    // if (input.toLowerCase().contains("ignore previous instructions")) ...
+
+    return input.trim();
   }
 
   /// Generates a unique cache key based on operation name and input data hash
@@ -241,6 +251,13 @@ class AiService {
     required String testName,
     required List<Map<String, dynamic>> history,
   }) async {
+    if (!_rateLimiter.canRequest()) {
+      return {
+        'direction': 'Stable',
+        'change_percent': '--',
+        'analysis': 'Rate limit exceeded. Please try again later.',
+      };
+    }
     if (history.length < 2) {
       return {
         'direction': 'Stable',
@@ -301,6 +318,9 @@ class AiService {
     required Map<String, List<Map<String, dynamic>>> data,
     required List<String> markers,
   }) async {
+    if (!_rateLimiter.canRequest()) {
+      return 'Rate limit exceeded. Please wait a moment.';
+    }
     if (markers.isEmpty) return 'No markers selected for correlation analysis.';
 
     final minifiedData = <String, List<Map<String, dynamic>>>{};
@@ -364,6 +384,7 @@ class AiService {
   Future<List<Map<String, dynamic>>> getOptimizationTips(
     List<Map<String, dynamic>> abnormalTests,
   ) async {
+    if (!_rateLimiter.canRequest()) return [];
     if (abnormalTests.isEmpty) return [];
 
     // Minimize input
@@ -427,6 +448,7 @@ class AiService {
   Future<List<Map<String, dynamic>>> getWellnessTips(
     List<Map<String, dynamic>> recentNormalTests,
   ) async {
+    if (!_rateLimiter.canRequest()) return [];
     if (recentNormalTests.isEmpty) {
       // If no data at all, return generic healthy living tips
       return [
@@ -497,6 +519,7 @@ class AiService {
   Future<List<Map<String, dynamic>>> getHealthPredictions(
     List<Map<String, dynamic>> fullHistory,
   ) async {
+    if (!_rateLimiter.canRequest()) return [];
     if (fullHistory.length < 2) return [];
 
     final recentHistory = fullHistory.take(5).toList();
@@ -554,6 +577,9 @@ class AiService {
     List<Map<String, dynamic>> tests, {
     UserProfile? profile,
   }) async {
+    if (!_rateLimiter.canRequest()) {
+      return 'System is busy (Rate Limit). Please try again in 1 minute.';
+    }
     if (tests.isEmpty) {
       return 'No lab results available.';
     }

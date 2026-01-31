@@ -104,8 +104,10 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage>
       dosage: medication.dosage,
       frequency: medication.frequency,
       startDate: medication.startDate,
-      endDate: DateTime.now().subtract(const Duration(days: 1)),
+      endDate: DateTime.now(),
       schedules: medication.schedules,
+      isActive: false,
+      imageUrl: medication.imageUrl,
     );
 
     try {
@@ -164,14 +166,8 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage>
     );
   }
 
-  bool _isActive(Medication m) {
-    final now = DateTime.now();
-    if (m.endDate == null) return true;
-    return m.endDate!.isAfter(now.subtract(const Duration(days: 1)));
-  }
-
   Widget _buildPrescriptionList(bool active) {
-    final filtered = _medications.where((m) => _isActive(m) == active).toList();
+    final filtered = _medications.where((m) => m.isActive == active).toList();
 
     if (filtered.isEmpty) {
       return Center(
@@ -448,11 +444,10 @@ class _PrescriptionsPageState extends ConsumerState<PrescriptionsPage>
           ),
           tabs: [
             Tab(
-              text:
-                  'Active (${_medications.where((m) => _isActive(m)).length})',
+              text: 'Active (${_medications.where((m) => m.isActive).length})',
             ),
             Tab(
-              text: 'Past (${_medications.where((m) => !_isActive(m)).length})',
+              text: 'Past (${_medications.where((m) => !m.isActive).length})',
             ),
           ],
         ),

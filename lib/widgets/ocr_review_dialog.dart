@@ -25,9 +25,17 @@ class _OcrReviewDialogState extends ConsumerState<OcrReviewDialog> {
     );
     _dateController = TextEditingController(text: widget.initialData['date']);
     _testResults = List<Map<String, dynamic>>.from(
-      (widget.initialData['test_results'] as List).map(
-        (t) => Map<String, dynamic>.from(t),
-      ),
+      (widget.initialData['test_results'] as List).map((t) {
+        final map = Map<String, dynamic>.from(t);
+        // Normalize keys
+        if (map['name'] == null && map['test_name'] != null) {
+          map['name'] = map['test_name'];
+        }
+        if (map['result'] == null && map['result_value'] != null) {
+          map['result'] = map['result_value'];
+        }
+        return map;
+      }),
     );
   }
 
@@ -80,7 +88,7 @@ class _OcrReviewDialogState extends ConsumerState<OcrReviewDialog> {
                         flex: 3,
                         child: _buildTestField(
                           'Name',
-                          test['name'] ?? test['test_name'],
+                          test['name'],
                           (v) => _testResults[idx]['name'] = v,
                         ),
                       ),
@@ -89,8 +97,7 @@ class _OcrReviewDialogState extends ConsumerState<OcrReviewDialog> {
                         flex: 2,
                         child: _buildTestField(
                           'Result',
-                          test['result']?.toString() ??
-                              test['result_value']?.toString(),
+                          test['result'],
                           (v) => _testResults[idx]['result'] = v,
                         ),
                       ),

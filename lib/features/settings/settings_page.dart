@@ -92,21 +92,25 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     setState(() => _isLoading = false);
   }
 
+  Map<String, dynamic> _getProfileData() {
+    return {
+      'first_name': _firstNameController.text,
+      'last_name': _lastNameController.text,
+      'phone_number': _phoneController.text,
+      'state': _stateController.text,
+      'postal_code': _postalCodeController.text,
+      'country': _countryController.text,
+      'date_of_birth': _dob != 'Not set' ? _dob : null,
+      'gender': _gender != 'Not set' ? _gender : null,
+      'email_notifications': _emailNotifications,
+      'result_reminders': _resultReminders,
+    };
+  }
+
   Future<void> _saveProfile() async {
     setState(() => _isSaving = true);
     try {
-      await ref.read(userRepositoryProvider).updateProfile({
-        'first_name': _firstNameController.text,
-        'last_name': _lastNameController.text,
-        'phone_number': _phoneController.text,
-        'state': _stateController.text,
-        'postal_code': _postalCodeController.text,
-        'country': _countryController.text,
-        'date_of_birth': _dob != 'Not set' ? _dob : null,
-        'gender': _gender != 'Not set' ? _gender : null,
-        'email_notifications': _emailNotifications,
-        'result_reminders': _resultReminders,
-      });
+      await ref.read(userRepositoryProvider).updateProfile(_getProfileData());
       ref.invalidate(userProfileProvider);
       ref.invalidate(userProfileStreamProvider);
       if (mounted) {
@@ -146,9 +150,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           .uploadProfilePhoto(bytes);
 
       if (publicUrl != null) {
-        await ref.read(userRepositoryProvider).updateProfile({
-          'avatar_url': publicUrl,
-        });
+        final profileData = _getProfileData();
+        profileData['avatar_url'] = publicUrl;
+
+        await ref.read(userRepositoryProvider).updateProfile(profileData);
         ref.invalidate(userProfileProvider);
         ref.invalidate(userProfileStreamProvider);
         setState(() => _avatarUrl = publicUrl);
@@ -176,7 +181,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _removePhoto() async {
-    await ref.read(userRepositoryProvider).updateProfile({'avatar_url': null});
+    final profileData = _getProfileData();
+    profileData['avatar_url'] = null;
+
+    await ref.read(userRepositoryProvider).updateProfile(profileData);
     ref.invalidate(userProfileProvider);
     setState(() => _avatarUrl = null);
   }
@@ -321,24 +329,34 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: AppColors.secondary,
+          ),
         ),
         const SizedBox(height: 8),
         InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           child: GlassCard(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            opacity: 0.1,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            opacity: 0.03,
             child: Row(
               children: [
-                Text(
-                  value,
-                  style: const TextStyle(fontSize: 14, color: Colors.black),
+                Expanded(
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
+                  ),
                 ),
                 if (icon != null) ...[
-                  const Spacer(),
-                  Icon(icon, size: 16, color: AppColors.secondary),
+                  const SizedBox(width: 8),
+                  Icon(icon, size: 18, color: AppColors.secondary),
                 ],
               ],
             ),
@@ -355,32 +373,44 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
 
     return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(),
-          const SizedBox(height: 32),
+          const SizedBox(height: 48),
           _buildPersonalInfoSection(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           _buildNotificationsSection(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           _buildPrivacySection(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           _buildSupportSection(),
-          const SizedBox(height: 40),
+          const SizedBox(height: 64),
           Center(
             child: TextButton(
               onPressed: _signOut,
-              child: const Text(
-                'Sign Out',
-                style: TextStyle(
-                  color: AppColors.secondary,
-                  fontWeight: FontWeight.bold,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
                 ),
+                foregroundColor: AppColors.secondary,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.logout_rounded, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Sign Out',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 48),
         ],
       ),
     );
@@ -390,25 +420,41 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     return Row(
       children: [
         GlassCard(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           opacity: 0.1,
-          child: const Icon(
-            Icons.settings,
-            size: 24,
-            color: AppColors.secondary,
+          child: Container(
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  spreadRadius: -5,
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.settings_suggest_rounded,
+              size: 32,
+              color: AppColors.primary,
+            ),
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 24),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
             Text(
               'Settings',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+              ),
             ),
+            SizedBox(height: 4),
             Text(
-              'Manage your account and preferences',
-              style: TextStyle(color: AppColors.secondary, fontSize: 14),
+              'Manage your account & preferences',
+              style: TextStyle(color: AppColors.secondary, fontSize: 16),
             ),
           ],
         ),
@@ -416,6 +462,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
+  // No changes to _buildPersonalInfoSection structure, but it uses the updated widgets.
+  // We can just update the button styling and overall padding.
   Widget _buildPersonalInfoSection() {
     return GlassCard(
       padding: const EdgeInsets.all(24),
@@ -427,82 +475,93 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           children: [
             Row(
               children: const [
-                Icon(
-                  Icons.person_outline,
-                  size: 18,
-                  color: AppColors.secondary,
-                ),
+                Icon(Icons.person_rounded, size: 20, color: AppColors.primary),
                 SizedBox(width: 12),
                 Text(
                   'Personal Information',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             _buildProfilePhotoRow(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             _buildTextField('First Name', _firstNameController),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _buildTextField('Last Name', _lastNameController),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _buildReadOnlyField('Email Address', _email),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _buildTextField('Phone Number', _phoneController),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _buildEditableField(
               'Date of Birth',
               _dob,
-              icon: Icons.calendar_today,
+              icon: Icons.calendar_today_rounded,
               onTap: _pickDate,
             ),
             const SizedBox(height: 8),
             const Text(
-              'Used for age-appropriate reference ranges',
-              style: TextStyle(color: AppColors.secondary, fontSize: 12),
+              'Used to calculate age-appropriate normal ranges.',
+              style: TextStyle(color: AppColors.secondary, fontSize: 13),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _buildEditableField(
               'Gender',
               _gender,
-              icon: Icons.keyboard_arrow_down,
+              icon: Icons.keyboard_arrow_down_rounded,
               onTap: _pickGender,
             ),
             const SizedBox(height: 8),
             const Text(
-              'Used for gender-specific reference ranges',
-              style: TextStyle(color: AppColors.secondary, fontSize: 12),
+              'Used to determine gender-specific reference ranges.',
+              style: TextStyle(color: AppColors.secondary, fontSize: 13),
             ),
             const SizedBox(height: 32),
-            _buildTextField('State / Province', _stateController),
-            const SizedBox(height: 16),
-            _buildTextField('Postal Code', _postalCodeController),
-            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildTextField('State / Province', _stateController),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildTextField('Postal Code', _postalCodeController),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
             _buildTextField('Country', _countryController),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: _isSaving ? null : _saveProfile,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
+            const SizedBox(height: 40),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _saveProfile,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  elevation: 0, // Flat for glass look
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Save Changes',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    )
-                  : const Text('Save Changes'),
+              ),
             ),
           ],
         ),
@@ -513,59 +572,82 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget _buildProfilePhotoRow() {
     return Row(
       children: [
-        CircleAvatar(
-          radius: 35,
-          backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
-              ? NetworkImage(_avatarUrl!)
-              : const NetworkImage('https://via.placeholder.com/150'),
-          backgroundColor: const Color(0xFFF3F4F6),
-          child: _isUploadingPhoto ? const CircularProgressIndicator() : null,
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              width: 3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: CircleAvatar(
+            radius: 40,
+            backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+                ? NetworkImage(_avatarUrl!)
+                : const NetworkImage('https://via.placeholder.com/150'),
+            backgroundColor: const Color(0xFFF3F4F6),
+            child: _isUploadingPhoto ? const CircularProgressIndicator() : null,
+          ),
         ),
         const SizedBox(width: 24),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Profile Photo',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const Text(
-              'JPG, PNG, or WebP up to 5MB.',
-              style: TextStyle(color: AppColors.secondary, fontSize: 12),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                OutlinedButton(
-                  onPressed: _isUploadingPhoto ? null : _uploadPhoto,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Profile Photo',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Update your profile picture.',
+                style: TextStyle(color: AppColors.secondary, fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton(
+                    onPressed: _isUploadingPhoto ? null : _uploadPhoto,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      side: const BorderSide(color: AppColors.border),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    side: const BorderSide(color: AppColors.border),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                    child: const Text(
+                      'Upload New',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
-                  child: const Text(
-                    'Upload Photo',
-                    style: TextStyle(color: AppColors.primary, fontSize: 13),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                TextButton(
-                  onPressed: (_avatarUrl == null || _avatarUrl!.isEmpty)
-                      ? null
-                      : _removePhoto,
-                  child: const Text(
-                    'Remove',
-                    style: TextStyle(color: Colors.red, fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
-          ],
+                  if (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+                    TextButton(
+                      onPressed: _removePhoto,
+                      child: const Text(
+                        'Remove',
+                        style: TextStyle(color: Colors.red, fontSize: 13),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -577,23 +659,27 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: AppColors.secondary,
+          ),
         ),
         const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.border),
+        GlassCard(
+          opacity: 0.03,
+          padding: EdgeInsets.zero,
+          child: TextFormField(
+            controller: controller,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+            decoration: const InputDecoration(
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              border: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              enabledBorder: InputBorder.none,
             ),
           ),
         ),
@@ -607,24 +693,31 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: AppColors.secondary,
+          ),
         ),
         const SizedBox(height: 8),
         GlassCard(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          opacity: 0.05,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          opacity: 0.03,
           child: Row(
             children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.secondary,
+              Expanded(
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.secondary, // Muted for read-only
+                  ),
                 ),
               ),
               if (icon != null) ...[
-                const Spacer(),
-                Icon(icon, size: 16, color: AppColors.secondary),
+                const SizedBox(width: 8),
+                Icon(icon, size: 18, color: AppColors.secondary),
               ],
             ],
           ),
@@ -643,28 +736,28 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           Row(
             children: const [
               Icon(
-                Icons.notifications_none_outlined,
-                size: 18,
-                color: AppColors.secondary,
+                Icons.notifications_rounded,
+                size: 20,
+                color: AppColors.primary,
               ),
               SizedBox(width: 12),
               Text(
                 'Notifications',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
             ],
           ),
           const SizedBox(height: 24),
           _buildSwitchTile(
             'Email Notifications',
-            'Receive updates about new features and tips',
+            'Receive updates about new features and tips.',
             _emailNotifications,
             (val) => setState(() => _emailNotifications = val),
           ),
-          const Divider(height: 32),
+          const Divider(height: 48), // Increased spacing for cleaner look
           _buildSwitchTile(
             'Result Reminders',
-            'Get reminded to check your lab results',
+            'Get reminded to check your latest lab results.',
             _resultReminders,
             (val) => setState(() => _resultReminders = val),
           ),
@@ -688,24 +781,26 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               Text(
                 title,
                 style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
                 ),
               ),
+              const SizedBox(height: 4),
               Text(
                 subtitle,
                 style: const TextStyle(
                   color: AppColors.secondary,
-                  fontSize: 12,
+                  fontSize: 13,
                 ),
               ),
             ],
           ),
         ),
+        const SizedBox(width: 16),
         Switch(
           value: value,
           onChanged: onChanged,
-          activeTrackColor: AppColors.primary,
+          activeColor: AppColors.primary,
         ),
       ],
     );
@@ -720,27 +815,27 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         children: [
           Row(
             children: const [
-              Icon(Icons.shield_outlined, size: 18, color: AppColors.secondary),
+              Icon(Icons.shield_rounded, size: 20, color: AppColors.primary),
               SizedBox(width: 12),
               Text(
                 'Privacy & Security',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
             ],
           ),
           const SizedBox(height: 24),
           _buildActionRow(
-            Icons.file_download_outlined,
+            Icons.file_download_rounded,
             'Export Your Data',
-            'Download all your lab results and account data',
+            'Download all your medical data.',
             'Export',
             onPressed: _exportData,
           ),
           if (_canCheckBiometrics) ...[
-            const Divider(height: 32),
+            const Divider(height: 48),
             _buildSwitchTile(
               'Biometric Lock',
-              'Require FaceID/Fingerprint to open the app',
+              'Require FaceID/Fingerprint to open app.',
               _biometricEnabled,
               (val) async {
                 bool success = true;
@@ -755,19 +850,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               },
             ),
           ],
-          const Divider(height: 32),
+          const Divider(height: 48),
           _buildActionRow(
-            Icons.delete_outline,
+            Icons.delete_rounded,
             'Delete Account',
-            'Permanently delete your account and all data',
+            'Permanently delete account and data.',
             'Delete',
             isDestructive: true,
             onPressed: _deleteAccount,
           ),
-          const Divider(height: 32),
+          const Divider(height: 48),
           _buildSwitchTile(
-            'Two-Factor Authentication (2FA)',
-            'Use an authenticator app to protect your account',
+            'Two-Factor Auth (2FA)',
+            'Use authenticator for extra security.',
             _mfaEnabled,
             (val) async {
               if (val) {
@@ -802,29 +897,33 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         children: [
           Row(
             children: const [
-              Icon(Icons.help_outline, size: 18, color: AppColors.secondary),
+              Icon(
+                Icons.help_center_rounded,
+                size: 20,
+                color: AppColors.primary,
+              ),
               SizedBox(width: 12),
               Text(
                 'Help & Support',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
             ],
           ),
           const SizedBox(height: 24),
           _buildActionRow(
-            Icons.map_outlined,
+            Icons.map_rounded,
             'Take a Tour',
-            'Replay the onboarding walkthrough to see key features',
+            'Replay the onboarding walkthrough.',
             'Start Tour',
             onPressed: () {
               ref.read(showOnboardingProvider.notifier).state = true;
             },
           ),
-          const Divider(height: 32),
+          const Divider(height: 48),
           _buildActionRow(
-            Icons.chat_bubble_outline,
+            Icons.chat_bubble_rounded,
             'Contact Support',
-            'Get help with your account or report an issue',
+            'Get help or report an issue.',
             'Contact',
             onPressed: () {},
           ),
@@ -845,7 +944,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       children: [
         Icon(
           icon,
-          size: 18,
+          size: 20,
           color: isDestructive ? Colors.red : AppColors.secondary,
         ),
         const SizedBox(width: 16),
@@ -856,15 +955,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               Text(
                 title,
                 style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
                 ),
               ),
+              const SizedBox(height: 4),
               Text(
                 subtitle,
                 style: const TextStyle(
                   color: AppColors.secondary,
-                  fontSize: 12,
+                  fontSize: 13,
                 ),
               ),
             ],
@@ -873,15 +973,24 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         OutlinedButton(
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: AppColors.border),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            side: BorderSide(
+              color: isDestructive
+                  ? Colors.red.withValues(alpha: 0.5)
+                  : AppColors.border,
             ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: isDestructive
+                ? Colors.red.withValues(alpha: 0.05)
+                : null,
           ),
           child: Text(
             actionLabel,
             style: TextStyle(
               color: isDestructive ? Colors.red : AppColors.primary,
+              fontWeight: FontWeight.bold,
               fontSize: 13,
             ),
           ),

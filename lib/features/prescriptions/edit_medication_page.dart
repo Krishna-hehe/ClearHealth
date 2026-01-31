@@ -6,6 +6,7 @@ import '../../core/repositories/medication_repository.dart';
 import '../../core/notification_service.dart';
 import '../../core/providers.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:uuid/uuid.dart';
 
 class EditMedicationDialog extends ConsumerStatefulWidget {
   final Medication? medication;
@@ -94,7 +95,7 @@ class _EditMedicationDialogState extends ConsumerState<EditMedicationDialog> {
       setState(() {
         _reminders.add(
           ReminderSchedule(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            id: const Uuid().v4(),
             medicationId: widget.medication?.id ?? '',
             time:
                 '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}',
@@ -134,6 +135,7 @@ class _EditMedicationDialogState extends ConsumerState<EditMedicationDialog> {
         endDate: _endDate,
         schedules: _reminders,
         imageUrl: _imageUrl,
+        isActive: widget.medication?.isActive ?? true,
       );
 
       final repo = ref.read(medicationRepositoryProvider);

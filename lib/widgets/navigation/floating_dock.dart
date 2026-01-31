@@ -176,6 +176,11 @@ class _FloatingDockState extends ConsumerState<FloatingDock> {
         label: 'Ask LabSense',
         navItem: NavItem.healthChat,
       ),
+      _DockItem(
+        icon: FontAwesomeIcons.leaf,
+        label: 'Optimization',
+        navItem: NavItem.healthOptimization,
+      ),
       // Divider-like spacer logic could be added here if needed,
       // but for simplicity we assume action is at end or handled separately.
       _DockItem(
