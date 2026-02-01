@@ -42,12 +42,6 @@ LabSense2 is an advanced, AI-powered health management platform designed to help
 - **Encrypted Storage**: All sensitive data encrypted at rest and in transit
 - **Audit Logging**: Comprehensive security event tracking
 
-#### Security Services (Ready for Integration)
-
-- **Input Validation**: SQL injection and XSS protection on all user inputs
-- **Rate Limiting**: Brute-force attack prevention on login and API endpoints
-- **Content Security Policy**: Strict CSP headers to prevent XSS attacks
-
 **Security Score**: 65/100 (Target: 85/100 after full integration)
 
 See [Security Documentation](docs/SECURITY_INTEGRATION_GUIDE.md) for details.
@@ -180,41 +174,6 @@ docs/
 
    flutter run -d android
    ```
-
-## 🔒 Security Features
-
-### Active Security Measures
-
-1. **RLS Verification** ✅
-   - Automatic verification on user login
-   - Tests 3 critical tables: `lab_results`, `profiles`, `prescriptions`
-   - Logs security status to console
-   - See logs: "🔐 User authenticated - verifying RLS policies..."
-
-2. **Biometric Authentication** ✅
-   - Fingerprint/Face ID support
-   - Secure local authentication
-   - Fallback to PIN/Password
-
-3. **Session Security** ✅
-   - Automatic timeout after inactivity
-   - Secure token management
-   - Session hijacking prevention
-
-### Pending Integration (Phase 2-3)
-
-1. **Input Validation** ⏳
-   - SQL injection prevention
-   - XSS attack prevention
-   - Comprehensive sanitization
-
-2. **Rate Limiting** ⏳
-   - Login: 5 attempts / 15 minutes
-   - File uploads: 10 / 5 minutes
-   - AI queries: 20 / 5 minutes
-
-See [Security Integration Progress](docs/SECURITY_INTEGRATION_PROGRESS.md) for status.
-
 ## 📱 Platform Support
 
 - ✅ **Web**: Chrome, Firefox, Safari, Edge
