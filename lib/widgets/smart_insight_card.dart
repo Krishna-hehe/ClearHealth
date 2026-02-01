@@ -22,7 +22,7 @@ class SmartInsightCard extends ConsumerWidget {
           margin: const EdgeInsets.only(bottom: 24),
           opacity: isDark ? 0.15 : 0.7,
           tintColor: isDark
-              ? const Color(0xFF1E293B) // Deep Blue tint
+              ? const Color.fromARGB(255, 11, 21, 37) // Deep Blue tint
               : Colors.white,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
