@@ -1,0 +1,116 @@
+# CodeRabbit Configuration for LabSense2
+# Flutter/Dart Health Application
+# https://docs.coderabbit.ai/configuration
+
+language: "en"
+
+# Review settings
+reviews:
+  # Enable automatic reviews on all PRs
+  auto_review:
+    enabled: true
+    drafts: false  # Don't review draft PRs
+
+  # High-priority review areas
+  high_level_summary: true
+  poem: false  # Disable poem summaries (keep professional)
+  
+  # Review depth
+  review_status: true
+  collapse_walkthrough: false
+  
+  # Path-based review configuration
+  path_instructions:
+    - path: "lib/features/auth/**"
+      instructions: |
+        This is authentication code for a health application.
+        CRITICAL: Check for security vulnerabilities, proper error handling,
+        and HIPAA compliance considerations. Verify secure token handling
+        and user session management.
+    
+    - path: "lib/core/services/**"
+      instructions: |
+        Core services layer. Ensure proper dependency injection patterns,
+        error handling, and null safety. Check for memory leaks in
+        stream subscriptions.
+    
+    - path: "lib/features/**/widgets/**"
+      instructions: |
+        UI components. Check for:
+        - Proper state management
+        - Widget disposal and cleanup
+        - Accessibility considerations
+        - Responsive design patterns
+    
+    - path: "lib/core/models/**"
+      instructions: |
+        Data models. Verify:
+        - Null safety
+        - JSON serialization correctness
+        - Immutability where appropriate
+        - copyWith implementations
+
+    - path: "test/**"
+      instructions: |
+        Test files. Ensure:
+        - Proper test coverage
+        - Meaningful assertions
+        - AAA pattern (Arrange, Act, Assert)
+        - Edge case coverage
+
+# Files/paths to ignore
+path_filters:
+  # Build artifacts
+  - "!build/**"
+  - "!.dart_tool/**"
+  
+  # Generated files
+  - "!**/*.g.dart"
+  - "!**/*.freezed.dart"
+  - "!**/*.gr.dart"
+  - "!**/generated/**"
+  
+  # Dependencies
+  - "!pubspec.lock"
+  
+  # IDE files
+  - "!.idea/**"
+  - "!.vscode/**"
+  
+  # Temporary files
+  - "!**/*.txt"
+  - "!build_*/**"
+
+# Chat settings
+chat:
+  auto_reply: true
+
+# Early access features
+early_access: true
+
+# Custom review instructions
+instructions: |
+  ## LabSense2 Health App Review Guidelines
+  
+  ### Framework & Language
+  - This is a Flutter/Dart application
+  - Uses Supabase for backend
+  - Follows clean architecture patterns
+  
+  ### Priority Focus Areas
+  1. **Security**: Health data handling, authentication, API security
+  2. **Null Safety**: Proper null checks and optional handling
+  3. **Performance**: Widget rebuilds, memory management
+  4. **Error Handling**: Try-catch blocks, user-friendly errors
+  5. **Code Quality**: DRY principles, proper naming conventions
+  
+  ### Dart/Flutter Specific
+  - Check for BuildContext usage across async gaps
+  - Verify proper dispose() implementations
+  - Ensure streams are properly closed
+  - Check for proper use of const constructors
+  
+  ### Health App Considerations
+  - Medical data must be handled securely
+  - Error messages should not expose sensitive information
+  - Input validation for health-related data

@@ -1,6 +1,6 @@
-// ignore_for_file: avoid_print
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:lab_sense_app/core/utils/exceptions.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -15,16 +15,18 @@ import 'core/notification_service.dart';
 import 'core/cache_service.dart';
 import 'core/services/session_timeout_manager.dart';
 import 'core/services/log_service.dart';
-import 'package:flutter_windowmanager/flutter_windowmanager.dart';
+// import 'package:flutter_windowmanager/flutter_windowmanager.dart';
 import 'package:flutter/foundation.dart';
 import 'features/splash/splash_page.dart';
 import 'features/share/doctor_view_page.dart';
 
-void main() {
+void main() async {
+  // Ensure binding initialized before anything else
+  WidgetsFlutterBinding.ensureInitialized();
+
   runZonedGuarded(
     () {
-      WidgetsFlutterBinding.ensureInitialized();
-      // Start the app immediately with a loading state
+      // Start the app
       runApp(const ProviderScope(child: AppEntryPoint()));
     },
     (error, stack) {
@@ -86,6 +88,9 @@ class _AppEntryPointState extends ConsumerState<AppEntryPoint> {
           anonKey: SupabaseConfig.anonKey,
         );
         AppLogger.info('✅ Supabase initialized');
+
+        // Verify RLS
+        await ref.read(supabaseServiceProvider).verifyRlsEnabled();
 
         // Set up RLS verification on auth state changes
         _setupRlsVerification();
@@ -301,7 +306,7 @@ class _SecurityWrapperState extends ConsumerState<SecurityWrapper>
   Future<void> _secureScreen() async {
     try {
       if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android)) {
-        await FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);
+        // await FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);
       }
     } catch (e) {
       debugPrint('Failed to set secure flags: $e');

@@ -16,7 +16,7 @@ class InputValidationService {
     return null; // Valid
   }
 
-  /// Validates a password (min 8 chars)
+  /// Validates a password
   String? validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Password is required';
@@ -24,8 +24,6 @@ class InputValidationService {
     if (value.length < 8) {
       return 'Password must be at least 8 characters';
     }
-
-    // Add more complexity checks as needed
     return null;
   }
 
@@ -77,6 +75,19 @@ class InputValidationService {
       return 'Name must contain only letters, spaces, or hyphens';
     }
     return null;
+  }
+
+  /// Sanitizes a string for safe database insertion.
+  /// Removes control characters and normalizes whitespace.
+  String sanitizeForDb(String input, {int maxLength = 500}) {
+    if (input.length > maxLength) {
+      // Or handle this case as you see fit, e.g., truncate
+      throw ArgumentError('Input exceeds maximum length of $maxLength characters.');
+    }
+    // Remove control characters, normalize whitespace
+    return input.replaceAll(RegExp(r'[\x00-\x1F\x7F]'), '')
+                .trim()
+                .replaceAll(RegExp(r'\s+'), ' ');
   }
 
   /// Detects potential SQL injection patterns

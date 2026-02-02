@@ -23,8 +23,5 @@ window.onload = function () {
     }
 };
 
-// Configure Flutter Web to use HTML renderer instead of CanvasKit
-// This fixes font rendering issues and works better with CSP
-window.flutterConfiguration = {
-    renderer: "html"
-};
+// Config removed: window.flutterConfiguration is deprecated.
+// Defaulting to auto-renderer (CanvasKit on Desktop) which supports Glassmorphism better.

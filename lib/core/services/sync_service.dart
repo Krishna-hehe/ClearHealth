@@ -89,7 +89,14 @@ class SyncService extends ChangeNotifier {
     _actionHandler = handler;
   }
 
+  // Whitelist allowed actions
+  static const _allowedActions = {'upload', 'delete', 'update'};
+
   Future<bool> _executeAction(String action, Map<String, dynamic> data) async {
+    if (!_allowedActions.contains(action)) {
+      AppLogger.error('Blocked unauthorized action: $action');
+      return false;
+    }
     if (_actionHandler != null) {
       return await _actionHandler!(action, data);
     }

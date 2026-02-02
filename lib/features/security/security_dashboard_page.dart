@@ -24,8 +24,8 @@ class SecurityDashboardPage extends ConsumerWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppColors.primary.withOpacity(0.05),
-              AppColors.secondary.withOpacity(0.05),
+              AppColors.primary.withAlpha(12),
+              AppColors.secondary.withAlpha(12),
             ],
           ),
         ),

@@ -378,21 +378,24 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
                 ),
                 const Spacer(),
                 if (status != '-')
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: bgColor,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      status,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: statusColor,
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: bgColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        status,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: statusColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
@@ -715,17 +718,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
                         ],
                       ),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${test.result} ${test.unit}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.danger,
-                          ),
+                    Expanded(
+                      child: Text(
+                        '${test.result} ${test.unit}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.danger,
                         ),
-                      ],
+                        textAlign: TextAlign.end,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     MiniSparkline(

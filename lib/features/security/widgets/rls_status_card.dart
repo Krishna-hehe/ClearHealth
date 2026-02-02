@@ -83,7 +83,7 @@ class RlsStatusCard extends ConsumerWidget {
           verified ? 'Protected' : 'Pending',
           style: TextStyle(
             fontSize: 11,
-            color: verified ? Colors.green.withOpacity(0.7) : Colors.grey,
+            color: verified ? Colors.green.withAlpha(178) : Colors.grey,
           ),
         ),
       ],

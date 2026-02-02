@@ -8,6 +8,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        debugShowCheckedModeBanner: false,
         home: Scaffold(
           body: MiniSparkline(
             data: data,
@@ -35,6 +36,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        debugShowCheckedModeBanner: false,
         home: Scaffold(
           body: Column(
             children: [
@@ -55,6 +57,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       const MaterialApp(
+        debugShowCheckedModeBanner: false,
         home: Scaffold(body: MiniSparkline(data: [10.0])),
       ),
     );

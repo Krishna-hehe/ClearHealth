@@ -24,7 +24,7 @@ class SecurityScoreGauge extends StatelessWidget {
                 child: CircularProgressIndicator(
                   value: score / 100,
                   strokeWidth: 15,
-                  backgroundColor: color.withOpacity(0.2),
+                  backgroundColor: color.withAlpha(51),
                   valueColor: AlwaysStoppedAnimation<Color>(color),
                   strokeCap: StrokeCap.round,
                 ),

@@ -24,22 +24,15 @@ class AuditService {
   }) async {
     try {
       final supabase = ref.read(supabaseServiceProvider).client;
-      final user = supabase.auth.currentUser;
-
-      if (user == null) {
-        AppLogger.warning('Attempted to log audit event without user: $action');
-        return;
-      }
-
-      await supabase.from('audit_logs').insert({
-        'user_id': user.id,
+      final response = await supabase.functions.invoke('audit-log', body: {
         'action': action.name,
-        // 'details': details, // Removed: column does not exist
-        'resource_id': resourceId,
-        'timestamp': DateTime.now().toIso8601String(),
-        'ip_address':
-            'client-side', // In a real app, this should be done via Edge Function for accuracy
+        'details': details,
+        'resourceId': resourceId,
       });
+
+      if (response.status != 200) {
+        throw 'Failed to log audit event: ${response.data}';
+      }
 
       AppLogger.info('Audit Log: ${action.name} - $details');
     } catch (e) {
