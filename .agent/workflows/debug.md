@@ -1,103 +1,81 @@
 ---
-description: Debugging command. Activates DEBUG mode for systematic problem investigation.
+description: Structured bug diagnosis and fixing workflow — reproduce, diagnose root cause, apply minimal fix, write regression test, and scan for similar patterns
 ---
 
-# /debug - Systematic Problem Investigation
+# MANDATORY RULES — VIOLATION IS FORBIDDEN
 
-$ARGUMENTS
-
----
-
-## Purpose
-
-This command activates DEBUG mode for systematic investigation of issues, errors, or unexpected behavior.
-
----
-
-## Behavior
-
-When `/debug` is triggered:
-
-1. **Gather information**
-   - Error message
-   - Reproduction steps
-   - Expected vs actual behavior
-   - Recent changes
-
-2. **Form hypotheses**
-   - List possible causes
-   - Order by likelihood
-
-3. **Investigate systematically**
-   - Test each hypothesis
-   - Check logs, data flow
-   - Use elimination method
-
-4. **Fix and prevent**
-   - Apply fix
-   - Explain root cause
-   - Add prevention measures
+- **Response language follows `language` setting in `.agent/config/user-preferences.yaml` if configured.**
+- **NEVER skip steps.** Execute from Step 1 in order.
+- **You MUST use MCP tools throughout the workflow.**
+  - Use code analysis tools (`find_symbol`, `find_referencing_symbols`, `search_for_pattern`) for bug investigation — NOT raw file reads or grep.
+  - Use memory write tool to record debugging results.
+  - Memory path: configurable via `memoryConfig.basePath` (default: `.serena/memories`)
+  - Tool names: configurable via `memoryConfig.tools` in `mcp.json`
+  - MCP tools are the primary interface for all code exploration.
 
 ---
 
-## Output Format
+## Step 1: Collect Error Information
 
-```markdown
-## 🔍 Debug: [Issue]
+Ask the user for:
+- Error message, steps to reproduce
+- Expected vs actual behavior
+- Environment (browser, OS, device)
 
-### 1. Symptom
-[What's happening]
-
-### 2. Information Gathered
-- Error: `[error message]`
-- File: `[filepath]`
-- Line: [line number]
-
-### 3. Hypotheses
-1. ❓ [Most likely cause]
-2. ❓ [Second possibility]
-3. ❓ [Less likely cause]
-
-### 4. Investigation
-
-**Testing hypothesis 1:**
-[What I checked] → [Result]
-
-**Testing hypothesis 2:**
-[What I checked] → [Result]
-
-### 5. Root Cause
-🎯 **[Explanation of why this happened]**
-
-### 6. Fix
-```[language]
-// Before
-[broken code]
-
-// After
-[fixed code]
-```
-
-### 7. Prevention
-🛡️ [How to prevent this in the future]
-```
+If an error message is provided, proceed immediately.
 
 ---
 
-## Examples
+## Step 2: Reproduce the Bug
 
-```
-/debug login not working
-/debug API returns 500
-/debug form doesn't submit
-/debug data not saving
-```
+// turbo
+Use MCP `search_for_pattern` with the error message or stack trace to locate the error in the codebase.
+Use `find_symbol` to identify the exact function and file. Do NOT grep or read files manually.
 
 ---
 
-## Key Principles
+## Step 3: Diagnose Root Cause
 
-- **Ask before assuming** - get full error context
-- **Test hypotheses** - don't guess randomly
-- **Explain why** - not just what to fix
-- **Prevent recurrence** - add tests, validation
+Use MCP `find_referencing_symbols` to trace the execution path backward from the error point.
+Identify the root cause — not just the symptom. Check:
+- null/undefined access
+- Race conditions
+- Missing error handling
+- Wrong data types
+- Stale state
+
+---
+
+## Step 4: Propose Minimal Fix
+
+Present the root cause and proposed fix to the user.
+- The fix should change only what is necessary.
+- Explain why this fixes the root cause, not just the symptom.
+- **You MUST get user confirmation before proceeding to Step 5.**
+
+---
+
+## Step 5: Apply Fix and Write Regression Test
+
+// turbo
+1. Implement the minimal fix.
+2. Write a regression test that reproduces the original bug and verifies the fix.
+3. The test must fail without the fix and pass with it.
+
+---
+
+## Step 6: Scan for Similar Patterns
+
+// turbo
+Use MCP `search_for_pattern` to search the codebase for the same pattern that caused the bug.
+Report any other locations that may have the same vulnerability. Fix them if confirmed.
+
+---
+
+## Step 7: Document the Bug
+
+Use memory write tool to record a bug report:
+- Symptom, root cause
+- Fix applied, files changed
+- Regression test location
+- Similar patterns found

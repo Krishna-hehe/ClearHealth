@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lab_sense_app/features/home/dashboard_page.dart';
-import 'package:lab_sense_app/core/providers.dart';
-import 'package:lab_sense_app/core/models.dart';
+import 'package:clear_health/features/home/dashboard_page.dart';
+import 'package:clear_health/core/providers.dart';
+import 'package:clear_health/core/models.dart';
 
 void main() {
   testWidgets('DashboardPage renders loading state correctly', (
@@ -84,3 +84,4 @@ class LabResultsNotifierMock extends LabResultsNotifier {
     return _initialData;
   }
 }
+

@@ -1,89 +1,71 @@
 ---
-description: Create project plan using project-planner agent. No code writing - only plan file generation.
+description: PM planning workflow — analyze requirements, select tech stack, decompose into prioritized tasks with dependencies, and define API contracts
 ---
 
-# /plan - Project Planning Mode
+# MANDATORY RULES — VIOLATION IS FORBIDDEN
 
-$ARGUMENTS
-
----
-
-## 🔴 CRITICAL RULES
-
-1. **NO CODE WRITING** - This command creates plan file only
-2. **Use project-planner agent** - NOT Antigravity Agent's native Plan mode
-3. **Socratic Gate** - Ask clarifying questions before planning
-4. **Dynamic Naming** - Plan file named based on task
-
----
-
-## Task
-
-Use the `project-planner` agent with this context:
-
-```
-CONTEXT:
-- User Request: $ARGUMENTS
-- Mode: PLANNING ONLY (no code)
-- Output: docs/PLAN-{task-slug}.md (dynamic naming)
-
-NAMING RULES:
-1. Extract 2-3 key words from request
-2. Lowercase, hyphen-separated
-3. Max 30 characters
-4. Example: "e-commerce cart" → PLAN-ecommerce-cart.md
-
-RULES:
-1. Follow project-planner.md Phase -1 (Context Check)
-2. Follow project-planner.md Phase 0 (Socratic Gate)
-3. Create PLAN-{slug}.md with task breakdown
-4. DO NOT write any code files
-5. REPORT the exact file name created
-```
+- **Response language follows `language` setting in `.agent/config/user-preferences.yaml` if configured.**
+- **NEVER skip steps.** Execute from Step 1 in order.
+- **You MUST use MCP tools throughout the workflow.**
+  - Use code analysis tools (`get_symbols_overview`, `find_symbol`, `search_for_pattern`) to analyze the existing codebase.
+  - Use memory tools (write/edit) to record planning results.
+  - Memory path: configurable via `memoryConfig.basePath` (default: `.serena/memories`)
+  - Tool names: configurable via `memoryConfig.tools` in `mcp.json`
+  - Do NOT use raw file reads or grep as substitutes.
 
 ---
 
-## Expected Output
+## Step 1: Gather Requirements
 
-| Deliverable | Location |
-|-------------|----------|
-| Project Plan | `docs/PLAN-{task-slug}.md` |
-| Task Breakdown | Inside plan file |
-| Agent Assignments | Inside plan file |
-| Verification Checklist | Phase X in plan file |
-
----
-
-## After Planning
-
-Tell user:
-```
-[OK] Plan created: docs/PLAN-{slug}.md
-
-Next steps:
-- Review the plan
-- Run `/create` to start implementation
-- Or modify plan manually
-```
+Ask the user to describe what they want to build. Clarify:
+- Target users
+- Core features (must-have vs nice-to-have)
+- Constraints (tech stack, existing codebase)
+- Deployment target (web, mobile, both)
 
 ---
 
-## Naming Examples
+## Step 2: Analyze Technical Feasibility
 
-| Request | Plan File |
-|---------|-----------|
-| `/plan e-commerce site with cart` | `docs/PLAN-ecommerce-cart.md` |
-| `/plan mobile app for fitness` | `docs/PLAN-fitness-app.md` |
-| `/plan add dark mode feature` | `docs/PLAN-dark-mode.md` |
-| `/plan fix authentication bug` | `docs/PLAN-auth-fix.md` |
-| `/plan SaaS dashboard` | `docs/PLAN-saas-dashboard.md` |
+// turbo
+If an existing codebase exists, use MCP code analysis tools to scan:
+- `get_symbols_overview` for project structure and architecture patterns.
+- `find_symbol` and `search_for_pattern` to identify reusable code and what needs to be built.
 
 ---
 
-## Usage
+## Step 3: Define API Contracts
 
-```
-/plan e-commerce site with cart
-/plan mobile app for fitness tracking
-/plan SaaS dashboard with analytics
-```
+// turbo
+Design API contracts between frontend/mobile and backend. Per endpoint:
+- Method, path, request/response schemas
+- Auth requirements, error responses
+- Save to `.agent/skills/_shared/api-contracts/`.
+
+---
+
+## Step 4: Decompose into Tasks
+
+// turbo
+Break down the project into actionable tasks. Each task must have:
+- Assigned agent (frontend/backend/mobile/qa/debug)
+- Title, acceptance criteria
+- Priority (P0-P3), dependencies
+
+---
+
+## Step 5: Review Plan with User
+
+Present the full plan: task list, priority tiers, dependency graph, agent assignments.
+**You MUST get user confirmation before proceeding to Step 6.**
+
+---
+
+## Step 6: Save Plan
+
+// turbo
+Save the approved plan:
+1. `.agent/plan.json`
+2. Use memory write tool to record plan summary.
+
+The plan is now ready for `/coordinate` or `/orchestrate` to execute.

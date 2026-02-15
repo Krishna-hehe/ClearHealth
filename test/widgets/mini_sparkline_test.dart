@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lab_sense_app/widgets/mini_sparkline.dart';
+import 'package:clear_health/widgets/mini_sparkline.dart';
 
 void main() {
   testWidgets('MiniSparkline renders with data', (WidgetTester tester) async {
@@ -69,3 +69,4 @@ void main() {
     expect(find.byType(SizedBox), findsWidgets);
   });
 }
+

@@ -1,6 +1,8 @@
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 // import 'dart:convert';
 import '../../core/theme.dart';
 import '../../core/providers.dart';
@@ -148,12 +150,21 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       setState(() => _isUploadingPhoto = true);
 
       final bytes = await image.readAsBytes();
+
+      // Compress the image
+      final compressedBytes = await FlutterImageCompress.compressWithList(
+        bytes,
+        minHeight: 512,
+        minWidth: 512,
+        quality: 85,
+      );
+
       final userId = Supabase.instance.client.auth.currentUser?.id;
       if (userId == null) return;
 
       final publicUrl = await ref
           .read(userRepositoryProvider)
-          .uploadProfilePhoto(userId, bytes);
+          .uploadProfilePhoto(userId, compressedBytes);
 
       if (publicUrl != null) {
         setState(() => _avatarUrl = publicUrl);
@@ -625,7 +636,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           child: CircleAvatar(
             radius: 40,
             backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
-                ? NetworkImage(_avatarUrl!)
+                ? CachedNetworkImageProvider(_avatarUrl!)
                 : null,
             backgroundColor: const Color(0xFFF3F4F6),
             child: _isUploadingPhoto

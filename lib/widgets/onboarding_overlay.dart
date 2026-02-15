@@ -27,7 +27,7 @@ class _OnboardingOverlayState extends State<OnboardingOverlay> {
     OnboardingStep(
       title: 'AI Health Insights',
       description:
-          'Ask deep questions about your health. LabSense understands your history and gives personalized, medical-grade answers.',
+          'Ask deep questions about your health. Clear Health understands your history and gives personalized, medical-grade answers.',
       icon: FontAwesomeIcons.userDoctor,
       color: Color(0xFF10B981), // Emerald
     ),

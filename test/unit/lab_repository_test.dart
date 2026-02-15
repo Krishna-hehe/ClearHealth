@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:lab_sense_app/core/repositories/lab_repository.dart';
-import 'package:lab_sense_app/core/supabase_service.dart';
-import 'package:lab_sense_app/core/cache_service.dart';
+import 'package:clear_health/core/repositories/lab_repository.dart';
+import 'package:clear_health/core/supabase_service.dart';
+import 'package:clear_health/core/cache_service.dart';
 
-import 'package:lab_sense_app/core/services/sync_service.dart';
+import 'package:clear_health/core/services/sync_service.dart';
 
 class MockSupabaseService extends Mock implements SupabaseService {}
 class MockCacheService extends Mock implements CacheService {}
@@ -81,3 +81,4 @@ void main() {
     });
   });
 }
+

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lab_sense_app/core/services/input_validation_service.dart';
+import 'package:clear_health/core/services/input_validation_service.dart';
 
 void main() {
   late InputValidationService validator;
@@ -63,3 +63,4 @@ void main() {
     });
   });
 }
+

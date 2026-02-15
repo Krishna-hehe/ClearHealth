@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:lab_sense_app/core/ai_service.dart';
-import 'package:lab_sense_app/core/cache_service.dart';
-import 'package:lab_sense_app/core/vector_service.dart';
-import 'package:lab_sense_app/core/services/rate_limiter_service.dart';
+import 'package:clear_health/core/ai_service.dart';
+import 'package:clear_health/core/cache_service.dart';
+import 'package:clear_health/core/vector_service.dart';
+import 'package:clear_health/core/services/rate_limiter_service.dart';
 
 // Mocks
 class MockCacheService extends Mock implements CacheService {}
@@ -152,3 +152,4 @@ void main() {
     },
   );
 }
+

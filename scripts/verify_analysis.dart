@@ -1,6 +1,6 @@
 // ignore_for_file: avoid_print
-import 'package:lab_sense_app/core/ai_service.dart';
-import 'package:lab_sense_app/core/vector_service.dart';
+import 'package:clear_health/core/ai_service.dart';
+import 'package:clear_health/core/vector_service.dart';
 
 // Mock Vector Service
 class MockVectorService extends VectorService {
@@ -63,3 +63,4 @@ void main() async {
   print('- recommendation (Max 15 words)');
   print('- potentialCauses (List instead of paragraph)');
 }
+

@@ -1,3 +1,4 @@
+
 # Miscellaneous
 *.class
 *.log
@@ -63,3 +64,9 @@ valid_models.txt
 models*.json
 *.txt
 *.log
+
+# Project specific
+.agent/
+my-project-design/
+build_*/
+build_to_delete_*/

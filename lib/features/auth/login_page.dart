@@ -21,8 +21,21 @@ class LoginPage extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              Container(
+                height: 100,
+                width: 100,
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Image.asset('assets/images/logo.png'),
+                ),
+              ),
               const Text(
-                'LabSense',
+                'Clear Health',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w500,
@@ -77,10 +90,7 @@ class _Header extends ConsumerWidget {
               isSignUp
                   ? 'Already have an account? '
                   : "Don't have an account? ",
-              style: const TextStyle(
-                color: AppColors.secondary,
-                fontSize: 14,
-              ),
+              style: const TextStyle(color: AppColors.secondary, fontSize: 14),
             ),
             GestureDetector(
               onTap: () => ref.read(loginPageProvider.notifier).toggleSignUp(),
@@ -102,6 +112,7 @@ class _Header extends ConsumerWidget {
 }
 
 class _AuthForm extends ConsumerWidget {
+  final _firstNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -113,6 +124,16 @@ class _AuthForm extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (pageState.isSignUp) ...[
+          _buildInputField(
+            label: 'First Name',
+            controller: _firstNameController,
+            hint: 'Your first name',
+            icon: Icons.person_outline,
+            keyboardType: TextInputType.text,
+          ),
+          const SizedBox(height: 24),
+        ],
         _buildInputField(
           label: 'Email address',
           controller: _emailController,
@@ -124,8 +145,9 @@ class _AuthForm extends ConsumerWidget {
         _buildInputField(
           label: 'Password',
           controller: _passwordController,
-          hint:
-              pageState.isSignUp ? 'Create a strong password' : 'Enter your password',
+          hint: pageState.isSignUp
+              ? 'Create a strong password'
+              : 'Enter your password',
           icon: Icons.lock_outline,
           obscureText: true,
         ),
@@ -140,23 +162,20 @@ class _AuthForm extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: 20),
-        if (!pageState.isSignUp)
-          _RememberMeRow()
-        else
-          _TermsAndConditions(),
+        if (!pageState.isSignUp) _RememberMeRow() else _TermsAndConditions(),
         const SizedBox(height: 32),
         _AuthButton(
-          onPressed: () => ref.read(authHandlerProvider).handleAuth(
+          onPressed: () => ref
+              .read(authHandlerProvider)
+              .handleAuth(
                 context,
                 _emailController.text,
                 _passwordController.text,
                 _confirmPasswordController.text,
+                firstName: _firstNameController.text,
               ),
         ),
-        if (!pageState.isSignUp) ...[
-          const SizedBox(height: 32),
-          _SocialAuth(),
-        ],
+        if (!pageState.isSignUp) ...[const SizedBox(height: 32), _SocialAuth()],
       ],
     );
   }
@@ -173,10 +192,7 @@ class _MfaForm extends ConsumerWidget {
       children: [
         const Text(
           'Two-Factor Authentication',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         const Text(
@@ -197,9 +213,7 @@ class _MfaForm extends ConsumerWidget {
           ),
           decoration: InputDecoration(
             counterText: '',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
           onChanged: (val) {
             if (val.length == 6) {
@@ -216,14 +230,12 @@ class _MfaForm extends ConsumerWidget {
             onPressed: pageState.isLoading
                 ? null
                 : () => ref
-                    .read(authHandlerProvider)
-                    .handleMfaVerify(context, _mfaController.text),
+                      .read(authHandlerProvider)
+                      .handleMfaVerify(context, _mfaController.text),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1A1A1A),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                vertical: 18,
-              ),
+              padding: const EdgeInsets.symmetric(vertical: 18),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -242,8 +254,9 @@ class _MfaForm extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         TextButton(
-          onPressed: () =>
-              ref.read(loginPageProvider.notifier).setMfaChallengeFactorId(null),
+          onPressed: () => ref
+              .read(loginPageProvider.notifier)
+              .setMfaChallengeFactorId(null),
           child: const Text('Back to Login'),
         ),
       ],
@@ -269,19 +282,14 @@ class _RememberMeRow extends ConsumerWidget {
                 onChanged: (v) =>
                     ref.read(loginPageProvider.notifier).setRememberMe(v!),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    4,
-                  ),
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
             ),
             const SizedBox(width: 8),
             const Text(
               'Remember me',
-              style: TextStyle(
-                color: AppColors.secondary,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: AppColors.secondary, fontSize: 14),
             ),
           ],
         ),
@@ -312,8 +320,7 @@ class _TermsAndConditions extends ConsumerWidget {
           value: pageState.agreeToTerms,
           onChanged: (v) =>
               ref.read(loginPageProvider.notifier).setAgreeToTerms(v!),
-          label:
-              'I agree to the Terms of Service and Privacy Policy',
+          label: 'I agree to the Terms of Service and Privacy Policy',
         ),
         const SizedBox(height: 12),
         _buildCheckItem(
@@ -321,7 +328,7 @@ class _TermsAndConditions extends ConsumerWidget {
           onChanged: (v) =>
               ref.read(loginPageProvider.notifier).setAcknowledgeHipaa(v!),
           label:
-              'I acknowledge that LabSense handles my health information in accordance with HIPAA guidelines',
+              'I acknowledge that Clear Health handles my health information in accordance with HIPAA guidelines',
         ),
       ],
     );
@@ -346,9 +353,7 @@ class _AuthButton extends ConsumerWidget {
               ? const Color(0xFF9CA3AF)
               : const Color(0xFF1A1A1A),
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(
-            vertical: 18,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 18),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -364,23 +369,17 @@ class _AuthButton extends ConsumerWidget {
                 ),
               )
             : Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    pageState.isSignUp
-                        ? 'Create account'
-                        : 'Sign in',
+                    pageState.isSignUp ? 'Create account' : 'Sign in',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Icon(
-                    Icons.arrow_forward,
-                    size: 18,
-                  ),
+                  const Icon(Icons.arrow_forward, size: 18),
                 ],
               ),
       ),
@@ -397,15 +396,10 @@ class _SocialAuth extends ConsumerWidget {
           children: [
             const Expanded(child: Divider()),
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 'Or continue with',
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: Colors.grey[400], fontSize: 12),
               ),
             ),
             const Expanded(child: Divider()),
@@ -418,7 +412,9 @@ class _SocialAuth extends ConsumerWidget {
               child: _buildSocialButton(
                 'Google',
                 FontAwesomeIcons.google,
-                () => ref.read(authHandlerProvider).handleSocialAuth(context, 'Google'),
+                () => ref
+                    .read(authHandlerProvider)
+                    .handleSocialAuth(context, 'Google'),
               ),
             ),
             const SizedBox(width: 16),
@@ -426,7 +422,9 @@ class _SocialAuth extends ConsumerWidget {
               child: _buildSocialButton(
                 'Apple',
                 FontAwesomeIcons.apple,
-                () => ref.read(authHandlerProvider).handleSocialAuth(context, 'Apple'),
+                () => ref
+                    .read(authHandlerProvider)
+                    .handleSocialAuth(context, 'Apple'),
               ),
             ),
           ],
@@ -532,10 +530,7 @@ Widget _buildInputField({
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: Color(0xFF111827),
-              width: 1.5,
-            ),
+            borderSide: const BorderSide(color: Color(0xFF111827), width: 1.5),
           ),
           errorMaxLines: 3,
         ),
@@ -558,9 +553,7 @@ Widget _buildCheckItem({
         child: Checkbox(
           value: value,
           onChanged: onChanged,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         ),
       ),
       const SizedBox(width: 12),
@@ -578,11 +571,7 @@ Widget _buildCheckItem({
   );
 }
 
-Widget _buildSocialButton(
-  String label,
-  IconData icon,
-  VoidCallback onPressed,
-) {
+Widget _buildSocialButton(String label, IconData icon, VoidCallback onPressed) {
   return OutlinedButton(
     onPressed: onPressed,
     style: OutlinedButton.styleFrom(

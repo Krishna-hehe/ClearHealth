@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -18,6 +19,8 @@ class ResultsListPage extends ConsumerStatefulWidget {
 
 class _ResultsListPageState extends ConsumerState<ResultsListPage> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -28,6 +31,8 @@ class _ResultsListPageState extends ConsumerState<ResultsListPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -38,6 +43,13 @@ class _ResultsListPageState extends ConsumerState<ResultsListPage> {
     }
   }
 
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      ref.read(labResultsProvider.notifier).search(query);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final labResultsAsync = ref.watch(labResultsProvider);
@@ -45,7 +57,7 @@ class _ResultsListPageState extends ConsumerState<ResultsListPage> {
     final selectedReportsForComparison = ref.watch(
       selectedComparisonReportsProvider,
     );
-    final searchQuery = ref.watch(searchQueryProvider).toLowerCase();
+    final searchQuery = _searchController.text;
 
     return CustomScrollView(
       controller: _scrollController,
@@ -62,24 +74,7 @@ class _ResultsListPageState extends ConsumerState<ResultsListPage> {
           ),
         ),
         labResultsAsync.when(
-          data: (allData) {
-            final data = searchQuery.isEmpty
-                ? allData
-                : allData.where((report) {
-                    final matchLab = report.labName.toLowerCase().contains(
-                      searchQuery,
-                    );
-                    final matchDate = report.date.toString().contains(
-                      searchQuery,
-                    );
-                    final matchTests =
-                        report.testResults?.any(
-                          (t) => t.name.toLowerCase().contains(searchQuery),
-                        ) ??
-                        false;
-                    return matchLab || matchDate || matchTests;
-                  }).toList();
-
+          data: (data) {
             if (data.isEmpty) {
               return SliverToBoxAdapter(
                 child: searchQuery.isEmpty
@@ -183,7 +178,10 @@ class _ResultsListPageState extends ConsumerState<ResultsListPage> {
           ),
           const SizedBox(height: 24),
           TextButton(
-            onPressed: () => ref.read(searchQueryProvider.notifier).state = '',
+            onPressed: () {
+              _searchController.clear();
+              _onSearchChanged('');
+            },
             child: const Text('Clear Search'),
           ),
         ],
@@ -207,62 +205,93 @@ class _ResultsListPageState extends ConsumerState<ResultsListPage> {
     bool isComparisonMode,
     List<LabReport> selectedReports,
   ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
       children: [
-        const Text(
-          'Lab History',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            if (isComparisonMode) ...[
-              Text(
-                '${selectedReports.length} selected',
-                style: const TextStyle(
-                  color: AppColors.secondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                onPressed: selectedReports.length >= 2
-                    ? () => ref.read(navigationProvider.notifier).state =
-                          NavItem.comparison
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+            const Text(
+              'Lab History',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            Row(
+              children: [
+                if (isComparisonMode) ...[
+                  Text(
+                    '${selectedReports.length} selected',
+                    style: const TextStyle(
+                      color: AppColors.secondary,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                child: const Text('Compare Now'),
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: () {
-                  ref.read(isComparisonModeProvider.notifier).state = false;
-                  ref.read(selectedComparisonReportsProvider.notifier).state =
-                      [];
-                },
-                child: const Text('Cancel'),
-              ),
-            ] else
-              OutlinedButton.icon(
-                icon: const Icon(Icons.compare_arrows, size: 16),
-                label: const Text('Compare Results'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  const SizedBox(width: 16),
+                  ElevatedButton(
+                    onPressed: selectedReports.length >= 2
+                        ? () => ref.read(navigationProvider.notifier).state =
+                              NavItem.comparison
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Compare Now'),
                   ),
-                ),
-                onPressed: () =>
-                    ref.read(isComparisonModeProvider.notifier).state = true,
-              ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      ref.read(isComparisonModeProvider.notifier).state = false;
+                      ref
+                              .read(selectedComparisonReportsProvider.notifier)
+                              .state =
+                          [];
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                ] else
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.compare_arrows, size: 16),
+                    label: const Text('Compare Results'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () =>
+                        ref.read(isComparisonModeProvider.notifier).state =
+                            true,
+                  ),
+              ],
+            ),
           ],
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _searchController,
+          onChanged: _onSearchChanged,
+          decoration: InputDecoration(
+            hintText: 'Search by test name, lab, or date...',
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      _onSearchChanged('');
+                    },
+                  )
+                : null,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(width: 0, style: BorderStyle.none),
+            ),
+            filled: true,
+            fillColor: Theme.of(context).dividerColor.withAlpha(25),
+          ),
         ),
       ],
     );

@@ -514,7 +514,7 @@ class _LandingPageState extends ConsumerState<LandingPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           const Text(
-            'LabSense',
+            'Clear Health',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -531,7 +531,7 @@ class _LandingPageState extends ConsumerState<LandingPage> {
             ],
           ),
           Text(
-            '© 2024 LabSense. All rights reserved.',
+            '© 2024 Clear Health. All rights reserved.',
             style: TextStyle(color: Colors.grey[500], fontSize: 13),
           ),
         ],

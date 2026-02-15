@@ -1,237 +1,112 @@
 ---
-description: Coordinate multiple agents for complex tasks. Use for multi-perspective analysis, comprehensive reviews, or tasks requiring different domain expertise.
+description: Automated CLI-based parallel agent execution — spawn subagents via Gemini CLI, coordinate through MCP Memory, monitor progress, and run verification
 ---
 
-# Multi-Agent Orchestration
+# MANDATORY RULES — VIOLATION IS FORBIDDEN
 
-You are now in **ORCHESTRATION MODE**. Your task: coordinate specialized agents to solve this complex problem.
-
-## Task to Orchestrate
-$ARGUMENTS
-
----
-
-## 🔴 CRITICAL: Minimum Agent Requirement
-
-> ⚠️ **ORCHESTRATION = MINIMUM 3 DIFFERENT AGENTS**
-> 
-> If you use fewer than 3 agents, you are NOT orchestrating - you're just delegating.
-> 
-> **Validation before completion:**
-> - Count invoked agents
-> - If `agent_count < 3` → STOP and invoke more agents
-> - Single agent = FAILURE of orchestration
-
-### Agent Selection Matrix
-
-| Task Type | REQUIRED Agents (minimum) |
-|-----------|---------------------------|
-| **Web App** | frontend-specialist, backend-specialist, test-engineer |
-| **API** | backend-specialist, security-auditor, test-engineer |
-| **UI/Design** | frontend-specialist, seo-specialist, performance-optimizer |
-| **Database** | database-architect, backend-specialist, security-auditor |
-| **Full Stack** | project-planner, frontend-specialist, backend-specialist, devops-engineer |
-| **Debug** | debugger, explorer-agent, test-engineer |
-| **Security** | security-auditor, penetration-tester, devops-engineer |
+- **Response language follows `language` setting in `.agent/config/user-preferences.yaml` if configured.**
+- **NEVER skip steps.** Execute from Step 0 in order. Explicitly report completion of each step before proceeding.
+- **You MUST use MCP tools throughout the entire workflow.** This is NOT optional.
+  - Use code analysis tools (`get_symbols_overview`, `find_symbol`, `find_referencing_symbols`, `search_for_pattern`) for code exploration.
+  - Use memory tools (read/write/edit) for progress tracking.
+  - Memory path: configurable via `memoryConfig.basePath` (default: `.serena/memories`)
+  - Tool names: configurable via `memoryConfig.tools` in `mcp.json`
+  - Do NOT use raw file reads or grep as substitutes. MCP tools are the primary interface.
+- **Read required documents BEFORE starting.**
 
 ---
 
-## Pre-Flight: Mode Check
+## Step 0: Preparation (DO NOT SKIP)
 
-| Current Mode | Task Type | Action |
-|--------------|-----------|--------|
-| **plan** | Any | ✅ Proceed with planning-first approach |
-| **edit** | Simple execution | ✅ Proceed directly |
-| **edit** | Complex/multi-file | ⚠️ Ask: "This task requires planning. Switch to plan mode?" |
-| **ask** | Any | ⚠️ Ask: "Ready to orchestrate. Switch to edit or plan mode?" |
+1. Read `.agent/skills/workflow-guide/SKILL.md` and confirm Core Rules.
+2. Read `.agent/skills/_shared/context-loading.md` for resource loading strategy.
+3. Read `.agent/skills/_shared/memory-protocol.md` for memory protocol.
 
 ---
 
-## 🔴 STRICT 2-PHASE ORCHESTRATION
+## Step 1: Load or Create Plan
 
-### PHASE 1: PLANNING (Sequential - NO parallel agents)
+Check if `.agent/plan.json` exists.
 
-| Step | Agent | Action |
-|------|-------|--------|
-| 1 | `project-planner` | Create docs/PLAN.md |
-| 2 | (optional) `explorer-agent` | Codebase discovery if needed |
-
-> 🔴 **NO OTHER AGENTS during planning!** Only project-planner and explorer-agent.
-
-### ⏸️ CHECKPOINT: User Approval
-
-```
-After PLAN.md is complete, ASK:
-
-"✅ Plan oluşturuldu: docs/PLAN.md
-
-Onaylıyor musunuz? (Y/N)
-- Y: Implementation başlatılır
-- N: Planı düzeltirim"
-```
-
-> 🔴 **DO NOT proceed to Phase 2 without explicit user approval!**
-
-### PHASE 2: IMPLEMENTATION (Parallel agents after approval)
-
-| Parallel Group | Agents |
-|----------------|--------|
-| Foundation | `database-architect`, `security-auditor` |
-| Core | `backend-specialist`, `frontend-specialist` |
-| Polish | `test-engineer`, `devops-engineer` |
-
-> ✅ After user approval, invoke multiple agents in PARALLEL.
-
-## Available Agents (17 total)
-
-| Agent | Domain | Use When |
-|-------|--------|----------|
-| `project-planner` | Planning | Task breakdown, PLAN.md |
-| `explorer-agent` | Discovery | Codebase mapping |
-| `frontend-specialist` | UI/UX | React, Vue, CSS, HTML |
-| `backend-specialist` | Server | API, Node.js, Python |
-| `database-architect` | Data | SQL, NoSQL, Schema |
-| `security-auditor` | Security | Vulnerabilities, Auth |
-| `penetration-tester` | Security | Active testing |
-| `test-engineer` | Testing | Unit, E2E, Coverage |
-| `devops-engineer` | Ops | CI/CD, Docker, Deploy |
-| `mobile-developer` | Mobile | React Native, Flutter |
-| `performance-optimizer` | Speed | Lighthouse, Profiling |
-| `seo-specialist` | SEO | Meta, Schema, Rankings |
-| `documentation-writer` | Docs | README, API docs |
-| `debugger` | Debug | Error analysis |
-| `game-developer` | Games | Unity, Godot |
-| `orchestrator` | Meta | Coordination |
+- If yes: load it and proceed to Step 2.
+- If no: ask the user to run `/plan` first, or ask them to describe the tasks to execute.
+- **Do NOT proceed without a plan.**
 
 ---
 
-## Orchestration Protocol
+## Step 2: Initialize Session
 
-### Step 1: Analyze Task Domains
-Identify ALL domains this task touches:
-```
-□ Security     → security-auditor, penetration-tester
-□ Backend/API  → backend-specialist
-□ Frontend/UI  → frontend-specialist
-□ Database     → database-architect
-□ Testing      → test-engineer
-□ DevOps       → devops-engineer
-□ Mobile       → mobile-developer
-□ Performance  → performance-optimizer
-□ SEO          → seo-specialist
-□ Planning     → project-planner
-```
+// turbo
 
-### Step 2: Phase Detection
+1. 설정 파일 로드:
+   - `.agent/config/user-preferences.yaml` (언어, CLI 매핑)
+2. CLI 매핑 현황 표시:
 
-| If Plan Exists | Action |
-|----------------|--------|
-| NO `docs/PLAN.md` | → Go to PHASE 1 (planning only) |
-| YES `docs/PLAN.md` + user approved | → Go to PHASE 2 (implementation) |
+   ```
+   📋 CLI 에이전트 매핑
+   ┌──────────┬─────────┐
+   │ Agent    │ CLI     │
+   ├──────────┼─────────┤
+   │ frontend │ gemini  │
+   │ backend  │ gemini  │
+   │ mobile   │ claude  │
+   │ pm       │ claude  │
+   └──────────┴─────────┘
+   ```
 
-### Step 3: Execute Based on Phase
-
-**PHASE 1 (Planning):**
-```
-Use the project-planner agent to create PLAN.md
-→ STOP after plan is created
-→ ASK user for approval
-```
-
-**PHASE 2 (Implementation - after approval):**
-```
-Invoke agents in PARALLEL:
-Use the frontend-specialist agent to [task]
-Use the backend-specialist agent to [task]
-Use the test-engineer agent to [task]
-```
-
-**🔴 CRITICAL: Context Passing (MANDATORY)**
-
-When invoking ANY subagent, you MUST include:
-
-1. **Original User Request:** Full text of what user asked
-2. **Decisions Made:** All user answers to Socratic questions
-3. **Previous Agent Work:** Summary of what previous agents did
-4. **Current Plan State:** If plan files exist in workspace, include them
-
-**Example with FULL context:**
-```
-Use the project-planner agent to create PLAN.md:
-
-**CONTEXT:**
-- User Request: "Öğrenciler için sosyal platform, mock data ile"
-- Decisions: Tech=Vue 3, Layout=Grid Widget, Auth=Mock, Design=Genç Dinamik
-- Previous Work: Orchestrator asked 6 questions, user chose all options
-- Current Plan: playful-roaming-dream.md exists in workspace with initial structure
-
-**TASK:** Create detailed PLAN.md based on ABOVE decisions. Do NOT infer from folder name.
-```
-
-> ⚠️ **VIOLATION:** Invoking subagent without full context = subagent will make wrong assumptions!
-
-
-### Step 4: Verification (MANDATORY)
-The LAST agent must run appropriate verification scripts:
-```bash
-python .agent/skills/vulnerability-scanner/scripts/security_scan.py .
-python .agent/skills/lint-and-validate/scripts/lint_runner.py .
-```
-
-### Step 5: Synthesize Results
-Combine all agent outputs into unified report.
+3. Generate session ID (format: `session-YYYYMMDD-HHMMSS`).
+4. Use memory write tool to create `orchestrator-session.md` and `task-board.md` in the memory base path.
+5. Set session status to RUNNING.
 
 ---
 
-## Output Format
+## Step 3: Spawn Agents by Priority Tier
 
-```markdown
-## 🎼 Orchestration Report
+// turbo
+For each priority tier (P0 first, then P1, etc.):
 
-### Task
-[Original task summary]
+- Spawn agents using `oh-my-ag agent:spawn {agent_id} {prompt_file} {session_id} {workspace}`.
+- Each agent gets: task description, API contracts, relevant context from `_shared/context-loading.md`.
+- Use memory edit tool to update `task-board.md` with agent status.
 
-### Mode
-[Current Antigravity Agent mode: plan/edit/ask]
+---
 
-### Agents Invoked (MINIMUM 3)
-| # | Agent | Focus Area | Status |
-|---|-------|------------|--------|
-| 1 | project-planner | Task breakdown | ✅ |
-| 2 | frontend-specialist | UI implementation | ✅ |
-| 3 | test-engineer | Verification scripts | ✅ |
+## Step 4: Monitor Progress
 
-### Verification Scripts Executed
-- [x] security_scan.py → Pass/Fail
-- [x] lint_runner.py → Pass/Fail
+Use `oh-my-ag agent:status {session_id} {agent_id}` to check process health.
+Also use memory read tool to poll `progress-{agent}.md` for logic updates.
 
-### Key Findings
-1. **[Agent 1]**: Finding
-2. **[Agent 2]**: Finding
-3. **[Agent 3]**: Finding
+- Use memory edit tool to update `task-board.md` with turn counts and status changes.
+- Watch for: completion, failures, crashes.
 
-### Deliverables
-- [ ] PLAN.md created
-- [ ] Code implemented
-- [ ] Tests passing
-- [ ] Scripts verified
+---
 
-### Summary
-[One paragraph synthesis of all agent work]
+## Step 5: Verify Completed Agents
+
+// turbo
+For each completed agent, run automated verification:
+
+```
+bash .agent/skills/_shared/verify.sh {agent-type} {workspace}
 ```
 
----
-
-## 🔴 EXIT GATE
-
-Before completing orchestration, verify:
-
-1. ✅ **Agent Count:** `invoked_agents >= 3`
-2. ✅ **Scripts Executed:** At least `security_scan.py` ran
-3. ✅ **Report Generated:** Orchestration Report with all agents listed
-
-> **If any check fails → DO NOT mark orchestration complete. Invoke more agents or run scripts.**
+- PASS (exit 0): accept result.
+- FAIL (exit 1): re-spawn with error context (max 2 retries).
 
 ---
 
-**Begin orchestration now. Select 3+ agents, execute sequentially, run verification scripts, synthesize results.**
+## Step 6: Collect Results
+
+// turbo
+After all agents complete, use memory read tool to read all `result-{agent}.md` files.
+Compile summary: completed tasks, failed tasks, files changed, remaining issues.
+
+---
+
+## Step 7: Final Report
+
+Present session summary to the user.
+
+- If any tasks failed after retries, list them with error details.
+- Suggest next steps: manual fix, re-run specific agents, or run `/review` for QA.
+- Use memory write tool to record final results.

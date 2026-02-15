@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
 import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
@@ -464,7 +466,7 @@ class _FamilyProfilesPageState extends ConsumerState<FamilyProfilesPage> {
                       child: CircleAvatar(
                         backgroundColor: Color(int.parse(profile.avatarColor)),
                         backgroundImage: profile.avatarUrl != null
-                            ? NetworkImage(profile.avatarUrl!)
+                            ? CachedNetworkImageProvider(profile.avatarUrl!)
                             : null,
                         child: profile.avatarUrl == null
                             ? Text(

@@ -21,15 +21,22 @@ class SplashPage extends StatelessWidget {
                 color: Colors.blue.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.science_rounded,
-                size: 64,
-                color: Colors.blue,
+              child: Image.asset(
+                'assets/images/logo.png',
+                width: 80,
+                height: 80,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.science_rounded,
+                    size: 64,
+                    color: Colors.blue,
+                  );
+                },
               ),
             ),
             const SizedBox(height: 24),
             Text(
-              'LabSense',
+              'Clear Health',
               style: GoogleFonts.outfit(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,

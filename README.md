@@ -1,271 +1,99 @@
-# LabSense2 🧬
+# LabSense - Intelligent Health Monitoring
 
-LabSense2 is an advanced, AI-powered health management platform designed to help users understand their lab results, track health trends, manage medications, and maintain their overall wellness with enterprise-grade security.
+LabSense is a Flutter-based mobile application designed for intelligent health monitoring. It allows users to upload, analyze, and track their lab results, providing AI-powered insights, health predictions, and wellness tips.
 
-## ✨ Key Features
+## Key Features
 
-### 🔬 Lab Results Management
+* **Lab Report Management**: Upload and manage PDF lab reports.
+* **AI-Powered Insights**: Get AI-generated summaries, optimization tips, and health predictions based on your lab results, powered by Google Gemini.
+* **Secure Authentication**: Secure login with Supabase authentication and biometric support (fingerprint/face ID).
+* **Multi-Profile Support**: Manage health data for multiple family members.
+* **Trend Analysis**: Visualize your health data over time with charts and graphs.
+* **Medication Tracking**: Keep a record of your medications.
+* **Notifications**: Receive reminders and updates.
+* **Data Export**: Export your data as a PDF.
 
-- **AI-Powered Analysis**: Upload PDF or image lab reports and get instant, easy-to-understand explanations using Gemini AI
-- **OCR Technology**: Automatic text extraction from lab reports with intelligent parsing
-- **Trend Visualization**: Interactive charts showing health metrics over time
-- **Comparison Tools**: Compare results across different time periods
-- **Abnormal Value Detection**: Automatic highlighting of out-of-range values
-
-### 💊 Medication Management
-
-- **Prescription Tracking**: Manage all your medications in one place
-- **Smart Reminders**: Get notified when it's time to take your medication
-- **Dosage History**: Track medication adherence over time
-- **Refill Alerts**: Never run out of important medications
-
-### 👥 Family Health Profiles
-
-- **Multi-Profile Support**: Manage health records for your entire family
-- **Secure Sharing**: Share lab results with doctors via secure, time-limited links
-- **Doctor View Mode**: Special read-only mode for healthcare providers
-- **Care Circles**: Collaborate with family members on health management
-
-### 🤖 AI Health Assistant
-
-- **Contextual Chat**: Ask health questions with full context of your lab results
-- **Personalized Insights**: AI analyzes your health trends and provides recommendations
-- **Medical Term Explanations**: Understand complex medical terminology easily
-
-### 🔐 Enterprise-Grade Security
-
-#### Active Security Features
-
-- **Row Level Security (RLS) Verification**: Automatic verification of database security policies on every login
-- **Biometric Authentication**: Fingerprint/Face ID support for quick, secure access
-- **Session Management**: Automatic timeout and secure session handling
-- **Encrypted Storage**: All sensitive data encrypted at rest and in transit
-- **Audit Logging**: Comprehensive security event tracking
-
-**Security Score**: 65/100 (Target: 85/100 after full integration)
-
-See [Security Documentation](docs/SECURITY_INTEGRATION_GUIDE.md) for details.
-
-### 📊 Analytics & Insights
-
-- **Health Dashboard**: Comprehensive overview of your health status
-- **Trend Analysis**: AI-powered insights into your health patterns
-- **Risk Assessment**: Early warning system for potential health issues
-- **Progress Tracking**: Monitor improvements in key health metrics
-
-## 🛠️ Tech Stack
-
-- **Frontend**: [Flutter](https://flutter.dev/) 3.x
-- **State Management**: [Riverpod](https://riverpod.dev/) 2.x
-- **Backend**: [Supabase](https://supabase.com/) (PostgreSQL + Realtime)
-- **AI**: [Google Gemini API](https://ai.google.dev/) (Gemini 2.0 Flash)
-- **Authentication**: Supabase Auth (Email, Google, Apple)
-- **Storage**: Supabase Storage (Encrypted file storage)
-- **OCR**: Google Cloud Vision API
-- **Security**: RLS, Input Validation, Rate Limiting
-- **Monitoring**: Sentry (Error tracking)
-
-## 📦 Project Structure
-
-```text
-lib/
-├── core/
-│   ├── services/          # Core services (Supabase, AI, Security)
-
-│   │   ├── rls_verification_service.dart  # RLS security verification
-
-│   │   ├── rate_limiter.dart              # Rate limiting service
-
-│   │   └── ...
-│   ├── utils/             # Utilities (Input validation, etc.)
-
-│   ├── providers/         # Riverpod state providers
-
-│   ├── repositories/      # Data access layer
-
-│   └── models.dart        # Data models
-
-├── features/              # Feature modules
-
-│   ├── auth/             # Authentication
-
-│   ├── home/             # Dashboard
-
-│   ├── lab_results/      # Lab result management
-
-│   ├── trends/           # Health trends
-
-│   ├── medications/      # Medication tracking
-
-│   ├── chat/             # AI health assistant
-
-│   ├── settings/         # User settings & family profiles
-
-│   └── share/            # Secure sharing features
-
-├── widgets/              # Shared UI components
-
-└── main.dart             # Application entry point
-
-docs/
-├── SECURITY_INTEGRATION_GUIDE.md      # Security implementation guide
-
-├── SECURITY_AUDIT_REPORT.md           # Security audit findings
-
-├── PLAN-security-integration.md       # Security roadmap
-
-└── SECURITY_INTEGRATION_HANDOFF.md    # Development handoff doc
-
-```text
-
-## ⚡ Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- [Flutter SDK](https://flutter.dev/docs/get-started/install) (3.0 or higher)
-- [Supabase](https://supabase.com/) Account & Project
-- [Google Gemini API Key](https://ai.google.dev/)
-- [Sentry DSN](https://sentry.io/) (Optional, for error tracking)
+* Flutter SDK: Make sure you have the Flutter SDK installed.
+* An editor with the Flutter plugin (e.g., VS Code, Android Studio).
 
 ### Installation
 
-1. **Clone the repository**
+1. **Clone the repository:**
 
-   ```bash
-   git clone https://github.com/yourusername/labsense2.git
-   cd labsense2
-   ```
+    ```bash
+    git clone <repository-url>
+    cd lab_sense_app
+    ```
 
-2. **Install dependencies**
+2. **Install dependencies:**
 
-   ```bash
-   flutter pub get
-   ```
+    ```bash
+    flutter pub get
+    ```
 
-3. **Environment Setup**
+3. **Set up environment variables:**
+    Create a `.env` file in the root of the project and add the following environment variables. You can get these from your Supabase and Google AI project settings.
 
-   Create a `.env` file in the root directory:
+    ```
+    GEMINI_API_KEY=your_gemini_api_key
+    SUPABASE_URL=your_supabase_url
+    SUPABASE_ANON_KEY=your_supabase_anon_key
+    LABSENSE_CHAT_API_KEY=your_labsense_chat_api_key
+    Note: Do NOT bundle this file in your build. Instead, use these values with `--dart-define` when running/building the app.
+    ```
 
-   ```env
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_ANON_KEY=your_supabase_anon_key
-   GEMINI_API_KEY=your_gemini_api_key
-   SENTRY_DSN=your_sentry_dsn  # Optional
+    flutter run \
+      --dart-define=GEMINI_API_KEY=your_key \
+      --dart-define=SUPABASE_URL=your_url \
+      --dart-define=SUPABASE_ANON_KEY=your_key \
+      --dart-define=LABSENSE_CHAT_API_KEY=your_key \
+      --dart-define=SENTRY_DSN=your_dsn
 
-   ```
+    ```
 
-4. **Database Setup**
-   - Run the SQL migrations in `supabase/migrations/`
-   - Enable Row Level Security (RLS) on all tables
-   - See [Database Schema](docs/DATABASE_SCHEMA.md) for details
 
-5. **Run the App**
+4. **Run the application:**
 
-   ```bash
-   # Web
+    ```bash
+    flutter run
+    ```
 
-   flutter run -d chrome
-   
-   # iOS
+## Architecture
 
-   flutter run -d ios
-   
-   # Android
+LabSense is built with a modern Flutter architecture, emphasizing separation of concerns and maintainability.
 
-   flutter run -d android
-   ```
-## 📱 Platform Support
+* **State Management**: The application uses `flutter_riverpod` for state management, with providers organized by feature domains (auth, core, labs, user, etc.).
+* **Backend**: [Supabase](https://supabase.io/) is used for the backend, providing authentication, a PostgreSQL database (with pgvector for embeddings), and file storage.
+* **AI Integration**: The application leverages the [Google Gemini API](https://ai.google.dev/) for its AI-powered features, including:
+  * **Vector Embeddings**: For semantic search and similarity.
+  * **Generative Models**: For summaries, insights, and predictions.
+* **Local Storage**: [Hive](https://pub.dev/packages/hive) is used for local caching and offline storage.
+* **Security**: The app features biometric authentication (`local_auth`), secure storage for sensitive data (`flutter_secure_storage`), and Row Level Security (RLS) in Supabase.
+* **Error Reporting**: [Sentry](https://sentry.io/) is used for real-time error monitoring.
 
-- ✅ **Web**: Chrome, Firefox, Safari, Edge
-- ✅ **iOS**: 12.0+
-- ✅ **Android**: API 21+ (Android 5.0+)
+## Core Dependencies
 
-## 🧪 Testing
+* `flutter_riverpod`: For state management.
+* `supabase_flutter`: For backend integration with Supabase.
+* `google_generative_ai`: For AI features.
+* `fl_chart`: for charting and data visualization.
+* `hive`: For local storage.
+* `sentry_flutter`: For error reporting.
+* `local_auth`: For biometric authentication.
+* `pdf`: For PDF generation.
 
-```bash
+## Project Structure
 
-# Run all tests
+The project follows a feature-driven directory structure:
 
-flutter test
-
-# Run specific test
-
-flutter test test/widget/dashboard_page_test.dart
-
-# Run with coverage
-
-flutter test --coverage
-```text
-
-## 📚 Documentation
-
-- [Security Integration Guide](docs/SECURITY_INTEGRATION_GUIDE.md)
-- [Security Audit Report](docs/SECURITY_AUDIT_REPORT.md)
-- [API Documentation](docs/API_DOCUMENTATION.md)
-- [Development Handoff](docs/SECURITY_INTEGRATION_HANDOFF.md)
-
-## 🗺️ Roadmap
-
-### ✅ Completed
-
-- [x] Core lab result management
-- [x] AI-powered analysis
-- [x] Medication tracking with reminders
-- [x] Family health profiles
-- [x] Secure doctor sharing
-- [x] RLS verification system
-- [x] Biometric authentication
-- [x] Health chat assistant
-
-### 🚧 In Progress (Phase 2-3)
-
-- [ ] Input validation integration
-- [ ] Rate limiting integration
-- [ ] Security monitoring dashboard
-
-### 📋 Planned
-
-- [ ] Wearable device integration
-- [ ] Appointment scheduling
-- [ ] Telemedicine integration
-- [ ] Health insurance integration
-- [ ] Multi-language support
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-Please ensure:
-
-- Code passes `flutter analyze` with no errors
-- All tests pass
-- Security features are not compromised
-- Documentation is updated
-
-## 🐛 Bug Reports
-
-Found a bug? Please open an issue with:
-
-- Description of the bug
-- Steps to reproduce
-- Expected vs actual behavior
-- Screenshots (if applicable)
-- Device/platform information
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Google Gemini AI for intelligent health insights
-- Supabase for secure backend infrastructure
-- Flutter team for the amazing framework
-- Open source community for various packages
-
+```
+lib/
+├── core/         # Core services, models, and providers
+├── features/     # Feature-specific widgets and pages
+├── widgets/      # Shared widgets
+└── main.dart     # Application entry point
+```

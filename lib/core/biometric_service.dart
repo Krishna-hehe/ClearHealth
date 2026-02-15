@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:lab_sense_app/core/services/secure_storage_service.dart';
+import 'package:clear_health/core/services/secure_storage_service.dart';
 
 class BiometricService {
   static final BiometricService _instance = BiometricService._internal();
@@ -58,3 +58,4 @@ class BiometricService {
     }
   }
 }
+

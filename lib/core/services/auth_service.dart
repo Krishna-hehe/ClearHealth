@@ -1,58 +1,73 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter/foundation.dart';
-
 import 'audit_service.dart';
 
 class AuthService {
   final SupabaseClient _client;
-  final AuditService? _auditService; // Optional for now to avoid breaking tests immediately
+  final AuditService _auditService;
 
-  AuthService(this._client, [this._auditService]);
-
-  // Authentication
-  Future<AuthResponse> signUp(String email, String password) async {
-    final response = await _client.auth.signUp(email: email, password: password);
-    if (response.user != null) {
-      _auditService?.log(AuditAction.login, details: 'User signed up', resourceId: response.user!.id);
-    }
-    return response;
-  }
-
-  Future<AuthResponse> signIn(String email, String password) async {
-    final response = await _client.auth.signInWithPassword(email: email, password: password);
-    if (response.user != null) {
-      _auditService?.log(AuditAction.login, details: 'User signed in', resourceId: response.user!.id);
-    }
-    return response;
-  }
-
-  Future<void> signInWithGoogle() async {
-    await _client.auth.signInWithOAuth(
-      OAuthProvider.google,
-      redirectTo: kIsWeb ? null : 'io.supabase.flutter://login-callback',
-    );
-     // Note: OAuth callback handling needs to happen where the auth state change is listened to for full audit, 
-     // but we can't easily hook it here without callback logic. 
-     // Relies on onAuthStateChange listener elsewhere or just accepts simple sign-in logging.
-  }
-
-  Future<void> signInWithApple() async {
-    await _client.auth.signInWithOAuth(
-      OAuthProvider.apple,
-      redirectTo: kIsWeb ? null : 'io.supabase.flutter://login-callback',
-    );
-  }
-
-
-  Future<void> signOut() async {
-    final userId = _client.auth.currentUser?.id;
-    await _client.auth.signOut();
-    if (userId != null) {
-      _auditService?.log(AuditAction.logout, details: 'User signed out', resourceId: userId);
-    }
-  }
+  AuthService(this._client, this._auditService);
 
   User? get currentUser => _client.auth.currentUser;
 
   Stream<AuthState> get onAuthStateChange => _client.auth.onAuthStateChange;
+
+  Future<AuthResponse> signIn(String email, String password) async {
+    final response = await _client.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
+    if (response.user != null) {
+      _auditService.log(
+        AuditAction.loginSuccess,
+        details: 'User $email signed in.',
+      );
+    }
+    return response;
+  }
+
+  Future<AuthResponse> signUp(String email, String password, {String? firstName}) async {
+    final Map<String, dynamic> data = {};
+    if (firstName != null && firstName.isNotEmpty) {
+      data['first_name'] = firstName;
+    }
+
+    final response = await _client.auth.signUp(
+      email: email,
+      password: password,
+      data: data.isNotEmpty ? data : null, // Pass data only if not empty
+    );
+    if (response.user != null) {
+      _auditService.log(
+        AuditAction.signupSuccess,
+        details: 'User $email signed up.',
+      );
+    }
+    return response;
+  }
+
+  Future<AuthResponse> signInWithGoogle() async {
+    // Placeholder for Google Sign-In
+    _auditService.log(
+      AuditAction.googleSignInAttempt,
+      details: 'Google sign-in attempt.',
+    );
+    // In a real app, you would initiate the Google sign-in flow here
+    // For now, we'll return a dummy AuthResponse or throw an unimplemented exception
+    throw UnimplementedError('Google Sign-In is not yet implemented.');
+  }
+
+  Future<AuthResponse> signInWithApple() async {
+    // Placeholder for Apple Sign-In
+    _auditService.log(
+      AuditAction.appleSignInAttempt,
+      details: 'Apple sign-in attempt.',
+    );
+    // In a real app, you would initiate the Apple sign-in flow here
+    // For now, we'll return a dummy AuthResponse or throw an unimplemented exception
+    throw UnimplementedError('Apple Sign-In is not yet implemented.');
+  }
+
+  Future<void> signOut() async {
+    await _client.auth.signOut();
+  }
 }

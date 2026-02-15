@@ -29,12 +29,14 @@ class LabRepository {
     int limit = 10,
     int offset = 0,
     String? profileId,
+    String? searchQuery,
   }) async {
     try {
       final data = await _supabaseService.getLabResults(
         limit: limit,
         offset: offset,
         profileId: profileId,
+        searchQuery: searchQuery,
       );
       if (offset == 0) {
         await _cacheService.cacheLabResults(data);

@@ -13,11 +13,12 @@ class AuthHandler {
   AuthHandler(this._ref);
 
   Future<void> handleAuth(
-      BuildContext context,
-      String email,
-      String password,
-      String confirmPassword,
-      ) async {
+    BuildContext context,
+    String email,
+    String password,
+    String confirmPassword, {
+    String? firstName,
+  }) async {
     final pageNotifier = _ref.read(loginPageProvider.notifier);
     final pageState = _ref.read(loginPageProvider);
 
@@ -58,7 +59,7 @@ class AuthHandler {
 
       final authService = _ref.read(authServiceProvider);
       if (pageState.isSignUp) {
-        await authService.signUp(email, password);
+        await authService.signUp(email, password, firstName: firstName);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -69,15 +70,15 @@ class AuthHandler {
           );
         }
       } else {
-        final response = await authService.signIn(
-          email,
-          password,
-        );
+        final response = await authService.signIn(email, password);
 
         if (response.user != null) {
-          final factors = await _ref.read(supabaseServiceProvider).getMFAFactors();
-          final verifiedFactors =
-              factors.all.where((f) => f.status == FactorStatus.verified).toList();
+          final factors = await _ref
+              .read(supabaseServiceProvider)
+              .getMFAFactors();
+          final verifiedFactors = factors.all
+              .where((f) => f.status == FactorStatus.verified)
+              .toList();
 
           if (verifiedFactors.isNotEmpty) {
             pageNotifier.setMfaChallengeFactorId(verifiedFactors.first.id);
@@ -91,9 +92,15 @@ class AuthHandler {
         }
       }
     } catch (e) {
+      debugPrint('Auth Error: $e'); // Added for debugging
       if (context.mounted) {
-        String message = 'Authentication failed. Please check your credentials.';
-        if (e is String) message = e;
+        String message =
+            'Authentication failed. Please check your credentials.';
+        if (e is AuthException) {
+          message = e.message;
+        } else if (e is String) {
+          message = e;
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message), backgroundColor: Colors.red),
@@ -104,10 +111,7 @@ class AuthHandler {
     }
   }
 
-  Future<void> handleMfaVerify(
-      BuildContext context,
-      String mfaCode,
-      ) async {
+  Future<void> handleMfaVerify(BuildContext context, String mfaCode) async {
     final pageNotifier = _ref.read(loginPageProvider.notifier);
     final pageState = _ref.read(loginPageProvider);
 
@@ -115,20 +119,16 @@ class AuthHandler {
 
     pageNotifier.setLoading(true);
     try {
-      await _ref.read(supabaseServiceProvider).verifyMFA(
-        factorId: pageState.mfaChallengeFactorId!,
-        code: mfaCode,
-      );
+      await _ref
+          .read(supabaseServiceProvider)
+          .verifyMFA(factorId: pageState.mfaChallengeFactorId!, code: mfaCode);
       if (context.mounted) {
         _ref.read(navigationProvider.notifier).state = NavItem.dashboard;
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('MFA Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('MFA Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -136,10 +136,7 @@ class AuthHandler {
     }
   }
 
-  Future<void> handleSocialAuth(
-      BuildContext context,
-      String provider,
-      ) async {
+  Future<void> handleSocialAuth(BuildContext context, String provider) async {
     final pageNotifier = _ref.read(loginPageProvider.notifier);
     pageNotifier.setLoading(true);
     try {

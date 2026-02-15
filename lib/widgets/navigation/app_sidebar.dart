@@ -28,13 +28,20 @@ class AppSidebar extends ConsumerWidget {
         children: [
           const Padding(
             padding: EdgeInsets.all(24.0),
-            child: Text(
-              'LabSense',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.5,
-              ),
+            child: Row(
+              children: [
+                // Optional: small logo in sidebar
+                // Image.asset('assets/images/logo.png', width: 24, height: 24),
+                // SizedBox(width: 8),
+                Text(
+                  'Clear Health',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
             ),
           ),
           _buildUserCard(context, ref),
@@ -86,7 +93,7 @@ class AppSidebar extends ConsumerWidget {
                   ref,
                   NavItem.healthChat,
                   FontAwesomeIcons.robot,
-                  'Ask LabSense',
+                  'Ask Clear Health',
                 ),
                 _buildSidebarItem(
                   context,
@@ -123,7 +130,7 @@ class AppSidebar extends ConsumerWidget {
 
     return profileAsync.when(
       data: (profile) {
-        final name = profile?.fullName ?? 'LabSense User';
+        final name = profile?.fullName ?? 'Clear Health User';
         final avatarUrl = profile?.avatarUrl;
         final avatarColor = profile != null
             ? Color(int.parse(profile.avatarColor))

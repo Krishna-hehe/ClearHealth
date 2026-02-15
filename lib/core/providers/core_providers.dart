@@ -11,8 +11,13 @@ import '../services/input_validation_service.dart';
 import '../services/rate_limiter_service.dart';
 import '../cache_service.dart';
 import '../services/rls_verification_service.dart';
+import '../services/audit_service.dart'; // Import AuditService
 
 // --- Core Infrastructure Providers ---
+
+final auditServiceProvider = Provider<AuditService>((ref) {
+  return AuditService();
+});
 
 final rlsVerificationServiceProvider = Provider<RlsVerificationService>((ref) {
   final client = ref.watch(supabaseClientProvider);

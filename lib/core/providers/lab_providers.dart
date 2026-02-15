@@ -4,7 +4,6 @@ import '../repositories/lab_repository.dart';
 import 'core_providers.dart';
 import '../cache_service.dart';
 import '../models.dart';
-import '../services/audit_service.dart';
 import '../services/trend_analysis_service.dart';
 
 import 'user_providers.dart';
@@ -33,6 +32,7 @@ class LabResultsNotifier extends AsyncNotifier<List<LabReport>> {
   static const int _pageSize = 10;
   bool _hasMore = true;
   bool _isLoadingMore = false;
+  String? _searchQuery;
 
   bool get hasMore => _hasMore;
   bool get isLoadingMore => _isLoadingMore;
@@ -47,6 +47,7 @@ class LabResultsNotifier extends AsyncNotifier<List<LabReport>> {
       limit: _pageSize,
       offset: 0,
       profileId: profileId,
+      searchQuery: _searchQuery,
     );
   }
 
@@ -66,6 +67,7 @@ class LabResultsNotifier extends AsyncNotifier<List<LabReport>> {
         limit: _pageSize,
         offset: nextPage * _pageSize,
         profileId: profileId,
+        searchQuery: _searchQuery,
       );
 
       if (results.isEmpty || results.length < _pageSize) {
@@ -82,15 +84,34 @@ class LabResultsNotifier extends AsyncNotifier<List<LabReport>> {
     }
   }
 
+  Future<void> search(String query) async {
+    _searchQuery = query;
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      _currentPage = 0;
+      _hasMore = true;
+      final profileId = ref.read(selectedProfileIdProvider);
+      return ref.read(labRepositoryProvider).getLabResults(
+            limit: _pageSize,
+            offset: 0,
+            profileId: profileId,
+            searchQuery: _searchQuery,
+          );
+    });
+  }
+
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       _currentPage = 0;
       _hasMore = true;
       final profileId = ref.read(selectedProfileIdProvider);
-      return ref
-          .read(labRepositoryProvider)
-          .getLabResults(limit: _pageSize, offset: 0, profileId: profileId);
+      return ref.read(labRepositoryProvider).getLabResults(
+            limit: _pageSize,
+            offset: 0,
+            profileId: profileId,
+            searchQuery: _searchQuery,
+          );
     });
   }
 }

@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:lab_sense_app/core/utils/exceptions.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import 'core/app_config.dart';
 import 'core/supabase_config.dart';
+
 import 'core/theme.dart';
 import 'core/providers.dart';
 import 'widgets/main_layout.dart';
@@ -59,19 +62,19 @@ class _AppEntryPointState extends ConsumerState<AppEntryPoint> {
 
   Future<void> _initApp() async {
     try {
-      // 1. Load Env
-      if (mounted) setState(() => _status = 'Loading configuration...');
+      // 1. Env is loaded at compile time
       try {
         await dotenv.load(fileName: ".env");
-        AppLogger.info('✅ Environment loaded');
+        AppLogger.info('✅ Environment configuration loaded');
       } catch (e) {
-        AppLogger.error('❌ Failed to load .env: $e', containsPII: false);
-        // Continue anyway as secrets might be optional or handled elsewhere in some builds
+        AppLogger.error('❌ Failed to load .env file: $e');
+        // Continue, as some might be set via --dart-define (fallback not implemented but good practice)
       }
 
       // 2. Initialize Sentry
-      final sentryDsn = dotenv.env['SENTRY_DSN'];
-      if (sentryDsn != null && sentryDsn.isNotEmpty) {
+      final sentryDsn = AppConfig.sentryDsn;
+
+      if (sentryDsn.isNotEmpty) {
         await SentryFlutter.init((options) {
           options.dsn = sentryDsn;
           options.tracesSampleRate = 1.0;
@@ -223,7 +226,6 @@ class LabSenseApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    print('🏗️ LabSenseApp: Building...');
     final isAuthLoading = ref.watch(isAuthLoadingProvider);
     final themeMode = ref.watch(themeProvider);
     final currentUser = ref.watch(currentUserProvider);
@@ -239,7 +241,7 @@ class LabSenseApp extends ConsumerWidget {
     }
 
     return MaterialApp(
-      title: 'LabSense',
+      title: 'Clear Health',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
@@ -379,7 +381,7 @@ class _SecurityWrapperState extends ConsumerState<SecurityWrapper>
               ),
               const SizedBox(height: 8),
               const Text(
-                'LabSense secured for your privacy',
+                'Clear Health secured for your privacy',
                 style: TextStyle(color: AppColors.secondary),
               ),
               const SizedBox(height: 32),

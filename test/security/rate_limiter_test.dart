@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lab_sense_app/core/services/rate_limiter_service.dart';
+import 'package:clear_health/core/services/rate_limiter_service.dart';
 
 void main() {
   late RateLimiterService rateLimiter;
@@ -89,3 +89,4 @@ void main() {
     );
   });
 }
+
