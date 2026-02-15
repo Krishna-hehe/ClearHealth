@@ -1,32 +1,43 @@
-# LabSense - Intelligent Health Monitoring
+# Clear Health
 
-LabSense is a Flutter-based mobile application designed for intelligent health monitoring. It allows users to upload, analyze, and track their lab results, providing AI-powered insights, health predictions, and wellness tips.
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![License](https://img.shields.io/badge/license-MIT-blue) ![Flutter](https://img.shields.io/badge/Flutter-3.10.4-02569B?logo=flutter)
 
-## Key Features
+**Clear Health** (formerly LabSense) is an intelligent health monitoring application built with Flutter. It empowers users to upload lab reports, receive AI-powered insights, tracking health trends monitoring, and manage family health profiles securely.
 
-* **Lab Report Management**: Upload and manage PDF lab reports.
-* **AI-Powered Insights**: Get AI-generated summaries, optimization tips, and health predictions based on your lab results, powered by Google Gemini.
-* **Secure Authentication**: Secure login with Supabase authentication and biometric support (fingerprint/face ID).
-* **Multi-Profile Support**: Manage health data for multiple family members.
-* **Trend Analysis**: Visualize your health data over time with charts and graphs.
-* **Medication Tracking**: Keep a record of your medications.
-* **Notifications**: Receive reminders and updates.
-* **Data Export**: Export your data as a PDF.
+## Features
 
-## Getting Started
+- **📄 Lab Report Management**: Upload PDF lab reports and extract data automatically.
+- **t 🤖 AI-Powered Insights**: Get personalized health summaries, optimization tips, and predictions using Google Gemini.
+- **🔒 Secure Authentication**: Biometric login (Fingerprint/Face ID) and Supabase authentication.
+- **👨‍👩‍👧‍👦 Multi-Profile Support**: Manage health records for the entire family.
+- **📈 Trend Analysis**: Visualize health metrics over time with interactive charts.
+- **💊 Medication Tracking**: Keep track of prescriptions and schedules.
+- **🔔 Smart Notifications**: Reminders for medication and appointments.
+- **📤 Data Export**: Generate comprehensive PDF health reports.
+
+## Tech Stack
+
+- **Frontend**: [Flutter](https://flutter.dev/)
+- **Backend**: [Supabase](https://supabase.io/) (Auth, Database, Storage, Edge Functions)
+- **AI**: [Google Gemini API](https://ai.google.dev/)
+- **State Management**: [Riverpod](https://riverpod.dev/)
+- **Local Storage**: [Hive](https://docs.hivedb.dev/)
+- **Charts**: [fl_chart](https://pub.dev/packages/fl_chart)
+
+## Quick Start
 
 ### Prerequisites
 
-* Flutter SDK: Make sure you have the Flutter SDK installed.
-* An editor with the Flutter plugin (e.g., VS Code, Android Studio).
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) installed.
+- Detailed setup guide available in [docs/setup.md](./docs/setup.md) (create this if needed).
 
 ### Installation
 
 1. **Clone the repository:**
 
     ```bash
-    git clone <repository-url>
-    cd lab_sense_app
+    git clone https://github.com/your-username/clear_health.git
+    cd clear_health
     ```
 
 2. **Install dependencies:**
@@ -35,65 +46,27 @@ LabSense is a Flutter-based mobile application designed for intelligent health m
     flutter pub get
     ```
 
-3. **Set up environment variables:**
-    Create a `.env` file in the root of the project and add the following environment variables. You can get these from your Supabase and Google AI project settings.
+3. **Configure Environment:**
+    Create a `.env` file in the root directory (see `.env.example` for reference):
 
-    ```
-    GEMINI_API_KEY=your_gemini_api_key
-    SUPABASE_URL=your_supabase_url
-    SUPABASE_ANON_KEY=your_supabase_anon_key
-    LABSENSE_CHAT_API_KEY=your_labsense_chat_api_key
-    Note: Do NOT bundle this file in your build. Instead, use these values with `--dart-define` when running/building the app.
+    ```env
+    GEMINI_API_KEY=your_key
+    SUPABASE_URL=your_url
+    SUPABASE_ANON_KEY=your_key
     ```
 
-    flutter run \
-      --dart-define=GEMINI_API_KEY=your_key \
-      --dart-define=SUPABASE_URL=your_url \
-      --dart-define=SUPABASE_ANON_KEY=your_key \
-      --dart-define=LABSENSE_CHAT_API_KEY=your_key \
-      --dart-define=SENTRY_DSN=your_dsn
-
-    ```
-
-
-4. **Run the application:**
+4. **Run the app:**
 
     ```bash
     flutter run
     ```
 
-## Architecture
+## Documentation
 
-LabSense is built with a modern Flutter architecture, emphasizing separation of concerns and maintainability.
+- [Contributing Guidelines](CONTRIBUTING.md)
+- [Changelog](CHANGELOG.md)
+- [License](LICENSE)
 
-* **State Management**: The application uses `flutter_riverpod` for state management, with providers organized by feature domains (auth, core, labs, user, etc.).
-* **Backend**: [Supabase](https://supabase.io/) is used for the backend, providing authentication, a PostgreSQL database (with pgvector for embeddings), and file storage.
-* **AI Integration**: The application leverages the [Google Gemini API](https://ai.google.dev/) for its AI-powered features, including:
-  * **Vector Embeddings**: For semantic search and similarity.
-  * **Generative Models**: For summaries, insights, and predictions.
-* **Local Storage**: [Hive](https://pub.dev/packages/hive) is used for local caching and offline storage.
-* **Security**: The app features biometric authentication (`local_auth`), secure storage for sensitive data (`flutter_secure_storage`), and Row Level Security (RLS) in Supabase.
-* **Error Reporting**: [Sentry](https://sentry.io/) is used for real-time error monitoring.
+## License
 
-## Core Dependencies
-
-* `flutter_riverpod`: For state management.
-* `supabase_flutter`: For backend integration with Supabase.
-* `google_generative_ai`: For AI features.
-* `fl_chart`: for charting and data visualization.
-* `hive`: For local storage.
-* `sentry_flutter`: For error reporting.
-* `local_auth`: For biometric authentication.
-* `pdf`: For PDF generation.
-
-## Project Structure
-
-The project follows a feature-driven directory structure:
-
-```
-lib/
-├── core/         # Core services, models, and providers
-├── features/     # Feature-specific widgets and pages
-├── widgets/      # Shared widgets
-└── main.dart     # Application entry point
-```
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
