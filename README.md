@@ -63,9 +63,13 @@
 
 ## Documentation
 
-- [Contributing Guidelines](CONTRIBUTING.md)
-- [Changelog](CHANGELOG.md)
-- [License](LICENSE)
+- **[Features Guide](./docs/FEATURES.md)**: Detailed breakdown of what Clear Health can do.
+- **[Technical Architecture](./docs/ARCHITECTURE.md)**: Overview of the tech stack and system design.
+- **[Development Guide](./docs/DEVELOPMENT_GUIDE.md)**: Setup instructions and development workflows.
+- **[User Manual](./docs/USER_MANUAL.md)**: Step-by-step documentation for end users.
+- **[Contributing Guidelines](CONTRIBUTING.md)**: How to help improve Clear Health.
+- **[Changelog](CHANGELOG.md)**: Version history and updates.
+- **[License](LICENSE)**: MIT License details.
 
 ## License
 

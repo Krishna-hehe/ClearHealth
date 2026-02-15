@@ -1,4 +1,3 @@
-
 # Miscellaneous
 *.class
 *.log
@@ -13,16 +12,12 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# IDEs and Editors
+.vscode/
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -45,15 +40,16 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Sensitive data
+# Environment and secrets
 .env
 .env.*
 *.secret
 *.pem
 credentials.json
 
-# Development Tools & Archived scripts (containing keys)
+# Development tools and logs
 /dev_tools/
+/app_migrations/
 /scripts/archived/
 test_*.dart
 test_*.py
@@ -64,6 +60,13 @@ valid_models.txt
 models*.json
 *.txt
 *.log
+/docs/*.txt
+/docs/PLAN-*
+/docs/FIX-*
+/docs/DEBUG_*
+/docs/ORCHESTRATION_REPORT_*
+/docs/SECURITY_INTEGRATION_PROGRESS.md
+/docs/FEATURE-diet-integration.md
 
 # Project specific
 .agent/
